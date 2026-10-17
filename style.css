@@ -561,7 +561,7 @@ button { font: inherit; }
 .task-list .tbell:disabled { opacity: .2; cursor: default; }
 .task-list li.editing .etext { flex: 1; }
 #tBell b { font-size: 9px; margin-left: 1px; }
-.balloons { position: absolute; right: 8px; bottom: 38px; z-index: 9700; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: none; }
+.balloons { position: absolute; right: 8px; bottom: 38px; z-index: 9850; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: none; }
 .balloon { position: relative; width: 260px; max-width: calc(100vw - 16px); padding: 10px 12px; background: #ffffe1; border: 1px solid #000; border-radius: 8px; box-shadow: 2px 2px 6px rgba(0,0,0,.35);
   font-size: 11px; pointer-events: auto; animation: winopen .2s ease-out; transition: opacity .6s; }
 .balloon::after { content: ""; position: absolute; right: 24px; bottom: -9px; border: 9px solid transparent; border-bottom: 0; border-top-color: #000; }
@@ -578,7 +578,7 @@ button { font: inherit; }
 .fitem { user-select: none; -webkit-user-select: none; }
 .fitem span { overflow-wrap: anywhere; }
 .titlebar, .resize { touch-action: none; }
-@media print { body * { visibility: hidden; } .paper, .paper * { visibility: visible; } .paper { position: absolute; left: 0; top: 0; box-shadow: none; margin: 0; } html, body { overflow: visible; height: auto; background: #fff; } }
+@media print { .screen, .desktop, .win, .wbody, .inner, .wordpad-bg { position: static !important; overflow: visible !important; height: auto !important; transform: none !important; contain: none !important; } body * { visibility: hidden; } .paper, .paper * { visibility: visible; } .paper { position: static; box-shadow: none; margin: 0; } html, body { overflow: visible; height: auto; background: #fff; } }
 
 /* screen saver */
 .saver { position: fixed; inset: 0; z-index: 100000; background: #000; cursor: none; }
@@ -587,3 +587,6 @@ button { font: inherit; }
 .saver-logo sup { color: #ff7a00; font-size: 18px; }
 .mon-screen.saver-mini { background: #000; display: flex; align-items: center; justify-content: center; }
 .tabs span[data-tab] { cursor: pointer; }
+
+.sol-table, .sol-table *, .game-stage, .ttt-grid, .mine-grid { user-select: none; -webkit-user-select: none; }
+@media (max-height: 640px) { .user-tile b { font-size: 18px; } .user-tile small { font-size: 12px; } }
