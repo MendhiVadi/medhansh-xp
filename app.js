@@ -12,6 +12,25 @@
   // Profile photo with initials fallback (if photo.jpg is missing the initials stay visible)
   const avatar = (cls = "") => `<span class="avatar ${cls}">${esc(P.initials)}${P.photo ? `<img src="${esc(P.photo)}" alt="${esc(P.name)}" decoding="async" onerror="this.remove()">` : ""}</span>`;
 
+  // Shared backend (/api on Vercel, backed by Firestore). When it can't be reached (offline, or a plain
+  // static server locally) the apps keep working with this browser's storage and sync again later.
+  const Cloud = {
+    ok: null,
+    async req(path, { method = "GET", body } = {}) {
+      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 8000);
+      try {
+        const r = await fetch("/api/" + path, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined, signal: ctl.signal, cache: "no-store" });
+        const j = await r.json().catch(() => ({}));
+        if (r.status === 404 || r.status >= 500) { this.set(false); throw Object.assign(new Error(j.error || "Server unavailable"), { status: r.status, body: j }); }
+        if (!r.ok) throw Object.assign(new Error(j.error || r.statusText), { status: r.status, body: j });
+        this.set(true); return j;
+      } catch (e) { if (!e.status) this.set(false); throw e; } finally { clearTimeout(t); }
+    },
+    set(v) { if (this.ok !== v) { this.ok = v; document.dispatchEvent(new CustomEvent("cloud")); } },
+    label() { return this.ok ? "Shared · synced" : this.ok === false ? "Offline · saved in this browser" : "Connecting…"; },
+  };
+  const readLocal = (k, d) => { try { const v = JSON.parse(store.lget(k)); return v ?? d; } catch { return d; } };
+
   // ---------------- Icons (inline SVG) ----------------
   const I = {
     computer: `<svg viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="17" rx="2" fill="#d8d8d0" stroke="#666"/><rect x="6" y="6" width="20" height="13" fill="url(#gsky)"/><path d="M12 21h8l2 5H10z" fill="#bbb" stroke="#666"/><rect x="7" y="26" width="18" height="3" rx="1" fill="#ccc" stroke="#666"/><defs><linearGradient id="gsky" x2="0" y2="1"><stop offset="0" stop-color="#2a6ee7"/><stop offset=".7" stop-color="#8fc3f5"/><stop offset=".71" stop-color="#5aa83a"/></linearGradient></defs></svg>`,
@@ -53,7 +72,7 @@
     projects: { title: "My Projects", icon: "project", w: 660, h: 440, render: renderProjects },
     resume:   { title: "Resume.doc - WordPad", icon: "resume", w: 720, h: 540, render: renderResume },
     contact:  { title: "New Message - Contact Me", icon: "mail", w: 520, h: 420, render: renderContact },
-    ie:       { title: "My Links - Internet Explorer", icon: "ie", w: 640, h: 440, render: renderIE },
+    ie:       { title: "Internet Explorer", icon: "ie", w: 640, h: 440, render: renderIE },
     cmd:      { title: "Command Prompt", icon: "cmd", w: 620, h: 380, render: renderCmd },
     msn:      { title: "MSN Messenger - Chat", icon: "msn", w: 420, h: 460, render: renderMSN },
     mine:     { title: "Minesweeper", icon: "mine", w: 0, h: 0, render: renderMine, fixed: true },
@@ -70,13 +89,13 @@
     ttt:      { title: "Tic-Tac-Toe", icon: "ttt", w: 320, h: 400, render: lazyGame("tictactoe") },
   };
   const GAME_IDS = ["solitaire", "mine", "snake", "breakout", "ttt"];
-  const DESKTOP = ["about", "projects", "resume", "ie", "contact", "msn", "cmd", "calendar", "games", "solitaire", "mine", "snake", "paint", "notepad", "recycle"];
-  const DESK_LABEL = { about: "About Me", resume: "Resume", projects: "My Projects", contact: "Contact Me", ie: "My Links", cmd: "Command Prompt", msn: "MSN Messenger", mine: "Minesweeper", paint: "Paint", notepad: "Notepad", recycle: "Recycle Bin", computer: "My Computer", games: "Games", calendar: "Calendar", solitaire: "Solitaire", snake: "Snake", breakout: "Brick Breaker", ttt: "Tic-Tac-Toe", display: "Display" };
+  const DESKTOP = ["about", "projects", "resume", "ie", "contact", "msn", "cmd", "calendar", "games", "paint", "notepad", "recycle"];
+  const DESK_LABEL = { about: "About Me", resume: "Resume", projects: "My Projects", contact: "Contact Me", ie: "Internet Explorer", cmd: "Command Prompt", msn: "MSN Messenger", mine: "Minesweeper", paint: "Paint", notepad: "Notepad", recycle: "Recycle Bin", computer: "My Computer", games: "Games", calendar: "Calendar", solitaire: "Solitaire", snake: "Snake", breakout: "Brick Breaker", ttt: "Tic-Tac-Toe", display: "Display" };
 
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=15"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=17"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyGame(name) {
@@ -269,6 +288,8 @@
   const ext = (href, label, icon) => !href ? "" : `<a href="${esc(href)}" target="_blank" rel="noopener">${icon ? I[icon] : ""}${esc(label)}</a>`;
   const appLink = (id, label) => `<button class="link" data-open="${id}">${I[APPS[id].icon]}${esc(label)}</button>`;
   document.addEventListener("click", (e) => {
+    const bu = e.target.closest("[data-browse-url]");
+    if (bu) { e.preventDefault(); const had = wins.has("ie"), w = openApp("ie", { url: bu.dataset.browseUrl }); if (had) w?.navigate?.(bu.dataset.browseUrl); return; }
     const s = e.target.closest("[data-soon]");
     if (s) { e.preventDefault(); msgBox(s.dataset.soon, `The ${esc(s.dataset.soon)} website is coming soon. Check back later!`, "🚧"); return; }
     const b = e.target.closest("[data-open]");
@@ -284,16 +305,13 @@
       ${taskPane([
         ["Quick Links", appLink("resume", "View my resume") + appLink("projects", "Browse my projects") + appLink("contact", "Send me a message")],
         ["Elsewhere", yap() + ext(links.github, "GitHub", "github") + ext(links.linkedin, "LinkedIn", "linkedin") + ext(links.twitter, "X / Twitter", "x") + ext(links.website, "Website", "globe") || "<span class='muted'>Links coming soon</span>"],
-        ["Details", `<span><b>${esc(P.name)}</b><br>${esc(P.role)}<br>${esc(P.location)}</span>`],
       ])}
       <div class="ex-main doc">
         <div class="about-head">${avatar()}
           <div><h1>${esc(P.name)}</h1><div class="muted">${esc(P.role)}${P.subtitle ? " · " + esc(P.subtitle) : ""} · ${esc(P.location)}</div><p style="margin:6px 0 0">${esc(P.tagline)}</p></div></div>
         <h2>About</h2>${P.bio.map((p) => `<p>${esc(p)}</p>`).join("")}
-        <h2>Skills</h2>${Object.entries(P.skills).map(([k, v]) => `<p style="margin:4px 0"><b>${esc(k)}:</b></p><div class="chips">${v.map((s) => `<span class="chip">${esc(s)}</span>`).join("")}</div>`).join("")}
-        <h2>Education</h2>${P.education.map((e) => `<div class="row"><h3>${esc(e.school)}</h3><span class="muted">${esc(e.years)}</span></div><div>${esc(e.degree)}</div>${e.detail ? `<div class="muted">${esc(e.detail)}</div>` : ""}`).join("<br>")}
-        ${P.certifications?.length ? `<h2>Certifications</h2><ul>${P.certifications.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
-        ${P.languages?.length ? `<h2>Languages</h2><p>${P.languages.map(esc).join(" · ")}</p>` : ""}
+        <h2>Currently</h2><ul>${(P.experience || []).filter((x) => /present/i.test(x.years)).map((x) => `<li><b>${esc(x.title)}</b>, ${x.org === "Yap-less" ? yap() : esc(x.org)}</li>`).join("")}${P.education?.[0] ? `<li>${esc(P.education[0].degree)}, ${esc(P.education[0].school)}</li>` : ""}</ul>
+        <p class="about-more">Skills, education, awards and certifications are in my ${appLink("resume", "Resume")}. Things I've built are in ${appLink("projects", "My Projects")}.</p>
       </div></div>`;
   }
 
@@ -321,52 +339,107 @@
       inner.innerHTML = `<div class="doc"><h1>${esc(p.name)}</h1><div class="muted">${esc(p.year)}</div>
         <h2>Description</h2><p>${esc(p.desc)}</p>
         <h2>Built with</h2><div class="chips">${(p.stack || []).map((s) => `<span class="chip">${esc(s)}</span>`).join("")}</div>
-        <h2>Links</h2><p>${[p.github && `<a href="${esc(p.github)}" target="_blank" rel="noopener">Source code on GitHub</a>`, p.url && `<a href="${esc(p.url)}" target="_blank" rel="noopener">Live demo</a>`].filter(Boolean).join(" &nbsp;·&nbsp; ") || '<span class="muted">Links coming soon</span>'}</p></div>`;
+        <h2>Links</h2><p>${[p.github && `<a href="${esc(p.github)}" target="_blank" rel="noopener">Source code on GitHub</a>`, p.url && `<a href="${esc(p.url)}" data-browse-url="${esc(p.url)}">Live demo (opens in Internet Explorer)</a>`].filter(Boolean).join(" &nbsp;·&nbsp; ") || '<span class="muted">Links coming soon</span>'}</p></div>`;
     } } });
   }
 
-  function renderResume(body) {
-    const inner = chrome(body, { menu: ["File", "Edit", "View", "Insert", "Format", "Help"] });
-    inner.insertAdjacentHTML("beforebegin", `<div class="toolbar">${links.resumePdf ? `<a class="xpbtn" style="text-decoration:none;color:#000" href="${esc(links.resumePdf)}" download="${esc(P.name.replace(/\s+/g, "_"))}_Resume.pdf">⬇ Download PDF</a>` : ""}<button onclick="window.print()">🖨 Print</button></div><div class="ruler"></div>`);
-    inner.innerHTML = `<div class="wordpad-bg"><div class="paper doc">
-      <div class="row" style="align-items:flex-end"><div><h1>${esc(P.name)}</h1><div class="muted">${esc(P.role)}${P.subtitle ? " · " + esc(P.subtitle) : ""} · ${esc(P.location)}</div></div>
-      <div style="text-align:right">${links.email ? `<a href="mailto:${esc(links.email)}">${esc(links.email)}</a>` : ""}${[links.linkedin, links.github, links.website].filter(Boolean).map((u) => `<br><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))}</a>`).join("")}</div></div>
-      <h2>Summary</h2><p>${esc(P.summary || P.bio.join(" "))}</p>
-      <h2>Education</h2>${P.education.map((e) => `<div class="row"><h3>${esc(e.school)}</h3><span class="muted">${esc(e.years)}</span></div><div>${esc(e.degree)}</div>${e.detail ? `<div class="muted">${esc(e.detail)}</div>` : ""}${e.points?.length ? `<ul>${e.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}`).join("<div style='height:8px'></div>")}
-      <h2>Experience</h2>${P.experience.map((x) => `<div class="row"><h3>${esc(x.title)} - ${x.org === "Yap-less" ? yap() : esc(x.org)}${x.location ? ` <span class="muted" style="font-weight:normal">· ${esc(x.location)}</span>` : ""}</h3><span class="muted">${esc(x.years)}</span></div><ul>${x.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`).join("")}
-      <h2>Projects</h2>${P.projects.filter((p) => p.resume !== false).map((p) => `<div class="row"><h3>${esc(p.name)}${p.stack?.length ? ` <span class="muted" style="font-weight:normal">| ${p.stack.map(esc).join(", ")}</span>` : ""}</h3><span class="muted">${esc(p.year)}</span></div><ul><li>${esc(p.desc)}</li></ul>`).join("")}
-      <h2>Skills</h2>${Object.entries(P.skills).map(([k, v]) => `<div><b>${esc(k)}:</b> ${v.map(esc).join(", ")}</div>`).join("")}
-      ${P.achievements?.length ? `<h2>Honors & Awards</h2><ul>${P.achievements.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
-      ${P.certifications?.length ? `<h2>Certifications</h2><ul>${P.certifications.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
-      ${P.languages?.length ? `<h2>Languages</h2><p>${P.languages.map(esc).join(" · ")}</p>` : ""}
-    </div></div>`;
+  function renderResume(body, ctx) {
+    body.style.display = "flex"; body.style.flexDirection = "column"; body.style.overflow = "hidden";
+    body.innerHTML = `<div class="menubar"></div>
+      <div class="toolbar">${links.resumePdf ? `<a class="xpbtn" style="text-decoration:none;color:#000" href="${esc(links.resumePdf)}" download="${esc(P.name.replace(/\s+/g, "_"))}_Resume.pdf">⬇ Download PDF</a>` : ""}<button class="rprint">🖨 Print</button></div><div class="ruler"></div>
+      <div class="wordpad-bg rframe-wrap"><iframe class="rframe" src="resume.html?embed=1" title="Resume"></iframe></div>`;
+    const fr = body.querySelector(".rframe"), print = () => fr.contentWindow?.print();
+    body.querySelector(".rprint").onclick = print;
+    ctx.menu(body.querySelector(".menubar"), [
+      { label: "File", items: [{ label: "Print...", key: "Ctrl+P", act: print }, ...(links.resumePdf ? [{ label: "Download PDF", act: () => body.querySelector("[download]").click() }] : []), { label: "Open in new tab", act: () => window.open("resume.html", "_blank", "noopener") }, "-", { label: "Exit", act: ctx.close }] },
+      { label: "Help", items: [{ label: "About", act: () => msgBox("Resume", "The same page is printed to resume.pdf, so both always match.") }] },
+    ]);
   }
 
   function renderContact(body, ctx) {
-    const inner = chrome(body, { menu: ["File", "Edit", "View", "Insert", "Format", "Tools", "Message", "Help"] });
-    inner.innerHTML = `<form class="form">
-      <label><span>To:</span><input value="${esc(P.name)} <${esc(links.email)}>" readonly></label>
-      <label><span>From:</span><input name="from" placeholder="your name" required></label>
-      <label><span>Subject:</span><input name="subject" placeholder="a subject" required></label>
-      <textarea name="msg" placeholder="Write your message..." required></textarea>
-      <div style="display:flex;gap:6px;justify-content:space-between;align-items:center">
-        <span class="muted">Opens your email app with the message filled in.</span><button class="xpbtn" type="submit">✉ Send</button></div></form>`;
-    inner.querySelector("form").addEventListener("submit", (e) => {
+    const inner = chrome(body, { menus: [
+      { label: "File", items: [{ label: "Send", act: () => form.requestSubmit() }, { label: "Email instead", act: () => mailto() }, "-", { label: "Close", act: ctx.close }] },
+      { label: "Help", items: [{ label: "About", act: () => msgBox("Contact", `Messages go straight to ${esc(P.name)}.<br>Your details are only used to reply to you.`) }] },
+    ] });
+    inner.innerHTML = `<form class="form contact" novalidate>
+      <label><span>To:</span><input value="${esc(P.name)}" readonly tabindex="-1"></label>
+      <label><span>Name:</span><input name="name" maxlength="80" autocomplete="name" placeholder="your name" required></label>
+      <label><span>Email:</span><input name="email" type="email" maxlength="120" autocomplete="email" placeholder="you@example.com" required></label>
+      <label><span>Subject:</span><input name="subject" maxlength="140" placeholder="what's this about?" required></label>
+      <input name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <textarea name="message" maxlength="4000" placeholder="Write your message..." required></textarea>
+      <div class="cerr" role="alert"></div>
+      <div class="cfoot"><span class="muted">Or email <a href="mailto:${esc(links.email)}">${esc(links.email)}</a></span><button class="xpbtn csend" type="submit">✉ Send</button></div></form>`;
+    const form = inner.querySelector("form"), err = form.querySelector(".cerr"), btn = form.querySelector(".csend");
+    const mailto = () => { const f = new FormData(form); location.href = `mailto:${links.email}?subject=${encodeURIComponent(f.get("subject") || "")}&body=${encodeURIComponent(`${f.get("message") || ""}\n\n- ${f.get("name") || ""}`)}`; };
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const f = new FormData(e.target);
-      const bodyTxt = `${f.get("msg")}\n\n- ${f.get("from")}`;
-      location.href = `mailto:${links.email}?subject=${encodeURIComponent(f.get("subject"))}&body=${encodeURIComponent(bodyTxt)}`;
+      form.querySelectorAll(".bad").forEach((x) => x.classList.remove("bad")); err.textContent = "";
+      const data = Object.fromEntries(new FormData(form));
+      btn.disabled = true; btn.textContent = "Sending…";
+      try {
+        await Cloud.req("contact", { method: "POST", body: data });
+        inner.innerHTML = `<div class="csent"><b>✅ Message sent!</b><p>Thanks, ${esc(data.name)}. I'll get back to you at ${esc(data.email)}.</p><button class="xpbtn">Close</button></div>`;
+        inner.querySelector("button").onclick = ctx.close;
+      } catch (ex) {
+        btn.disabled = false; btn.textContent = "✉ Send";
+        const fe = ex.body?.errors || {};
+        Object.keys(fe).forEach((k) => form.elements[k]?.classList.add("bad"));
+        err.innerHTML = ex.status && ex.status < 500 && ex.status !== 404 ? esc(Object.values(fe).join(" ") || ex.message) : `Couldn't reach the server. <a href="#" class="cmail">Send it by email instead</a>.`;
+        err.querySelector(".cmail")?.addEventListener("click", (c) => { c.preventDefault(); mailto(); });
+      }
     });
+    setTimeout(() => form.elements.name.focus(), 0);
   }
 
-  function renderIE(body) {
-    const inner = chrome(body, { addr: "https://medhansh.xp/favorites", addrIcon: "ie", menu: ["File", "Edit", "View", "Favorites", "Tools", "Help"] });
+  function renderIE(body, ctx) {
+    body.style.display = "flex"; body.style.flexDirection = "column"; body.style.overflow = "hidden";
+    body.innerHTML = `<div class="menubar"></div>
+      <div class="toolbar"><button class="ieback" title="Back">◀ Back</button><button class="iefwd" title="Forward">▶</button><button class="iereload" title="Refresh">⟳</button><button class="iehome" title="Home">🏠 Home</button><button class="ienew" title="Open this page in a new tab">↗ New tab</button></div>
+      <form class="addr ieaddr">Address <div class="field">${I.ie}<input class="ieurl" spellcheck="false" autocomplete="off" aria-label="Address"></div><button class="xpbtn">Go</button></form>
+      <div class="iebar hidden">Some sites refuse to be shown inside other pages. If this stays blank, use <a href="#" class="ieopen">open in a new tab</a>.</div>
+      <div class="ieview"><div class="iehomepage"></div><iframe class="ieframe hidden" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe></div>
+      <div class="statusbar"><span class="iestat">Done</span></div>`;
+    const $b = (q) => body.querySelector(q), urlIn = $b(".ieurl"), frame = $b(".ieframe"), home = $b(".iehomepage"), bar = $b(".iebar"), stat = $b(".iestat");
+    const hist = [], HOME = "about:favorites"; let pos = -1;
     const L = [["GitHub", links.github, "github"], ["LinkedIn", links.linkedin, "linkedin"], ["X / Twitter", links.twitter, "x"], ["Website", links.website, "globe"], ["Email", "mailto:" + links.email, "mail"], ["Resume (PDF)", links.resumePdf, "pdf"]].filter(([, u]) => u && u !== "mailto:");
-    const yapCard = links.yapless
-      ? `<a class="link-card" href="${esc(links.yapless)}" target="_blank" rel="noopener">${I.yapless}<span><b>Yap-less</b><small>${esc(links.yapless.replace(/^https?:\/\//, ""))}</small></span></a>`
-      : `<a class="link-card" href="#" data-soon="Yap-less">${I.yapless}<span><b>Yap-less</b><small>Founder &amp; CEO (coming soon)</small></span></a>`;
-    inner.innerHTML = `<div class="ie-home"><h1>${esc(P.name)}'s Favorites</h1><div class="muted">Click a link to open it in a new tab.</div>
-      <div class="link-cards">${yapCard}${L.map(([n, u, ic]) => `<a class="link-card" href="${esc(u)}" target="_blank" rel="noopener">${I[ic]}<span><b>${esc(n)}</b><small>${esc(u.replace(/^(https?:\/\/|mailto:)/, ""))}</small></span></a>`).join("")}</div></div>`;
+    const demos = P.projects.filter((p) => p.url);
+    home.innerHTML = `<div class="ie-home"><h1>${esc(P.name)}'s Favorites</h1><div class="muted">Type an address or a search above, or pick a page.</div>
+      <h3>Live projects (open right here)</h3><div class="link-cards">${demos.map((p) => `<a class="link-card" href="${esc(p.url)}" data-browse>${I.globe}<span><b>${esc(p.name)}</b><small>${esc(p.url.replace(/^https?:\/\//, ""))}</small></span></a>`).join("")}</div>
+      <h3>Profiles (open in a new tab)</h3><div class="link-cards">${links.yapless ? `<a class="link-card" href="${esc(links.yapless)}" target="_blank" rel="noopener">${I.yapless}<span><b>Yap-less</b><small>${esc(links.yapless.replace(/^https?:\/\//, ""))}</small></span></a>` : `<a class="link-card" href="#" data-soon="Yap-less">${I.yapless}<span><b>Yap-less</b><small>Founder &amp; CEO (coming soon)</small></span></a>`}${L.map(([n, u, ic]) => `<a class="link-card" href="${esc(u)}" target="_blank" rel="noopener">${I[ic]}<span><b>${esc(n)}</b><small>${esc(u.replace(/^(https?:\/\/|mailto:)/, ""))}</small></span></a>`).join("")}</div></div>`;
+    const normalize = (q) => {
+      q = q.trim(); if (!q || q === HOME) return HOME;
+      if (/^https?:\/\//i.test(q)) return q;
+      if (/^[\w-]+(\.[\w-]+)+(:\d+)?(\/\S*)?$/.test(q)) return "https://" + q;
+      return "https://en.wikipedia.org/w/index.php?search=" + encodeURIComponent(q);
+    };
+    function show(url) {
+      urlIn.value = url === HOME ? "" : url; urlIn.placeholder = "Search Wikipedia or type a web address";
+      $b(".ieback").disabled = pos <= 0; $b(".iefwd").disabled = pos >= hist.length - 1; $b(".ienew").disabled = url === HOME;
+      ctx.setTitle(url === HOME ? "Favorites - Internet Explorer" : url.replace(/^https?:\/\/(www\.)?/, "").split(/[/?#]/)[0] + " - Internet Explorer");
+      if (url === HOME) { frame.classList.add("hidden"); frame.removeAttribute("src"); home.classList.remove("hidden"); bar.classList.add("hidden"); stat.textContent = "Done"; return; }
+      home.classList.add("hidden"); frame.classList.remove("hidden"); stat.textContent = "Opening page " + url + "…";
+      bar.classList.add("hidden"); clearTimeout(show.t); show.t = setTimeout(() => bar.classList.remove("hidden"), 2500);
+      frame.src = url;
+    }
+    frame.addEventListener("load", () => { stat.textContent = "Done"; });
+    const go = (q) => { const url = normalize(q); hist.splice(pos + 1); hist.push(url); pos = hist.length - 1; show(url); };
+    ctx.navigate = go; wins.get(ctx.key).navigate = go;
+    $b(".ieaddr").addEventListener("submit", (e) => { e.preventDefault(); go(urlIn.value); });
+    $b(".ieback").onclick = () => { if (pos > 0) show(hist[--pos]); };
+    $b(".iefwd").onclick = () => { if (pos < hist.length - 1) show(hist[++pos]); };
+    $b(".iereload").onclick = () => { const u = hist[pos]; if (u && u !== HOME) { frame.src = "about:blank"; setTimeout(() => (frame.src = u), 30); } };
+    $b(".iehome").onclick = () => go(HOME);
+    const openTab = () => { const u = hist[pos]; if (u && u !== HOME) window.open(u, "_blank", "noopener"); };
+    $b(".ienew").onclick = openTab; $b(".ieopen").addEventListener("click", (e) => { e.preventDefault(); openTab(); });
+    home.addEventListener("click", (e) => { const a = e.target.closest("[data-browse]"); if (a) { e.preventDefault(); go(a.getAttribute("href")); } });
+    ctx.menu(body.querySelector(".menubar"), [
+      { label: "File", items: [{ label: "Open in new tab", act: openTab }, "-", { label: "Close", act: ctx.close }] },
+      { label: "View", items: [{ label: "Refresh", key: "F5", act: () => $b(".iereload").click() }, { label: "Home", act: () => go(HOME) }] },
+      { label: "Favorites", items: () => [...demos.map((p) => ({ label: p.name, act: () => go(p.url) })), "-", { label: "Wikipedia", act: () => go("https://en.wikipedia.org") }] },
+      { label: "Help", items: [{ label: "About Internet Explorer", act: () => msgBox("Internet Explorer", "A real browser inside the portfolio. Many big sites (Google, GitHub, LinkedIn) block being shown inside other pages; use New tab for those.") }] },
+    ]);
+    go(ctx.url || HOME);
   }
 
   function renderCmd(body, ctx) {
@@ -624,24 +697,46 @@
     reset(true);
   }
 
+  const NOTE_DEFAULT = () => `Hi! Thanks for visiting my portfolio.\n\nThis notepad is shared: everyone who visits sees the same text.\n\nThings to try:\n - Open "Command Prompt" and type help\n - Play Solitaire, Minesweeper, Snake, Brick Breaker or Tic-Tac-Toe\n - Add tasks and reminders in the Calendar\n - Browse the web in Internet Explorer\n - Draw something in Paint\n - Right-click the desktop > Properties to change the wallpaper\n\n- ${P.name}`;
   function renderNotepad(body, ctx) {
     const inner = chrome(body, { menus: [
-      { label: "File", items: [{ label: "New", act: () => { if (!ta.value.trim() || confirm("Discard the current note?")) { ta.value = ""; save(); } } }, { label: "Save As...", key: "Ctrl+S", act: () => download(new Blob([ta.value], { type: "text/plain" }), "note.txt") }, "-", { label: "Exit", act: ctx.close }] },
+      { label: "File", items: [{ label: "New", act: () => { if (!ta.value.trim() || confirm("Clear the shared note for everyone?")) { ta.value = ""; queue(); } } }, { label: "Save As...", key: "Ctrl+S", act: () => download(new Blob([ta.value], { type: "text/plain" }), "note.txt") }, { label: "Reload from server", act: () => pull(true) }, "-", { label: "Exit", act: ctx.close }] },
       { label: "Edit", items: [{ label: "Select All", key: "Ctrl+A", act: () => ta.select() }, { label: "Time/Date", key: "F5", act: () => insert(new Date().toLocaleString()) }] },
       { label: "Format", items: () => [{ label: "Word Wrap", check: wrap, act: () => { wrap = !wrap; ta.style.whiteSpace = wrap ? "pre-wrap" : "pre"; } }, { label: "Bigger font", act: () => font(2) }, { label: "Smaller font", act: () => font(-2) }] },
-      { label: "Help", items: [{ label: "About Notepad", act: () => msgBox("About Notepad", "Your text is saved automatically in this browser.") }] },
+      { label: "Help", items: [{ label: "About Notepad", act: () => msgBox("About Notepad", "This note is shared with everyone who visits and is saved to the server as you type.<br>If the server can't be reached, it's kept in this browser and synced later.") }] },
     ] });
     inner.style.overflow = "hidden";
-    const saved = store.lget("xp-notepad");
-    inner.innerHTML = `<textarea class="notepad" spellcheck="false" placeholder="Start typing... (saved automatically in this browser)"></textarea>`;
-    const ta = inner.querySelector("textarea");
-    let wrap = true, size = 14;
-    const save = () => store.lset("xp-notepad", ta.value);
-    const insert = (t) => { ta.setRangeText(t, ta.selectionStart, ta.selectionEnd, "end"); save(); ta.focus(); };
+    inner.innerHTML = `<textarea class="notepad" spellcheck="false" placeholder="Start typing... (shared with everyone)"></textarea>`;
+    body.insertAdjacentHTML("beforeend", `<div class="statusbar"><span class="nstat">Connecting…</span><span class="nchars"></span></div>`);
+    const ta = inner.querySelector("textarea"), stat = body.querySelector(".nstat"), chars = body.querySelector(".nchars");
+    let wrap = true, size = 14, timer, lastRemote = 0, dirty = store.lget("xp-notepad-dirty") === "1";
+    const status = (t) => { stat.textContent = t; chars.textContent = `${ta.value.length.toLocaleString()} / 20,000`; };
+    const local = (v) => store.lset("xp-notepad", v);
+    async function push() {
+      clearTimeout(timer); timer = 0; const text = ta.value; local(text);
+      try { const r = await Cloud.req("notepad", { method: "PUT", body: { text } }); lastRemote = r.updatedAt; dirty = false; store.lset("xp-notepad-dirty", "0"); status("☁ Saved · shared with everyone"); }
+      catch (e) { dirty = true; store.lset("xp-notepad-dirty", "1"); status(e.status === 429 ? "Saving too fast, retrying…" : "💾 Offline · saved in this browser"); if (e.status === 429) timer = setTimeout(push, 3000); }
+    }
+    const queue = () => { local(ta.value); status("Saving…"); clearTimeout(timer); timer = setTimeout(push, 800); };
+    async function pull(force) {
+      try {
+        const r = await Cloud.req("notepad");
+        if (dirty && !force) return push(); // our offline edits win once we're back online
+        if (r.updatedAt > lastRemote || force) {
+          lastRemote = r.updatedAt;
+          if (document.activeElement !== ta || force) { const pos = ta.selectionStart; ta.value = r.text ?? NOTE_DEFAULT(); ta.selectionStart = ta.selectionEnd = Math.min(pos, ta.value.length); local(ta.value); }
+        }
+        status("☁ Up to date · shared with everyone");
+      } catch { status("💾 Offline · saved in this browser"); }
+    }
+    const insert = (t) => { ta.setRangeText(t, ta.selectionStart, ta.selectionEnd, "end"); queue(); ta.focus(); };
     const font = (d) => { size = Math.max(10, Math.min(28, size + d)); ta.style.fontSize = size + "px"; };
-    ta.value = saved ?? `Hi! Thanks for visiting my portfolio.\n\nThings to try:\n - Open "Command Prompt" and type help\n - Play Solitaire, Minesweeper, Snake, Brick Breaker or Tic-Tac-Toe\n - Add tasks and reminders in the Calendar\n - Chat with me on MSN Messenger\n - Draw something in Paint\n - Right-click the desktop > Properties to change the wallpaper\n\n- ${P.name}`;
-    let t; ta.addEventListener("input", () => { clearTimeout(t); t = setTimeout(save, 300); });
-    ctx.onClose(() => { clearTimeout(t); save(); });
+    ta.value = store.lget("xp-notepad") ?? NOTE_DEFAULT();
+    ta.maxLength = 20000; status("Connecting…"); pull();
+    ta.addEventListener("input", queue);
+    const poll = setInterval(() => ctx.isVisible() && document.activeElement !== ta && !timer && pull(), 15000);
+    ctx.onClose(() => { clearInterval(poll); if (timer) push(); });
+    ta.addEventListener("blur", () => { if (timer) push(); });
     ta.addEventListener("keydown", (e) => {
       if (e.key === "F5") { e.preventDefault(); insert(new Date().toLocaleString()); }
       if (e.key === "s" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); download(new Blob([ta.value], { type: "text/plain" }), "note.txt"); }
@@ -1021,12 +1116,10 @@
 
   // ---------------- Start menu ----------------
   const sm = $("#startMenu"), startBtn = $("#startBtn");
-  const left = [["ie", "My Links", "Internet Explorer"], ["contact", "Contact Me", "Outlook Express"], null, ["about", "About Me"], ["resume", "Resume"], ["projects", "My Projects"], ["cmd", "Command Prompt"], ["msn", "MSN Messenger"], ["games", "Games", "Solitaire, Snake & more"], ["paint", "Paint"]];
+  const left = [["ie", "Internet Explorer", "Browse the web"], ["contact", "Contact Me", "Send me a message"], null, ["about", "About Me"], ["resume", "Resume"], ["projects", "My Projects"], ["cmd", "Command Prompt"], ["msn", "MSN Messenger"], ["notepad", "Notepad"], ["paint", "Paint"]];
   $("#smLeft").innerHTML = left.map((x) => x ? `<li data-open="${x[0]}">${I[APPS[x[0]].icon]}<span>${x[2] ? `<b>${x[1]}</b><small>${x[2]}</small>` : x[1]}</span></li>` : "<hr>").join("");
   $("#smRight").innerHTML = [
-    `<li data-open="about">${I.user}<b>${esc(P.name)}</b></li>`, `<li data-open="resume">${I.resume}My Resume</li>`, `<li data-open="projects">${I.project}My Projects</li>`, `<li data-open="computer">${I.computer}<b>My Computer</b></li>`, "<hr>",
-    links.yapless ? `<li data-href="${esc(links.yapless)}">${I.yapless}Yap-less</li>` : `<li data-soon="Yap-less">${I.yapless}Yap-less <small class="muted">(coming soon)</small></li>`,
-    links.github ? `<li data-href="${esc(links.github)}">${I.github}GitHub</li>` : "", links.linkedin ? `<li data-href="${esc(links.linkedin)}">${I.linkedin}LinkedIn</li>` : "", links.twitter ? `<li data-href="${esc(links.twitter)}">${I.x}X / Twitter</li>` : "", links.website ? `<li data-href="${esc(links.website)}">${I.globe}My Website</li>` : "", "<hr>",
+    `<li data-open="computer">${I.computer}<b>My Computer</b></li>`, `<li data-open="games">${I.games}Games</li>`, `<li data-open="calendar">${I.calendar}Calendar</li>`, `<li data-open="recycle">${I.recycle}Recycle Bin</li>`, "<hr>",
     `<li data-open="display">${I.display}Display Properties</li>`, `<li data-reset>${I.showdesk}Reset Desktop</li>`, `<li data-help>${I.help}Help and Support</li>`,
   ].join("");
   const toggleStart = (on) => { sm.classList.toggle("hidden", !on); startBtn.classList.toggle("on", on); if (on) closeTray(); };
@@ -1034,7 +1127,7 @@
   sm.addEventListener("click", (e) => {
     const li = e.target.closest("li"); if (!li) return;
     if (li.dataset.href) window.open(li.dataset.href, "_blank", "noopener");
-    if ("reset" in li.dataset) resetDesktop();
+    if ("reset" in li.dataset && confirm("Reset the desktop? This closes all windows and restores icons, wallpaper and deleted shortcuts.")) resetDesktop();
     if ("help" in li.dataset) msgBox("Help and Support", "Double-click desktop icons to open apps, or drag them to rearrange. Drag windows by their title bar. Try the Command Prompt and type <b>help</b>.");
     toggleStart(false);
   });
@@ -1067,7 +1160,7 @@
     const t = e.target.closest("[data-c]"); if (!t) return; const c = t.dataset.c; hideCtx();
     if (c === "refresh") { iconsEl.style.opacity = 0; setTimeout(() => (iconsEl.style.opacity = 1), 120); }
     if (c === "arrange") layoutIcons(true);
-    if (c === "reset") resetDesktop();
+    if (c === "reset" && confirm("Reset the desktop? This closes all windows and restores icons, wallpaper and deleted shortcuts.")) resetDesktop();
     if (c === "open") openApp(t.dataset.id);
     if (["notepad", "cmd", "games", "display"].includes(c)) openApp(c);
   });
@@ -1085,14 +1178,42 @@
   const trayPop = $("#trayPop");
   let trayOpen = null;
   function closeTray() { trayPop.classList.add("hidden"); trayOpen = null; }
-  const net = { on: true, ssid: "Portfolio_5G", list: [["Portfolio_5G", 4, true], ["Hackathon-Guest", 3, false], ["FBI Surveillance Van", 2, true], ["Pretty Fly for a WiFi", 2, true], ["Free_Coffee_WiFi", 1, false]] };
+  // Real connection info. Browsers never expose the Wi-Fi network name (SSID), so it isn't shown.
+  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  const net = { ping: null, testing: false };
+  const netInfo = () => {
+    const t = conn?.type, labels = { wifi: "Wi-Fi", ethernet: "Ethernet", cellular: "Mobile data", bluetooth: "Bluetooth", wimax: "WiMAX", none: "No connection" };
+    return { online: navigator.onLine, kind: labels[t] || (conn ? "Network connection" : "Network connection"), eff: conn?.effectiveType, down: conn?.downlink, rtt: conn?.rtt, save: conn?.saveData };
+  };
+  const strength = () => { if (!navigator.onLine) return 0; const r = net.ping ?? netInfo().rtt; if (r == null) return 3; return r < 80 ? 4 : r < 160 ? 3 : r < 350 ? 2 : 1; };
+  async function testPing() {
+    if (net.testing || !navigator.onLine) return; net.testing = true; if (trayOpen === "net") renderPop();
+    const times = [];
+    for (let i = 0; i < 3; i++) {
+      const t0 = performance.now();
+      try { await fetch(`${location.origin}/vercel.json?ping=${Date.now()}${i}`, { method: "HEAD", cache: "no-store" }); times.push(performance.now() - t0); } catch {}
+    }
+    net.ping = times.length ? Math.round(Math.min(...times)) : null; net.testing = false;
+    paintTray(); if (trayOpen === "net") renderPop();
+  }
+  conn?.addEventListener?.("change", () => { paintTray(); if (trayOpen === "net") renderPop(); });
   let vol = parseInt(store.lget("xp-vol"), 10), muted = store.lget("xp-mute") === "1"; if (!(vol >= 0 && vol <= 100)) vol = 70;
   const bars = (n) => `<span class="sig">${[1, 2, 3, 4].map((k) => `<i class="${k <= n ? "on" : ""}" style="height:${k * 3}px"></i>`).join("")}</span>`;
   const POPS = {
     vol: () => `<h4>Volume</h4><div class="vol"><input type="range" min="0" max="100" value="${vol}" class="vslider" aria-label="Volume"><b class="vval">${vol}</b></div><label><input type="checkbox" class="mute" ${muted ? "checked" : ""}> Mute</label>`,
-    net: () => `<h4>Wireless Network Connection</h4><label class="row"><span>Wi-Fi</span><input type="checkbox" class="wifi" ${net.on ? "checked" : ""}></label>
-      ${net.on ? `<div class="nets">${net.list.map(([n, s, lock]) => `<div class="net ${n === net.ssid ? "cur" : ""}" data-n="${esc(n)}">${bars(s)}<span>${esc(n)}${n === net.ssid ? "<small>Connected</small>" : ""}</span>${lock ? "🔒" : ""}</div>`).join("")}</div>` : `<p class="muted">Wi-Fi is turned off.</p>`}
-      <p class="muted">${navigator.onLine ? "You are online." : "You appear to be offline."}</p>`,
+    net: () => {
+      const n = netInfo(), row = (k, v) => `<div class="nrow"><span>${k}</span><b>${v}</b></div>`;
+      return `<h4>Network Connection</h4>
+        <div class="net cur">${bars(strength())}<span><b>${esc(n.online ? n.kind : "Offline")}</b><small class="${n.online ? "" : "bad"}">${n.online ? "Connected" : "Not connected"}</small></span></div>
+        <div class="nstats">${row("Status", n.online ? "Online" : "Offline")}
+          ${row("Quality", n.eff ? n.eff.toUpperCase().replace("SLOW-", "Slow ") + "-class" : "Not reported by this browser")}
+          ${row("Speed (est.)", n.down != null ? `${n.down >= 10 ? Math.round(n.down) : n.down} Mbps` : "Not reported")}
+          ${row("Latency (est.)", n.rtt != null ? `${n.rtt} ms` : "Not reported")}
+          ${row("Ping to this site", net.testing ? "Testing…" : net.ping != null ? `${net.ping} ms` : "—")}
+          ${n.save ? row("Data saver", "On") : ""}</div>
+        <button class="xpbtn nping" ${net.testing || !n.online ? "disabled" : ""}>Test connection</button>
+        <p class="muted">Your browser doesn't share the Wi-Fi network's name with websites, so it isn't shown.</p>`;
+    },
     bat: () => `<h4>Power Meter</h4><div class="bat-big"><div class="bat-shell"><i style="width:${bat.level}%" class="${bat.level < 20 ? "low" : ""}"></i></div><b>${bat.level}%</b></div>
       <p>${bat.charging ? "⚡ Plugged in, charging" : "On battery"}${bat.real ? "" : " <small class='muted'>(simulated)</small>"}</p>
       <label><input type="radio" name="pp" ${powerPlan === "bal" ? "checked" : ""} value="bal"> Balanced</label><label><input type="radio" name="pp" ${powerPlan === "save" ? "checked" : ""} value="save"> Power saver</label><label><input type="radio" name="pp" ${powerPlan === "perf" ? "checked" : ""} value="perf"> High performance</label>`,
@@ -1116,7 +1237,9 @@
   }).catch(() => {});
   function paintTray() {
     $("#tVol").textContent = muted || vol === 0 ? "🔇" : vol < 40 ? "🔈" : "🔊";
-    $("#tNet").classList.toggle("off", !net.on || !navigator.onLine);
+    $("#tNet").classList.toggle("off", !navigator.onLine);
+    $("#tNet").querySelectorAll(".wifi-ico i").forEach((b, i) => b.classList.toggle("dim", i >= Math.max(1, strength() - 1)));
+    $("#tNet").title = navigator.onLine ? `${netInfo().kind}: connected${net.ping != null ? ` (${net.ping} ms)` : ""}` : "Not connected";
     $("#tBat").innerHTML = `<span class="bat-mini"><i style="width:${bat.level}%" class="${bat.level < 20 ? "low" : ""}"></i></span>${bat.charging ? "<small>⚡</small>" : ""}`;
     $("#tBat").title = `${bat.level}% ${bat.charging ? "(charging)" : "remaining"}`;
   }
@@ -1128,6 +1251,7 @@
   function toggleTray(which) {
     if (trayOpen === which) return closeTray();
     if (which === "clock") { calMonth = new Date(); calMonth.setDate(1); }
+    if (which === "net" && net.ping == null) setTimeout(testPing, 0);
     toggleStart(false); trayOpen = which; trayPop.classList.remove("hidden"); renderPop();
   }
   [["tVol", "vol"], ["tNet", "net"], ["tBat", "bat"], ["tClock", "clock"]].forEach(([id, w]) => $("#" + id).addEventListener("click", (e) => { e.stopPropagation(); toggleTray(w); }));
@@ -1138,15 +1262,13 @@
     if (e.target.closest(".copen")) { closeTray(); openApp("calendar"); return; }
     if (e.target.closest(".cprev")) { calMonth.setMonth(calMonth.getMonth() - 1); renderPop(); }
     if (e.target.closest(".cnext")) { calMonth.setMonth(calMonth.getMonth() + 1); renderPop(); }
-    const n = e.target.closest(".net");
-    if (n && n.dataset.n !== net.ssid) { net.ssid = n.dataset.n; renderPop(); }
+    if (e.target.closest(".nping")) testPing();
   });
   trayPop.addEventListener("input", (e) => {
     if (e.target.classList.contains("vslider")) { vol = +e.target.value; trayPop.querySelector(".vval").textContent = vol; store.lset("xp-vol", vol); paintTray(); }
   });
   trayPop.addEventListener("change", (e) => {
     if (e.target.classList.contains("mute")) { muted = e.target.checked; store.lset("xp-mute", muted ? "1" : "0"); }
-    if (e.target.classList.contains("wifi")) { net.on = e.target.checked; renderPop(); }
     if (e.target.name === "pp") { powerPlan = e.target.value; store.lset("xp-power", powerPlan); }
     paintTray();
   });
@@ -1170,15 +1292,50 @@
   // ---------------- Calendar, tasks and reminders ----------------
   // Tasks live in this browser: [{ id, date: "YYYY-MM-DD", time: "HH:MM" | "", text, done, remind, notified, snooze }]
   const dkey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  // Tasks are shared by everyone (server). Reminder state (notified/snooze) is per device.
+  const SHARED = ["date", "time", "text", "done", "remind"];
   const Tasks = {
-    list: (() => { try { const v = JSON.parse(store.lget("xp-tasks") || "[]"); return Array.isArray(v) ? v : []; } catch { return []; } })(),
+    list: readLocal("xp-tasks", []).filter((t) => t && t.id && t.date),
     save() { store.lset("xp-tasks", JSON.stringify(this.list)); paintBell(); wins.forEach((w, k) => k === "calendar" && w.refresh?.()); },
     on(date) { return this.list.filter((t) => t.date === date).sort((a, b) => (a.time || "99").localeCompare(b.time || "99")); },
     due(t) { return t.snooze || (t.time ? new Date(`${t.date}T${t.time}`).getTime() : null); },
-    add(t) { this.list.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), done: false, notified: false, ...t }); this.save(); },
-    update(id, patch) { const t = this.list.find((x) => x.id === id); if (t) { Object.assign(t, patch); this.save(); } },
-    remove(id) { this.list = this.list.filter((x) => x.id !== id); this.save(); },
+    async sync() {
+      try {
+        // push anything created while offline, then take the server's list
+        for (const t of this.list.filter((x) => x.pending)) {
+          const { task } = await Cloud.req("tasks", { method: "POST", body: pick(t) });
+          Object.assign(t, task, { pending: false });
+        }
+        const { tasks } = await Cloud.req("tasks");
+        const mine = new Map(this.list.map((t) => [t.id, t]));
+        this.list = tasks.map((t) => ({ ...t, notified: mine.get(t.id)?.notified ?? (Tasks.due(t) != null && Tasks.due(t) < Date.now()), snooze: mine.get(t.id)?.snooze || null }));
+        this.save();
+      } catch {}
+    },
+    async add(t) {
+      const task = { id: "tmp-" + Date.now().toString(36), done: false, notified: false, ...t, pending: true };
+      this.list.push(task); this.save();
+      try { const { task: srv } = await Cloud.req("tasks", { method: "POST", body: pick(task) }); Object.assign(task, srv, { pending: false }); this.save(); }
+      catch (e) { if (e.status === 400 || e.status === 409 || e.status === 429) { this.list = this.list.filter((x) => x !== task); this.save(); msgBox("Calendar", esc(e.message), "⚠️"); } }
+    },
+    async update(id, patch) {
+      const t = this.list.find((x) => x.id === id); if (!t) return;
+      Object.assign(t, patch); this.save();
+      const shared = Object.fromEntries(Object.entries(patch).filter(([k]) => SHARED.includes(k)));
+      if (!Object.keys(shared).length || t.pending) return;
+      try { await Cloud.req("tasks", { method: "PATCH", body: { id, ...shared } }); } catch (e) { if (e.status === 404) { this.list = this.list.filter((x) => x.id !== id); this.save(); } }
+    },
+    async remove(id) {
+      const t = this.list.find((x) => x.id === id);
+      this.list = this.list.filter((x) => x.id !== id); this.save();
+      if (t && !t.pending) try { await Cloud.req("tasks?id=" + encodeURIComponent(id), { method: "DELETE" }); } catch {}
+    },
+    async clearDone() {
+      this.list = this.list.filter((t) => !t.done); this.save();
+      try { await Cloud.req("tasks?done=1", { method: "DELETE" }); } catch {}
+    },
   };
+  const pick = (t) => Object.fromEntries(SHARED.map((k) => [k, t[k]]).filter(([, v]) => v !== undefined));
   const fmtTime = (hm) => { if (!hm) return ""; const [h, m] = hm.split(":").map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); };
 
   function renderCalendar(body, ctx) {
@@ -1189,14 +1346,14 @@
     const inner = chrome(body, { menus: [
       { label: "File", items: [{ label: "New Task", key: "Ctrl+N", act: () => input.focus() }, { label: "Export tasks (.json)", act: () => download(new Blob([JSON.stringify(Tasks.list, null, 2)], { type: "application/json" }), "tasks.json") }, "-", { label: "Exit", act: ctx.close }] },
       { label: "View", items: [{ label: "Today", act: () => { const n = new Date(); view = new Date(n.getFullYear(), n.getMonth(), 1); sel = dkey(n); paint(); } }, { label: "Previous Month", act: () => move(-1) }, { label: "Next Month", act: () => move(1) }] },
-      { label: "Tools", items: () => [{ label: "Clear completed tasks", act: () => { Tasks.list = Tasks.list.filter((t) => !t.done); Tasks.save(); } },
+      { label: "Tools", items: () => [{ label: "Clear completed tasks", act: () => Tasks.clearDone() },
         { label: notifyLabel(), disabled: !("Notification" in window) || Notification.permission !== "default", act: askNotify }] },
-      { label: "Help", items: [{ label: "About Calendar", act: () => msgBox("Calendar", "Click a day, type a task and press Enter. Give it a time and tick 🔔 to get a reminder.<br>Tasks are saved in this browser only.") }] },
+      { label: "Help", items: [{ label: "About Calendar", act: () => msgBox("Calendar", "This calendar is shared: everyone who visits sees and can edit the same tasks.<br>Click a day, type a task and press Enter. Give it a time and tick 🔔 to get a reminder in your browser.") }] },
     ] });
     inner.innerHTML = `<div class="cal-app">
       <div class="cal-left"><div class="cal-head"><button class="cprev" aria-label="Previous month">◀</button><b class="cmonth"></b><button class="cnext" aria-label="Next month">▶</button></div>
         <div class="cal big"></div><button class="xpbtn ctoday">Today</button>
-        <div class="cal-up"><h5>Upcoming reminders</h5><div class="uplist"></div></div></div>
+        <div class="cal-up"><h5>Upcoming reminders</h5><div class="uplist"></div></div><div class="cal-sync"></div></div>
       <div class="cal-right"><h3 class="cday"></h3>
         <form class="cal-add"><input class="ctext" placeholder="Add a task… (press Enter)" maxlength="140" required>
           <input type="time" class="ctime" aria-label="Time"><label title="Remind me"><input type="checkbox" class="crem" checked> 🔔</label><button class="xpbtn">Add</button></form>
@@ -1248,6 +1405,11 @@
     const keys = (e) => { if (ctx.isActive() && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") { e.preventDefault(); input.focus(); } };
     addEventListener("keydown", keys); ctx.onClose(() => removeEventListener("keydown", keys));
     wins.get(ctx.key).refresh = () => { if (!editing) paint(); };
+    const syncLabel = () => { const el = $c(".cal-sync"); if (el) { el.textContent = (Cloud.ok ? "☁ " : "💾 ") + Cloud.label(); el.classList.toggle("off", Cloud.ok === false); } };
+    document.addEventListener("cloud", syncLabel); ctx.onClose(() => document.removeEventListener("cloud", syncLabel)); syncLabel();
+    Tasks.sync();
+    const poll = setInterval(() => ctx.isVisible() && !editing && document.activeElement?.closest?.(".cal-add") == null && Tasks.sync(), 20000);
+    ctx.onClose(() => clearInterval(poll));
     wins.get(ctx.key).goto = (d) => { sel = d; const x = new Date(d + "T00:00"); view = new Date(x.getFullYear(), x.getMonth(), 1); editing = null; paint(); };
     paint(); setTimeout(() => input.focus(), 0);
   }
@@ -1298,7 +1460,8 @@
     if (!el) return; el.hidden = !n; el.querySelector("b").textContent = n; el.title = `${n} task${n === 1 ? "" : "s"} today`;
   }
 
-  checkReminders(true); paintBell();
+  Tasks.sync().then(() => { checkReminders(true); paintBell(); });
+  setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });
 
   // ---------------- Boot / login / shutdown flow ----------------
@@ -1319,6 +1482,7 @@
   $("#userTile").addEventListener("click", logon);
   const shut = $("#shutdown");
   $("#smShutdown").onclick = $("#loginOff").onclick = () => { toggleStart(false); shut.classList.remove("hidden"); };
+  $("#smReset").onclick = () => { toggleStart(false); if (confirm("Reset the desktop? This closes all windows and restores icons, wallpaper and deleted shortcuts.")) resetDesktop(); };
   $("#smLogoff").onclick = () => { toggleStart(false); closeTray(); [...wins.keys()].forEach((k) => close(k)); store.set("xp-logged", ""); show("#login"); };
   shut.addEventListener("click", (e) => {
     const a = e.target.closest("[data-act]")?.dataset.act; if (!a) return;

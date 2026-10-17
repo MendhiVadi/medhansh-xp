@@ -477,7 +477,8 @@ button { font: inherit; }
   .task span { display: none; }
   .start-btn { padding-right: 14px; }
   .start-menu { width: 100vw; }
-  .sm-right { display: none; }
+  .sm-body { flex-direction: column; max-height: calc(100vh - 140px); overflow: auto; }
+  .sm-right { border-left: 0; border-top: 1px solid #95bdee; }
   .boot-title { font-size: 34px; }
 }
 
@@ -590,3 +591,46 @@ button { font: inherit; }
 
 .sol-table, .sol-table *, .game-stage, .ttt-grid, .mine-grid { user-select: none; -webkit-user-select: none; }
 @media (max-height: 640px) { .user-tile b { font-size: 18px; } .user-tile small { font-size: 12px; } }
+
+/* network popup */
+.nstats { display: flex; flex-direction: column; border: 1px solid #c9d8ee; border-radius: 3px; padding: 4px 6px; }
+.nrow { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+.nrow + .nrow { border-top: 1px dotted #dfe6f3; }
+.nrow b { font-weight: normal; color: #0a246a; text-align: right; }
+.net small.bad { color: #c0392b; }
+.tray-pop .nping { align-self: flex-start; }
+.wifi-ico i.dim { background: rgba(255,255,255,.35); }
+
+.ico-reset { width: 20px; height: 20px; border-radius: 4px; border: 1px solid #fff; background: linear-gradient(#5aa0e6, #2463e4); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; }
+.sm-foot { flex-wrap: wrap; }
+
+/* ---------- Internet Explorer browser ---------- */
+.ieaddr { display: flex; align-items: center; gap: 6px; }
+.ieaddr .field input { flex: 1; border: 0; outline: none; font: 12px Tahoma, sans-serif; min-width: 0; background: transparent; }
+.ieaddr .xpbtn { min-width: 0; padding: 1px 10px; }
+.iebar { flex-shrink: 0; padding: 4px 8px; background: #ffffe1; border-bottom: 1px solid #e0d68a; font-size: 11px; }
+.ieview { flex: 1; position: relative; min-height: 0; background: #fff; }
+.iehomepage { position: absolute; inset: 0; overflow: auto; }
+.ieframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }
+.ie-home h3 { margin: 16px 0 0; font: bold 12px Trebuchet MS, Tahoma, sans-serif; color: #215dc6; }
+
+/* ---------- Contact form ---------- */
+.form.contact .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.form .bad { border-color: #c0392b !important; background: #fff4f2; }
+.cerr { color: #c0392b; min-height: 14px; font-size: 11px; }
+.cerr:empty { min-height: 0; }
+.cfoot { display: flex; gap: 6px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+.csent { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 20px; background: #fff; }
+.csent b { font: bold 16px Trebuchet MS, Tahoma, sans-serif; color: #0a246a; }
+
+/* ---------- sync status ---------- */
+.cal-sync { font-size: 11px; color: #e8f0ff; }
+.cal-sync.off { color: #ffe08a; }
+
+/* resume window shows resume.html */
+.rframe-wrap { flex: 1; padding: 0; min-height: 0; display: flex; }
+.rframe { flex: 1; width: 100%; border: 0; background: transparent; }
+.about-more { margin-top: 14px; }
+.about-more .link { display: inline-flex; vertical-align: middle; }
+.about-more .link { border: 0; background: none; padding: 0; color: #0645ad; cursor: pointer; text-decoration: underline; font: inherit; align-items: center; gap: 3px; }
+.about-more .link svg { width: 16px; height: 16px; }
