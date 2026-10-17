@@ -5,12 +5,13 @@
 window.PROFILE = {
   name: "Medhansh Khattar",
   initials: "MK",
-  photo: "photo.jpg",          // square avatar; photo-full.jpg is the full portrait
+  photo: "photo.jpg?v=13",          // square avatar; photo-full.jpg is the full portrait
   role: "AI/ML Engineer",
   subtitle: "Founder & CEO, Yap-less · CS @ VIT Bhopal",
   location: "Navi Mumbai, Maharashtra, India",
   hostname: "MK-PC",
-  tagline: "Computer science, machine learning and data analytics — and an out-of-the-box thinker.",
+  tagline: "Computer science, machine learning and data analytics, with an out-of-the-box approach.",
+  summary: "AI/ML-focused computer science student at VIT Bhopal and founder of Yap-less. Builds production systems (a secure WhatsApp automation platform deployed at KC Degree College), autonomous-driving agents in CARLA, real-time computer vision and research on news sentiment and stock prediction. Seeking research, programming and data analysis internships.",
   bio: [
     "Hi! I'm Medhansh, a sophomore at VIT Bhopal with a focused interest in computer science, machine learning and data analytics.",
     "I'm an out-of-the-box thinker with a track record of applying unique perspectives to complex problems, from secure messaging platforms and a CARLA self-driving agent to real-time computer vision and research on news sentiment and stock prediction.",
@@ -24,22 +25,22 @@ window.PROFILE = {
       points: ["Deputy Opposition Leader - Youth Parliament (2024)", "Debate Team (2024)"] }
   ],
   experience: [
-    { title: "Founder & CEO", org: "Yap-less", years: "2026 - Present",
-      points: ["Founded and lead Yap-less."] },
-    { title: "Freelance Software Engineer", org: "Security'26 and Club-Desk · Churchgate, Bombay", years: "Jun 2026 - Present",
+    { title: "Founder & CEO", org: "Yap-less", location: "Navi Mumbai", years: "2026 - Present",
+      points: ["Founded Yap-less and lead product, engineering and strategy. (More details and website coming soon.)"] },
+    { title: "Freelance Software Engineer", org: "Security'26 & Club-Desk", location: "Churchgate, Mumbai", years: "Jun 2026 - Present",
       points: [
-        "Developed a secure WhatsApp automation system on the Meta WhatsApp Cloud API for personalised notifications, reminders and appointment updates.",
+        "Developed a secure WhatsApp automation system on the Meta WhatsApp Cloud API for personalized notifications, reminders and appointment updates.",
         "Built web platform features including user authentication, account management and role-based access control.",
         "Designed a Firebase-backed backend to secure confidential user information and store real-time data.",
-        "Integrated Vercel, Cloudflare, Firebase and WhatsApp APIs for reliable data synchronisation.",
-        "Deployed the platform for use by KC Degree College, Bombay; further client discussions underway.",
+        "Integrated Vercel, Cloudflare, Firebase and WhatsApp APIs for reliable data synchronization.",
+        "Deployed the platform for use by KC Degree College, Mumbai; further client discussions underway.",
         "Leading its evolution into a subscription-based appointment-scheduling agent for healthcare providers and local businesses."
       ] },
-    { title: "Research Paper", org: "Vashi, Navi Mumbai", years: "Jul 2026 - Present",
+    { title: "Research Paper (in progress)", org: "Independent research", location: "Vashi, Navi Mumbai", years: "Jul 2026 - Present",
       points: ["Does News Sentiment Improve Stock Prediction? A comparative study using FinBERT and machine learning models for sentiment analysis on stock prices."] }
   ],
   achievements: [
-    "99.8 percentile (rank under 600) - MH-CET state entrance examination (2025)",
+    "99.8 percentile (Rank under 600) - MH-CET state entrance examination (2025)",
     "Best Delegate - Apeejay High School Model UN Conference (2024)",
     "Special Mention - Apeejay High School Model UN Conference (2023)",
     "Rank 24/450 - District Chess Championship (2023)",
@@ -61,8 +62,8 @@ window.PROFILE = {
     "Soft skills": ["Research & writing", "Public speaking", "Teamwork", "Time management", "Communication"]
   },
   projects: [
-    { name: "Medhansh XP (this site)", year: "2026", stack: ["HTML", "CSS", "JavaScript", "Canvas", "Vercel"],
-      desc: "This portfolio: a Windows XP desktop in the browser with draggable windows and icons, Paint, a Command Prompt, a calendar with reminders, and five games (Solitaire, Minesweeper, Snake, Brick Breaker, Tic-Tac-Toe). No framework, no build step.",
+    { name: "Portfolio XP", year: "2026", stack: ["HTML", "CSS", "JavaScript", "Canvas", "Vercel"],
+      desc: "This site: a Windows XP desktop in the browser with draggable windows and icons, Paint, a Command Prompt, a calendar with reminders, and five games (Solitaire, Minesweeper, Snake, Brick Breaker, Tic-Tac-Toe). No framework, no build step.",
       github: "https://github.com/MendhiVadi/medhansh-xp", url: "https://medhansh-xp.vercel.app" },
     { name: "Autonomous Driving Agent", year: "2026", stack: ["Python", "CARLA 0.9.16", "Imitation Learning", "RL (in progress)"],
       desc: "CARLA self-driving agent with a manual driving host, a map-and-controls cockpit, an imitation-learning policy that drives from road and vehicle state, and an authenticated two-computer control link for a reinforcement-learning trainer.",
@@ -80,11 +81,11 @@ window.PROFILE = {
       desc: "India-focused multimodal shipping planner that compares routes, modes, cost, ETA and emissions, with live flight positions, timetable-based train and ferry tracking, and secure owner-scoped parcel bookings.",
       github: "", url: "https://carbon-logistics.vercel.app" },
     { name: "Club-Desk WhatsApp Platform", year: "2026", stack: ["WhatsApp Cloud API", "Firebase", "Vercel", "Cloudflare"],
-      desc: "Secure WhatsApp automation for notifications, reminders and appointments with authentication and role-based access; deployed at KC Degree College, Bombay. (Private client project.)",
-      github: "", url: "" },
+      desc: "Secure WhatsApp automation for notifications, reminders and appointments with authentication and role-based access; deployed at KC Degree College, Mumbai. (Private client project.)",
+      github: "", url: "", resume: false },
     { name: "News Sentiment & Stocks", year: "2026", stack: ["Python", "FinBERT", "Machine Learning"],
       desc: "Research paper: does news sentiment improve stock prediction? Comparing FinBERT sentiment features across machine-learning models.",
-      github: "", url: "" }
+      github: "", url: "", resume: false }
   ],
   links: {
     email: "medhanshkhattar.in@gmail.com",
