@@ -56,7 +56,7 @@
     }
     function setDraw(v) { draw3 = v; ctx.store.lset("xp-sol-draw", v ? "3" : "1"); render(); }
     function help() {
-      const o = overlay(`<b>How to play</b><div style="margin:6px 0 10px">Build the four foundations up by suit, Ace to King.<br>Stack tableau cards downward, alternating colours.<br>Drag cards or runs between piles, or click a card to auto-move it.<br>Click the deck to draw; click the empty deck to recycle the waste.<br>F2 deals a new game, Ctrl+Z undoes.</div><button class="xpbtn">OK</button>`, "max-width:88%;text-align:left;line-height:1.5");
+      const o = overlay(`<b>How to play</b><div style="margin:6px 0 10px">Build the four foundations up by suit, Ace to King.<br>Stack tableau cards downward, alternating colors.<br>Drag cards or runs between piles, or click a card to auto-move it.<br>Click the deck to draw; click the empty deck to recycle the waste.<br>F2 deals a new game, Ctrl+Z undoes.</div><button class="xpbtn">OK</button>`, "max-width:88%;text-align:left;line-height:1.5");
       o.querySelector("button").onclick = () => o.remove();
     }
 
@@ -155,7 +155,7 @@
     table.addEventListener("pointerup", (e) => {
       if (!drag) return;
       const d = drag; drag = null;
-      if (!d.moved) { if (!autoMove(d.id, d.i)) render(); return; }
+      if (!d.moved) { if (d.id[0] === "f" || !autoMove(d.id, d.i)) render(); return; }
       const under = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-pile]");
       const to = under?.dataset.pile;
       if (to && to !== d.id && canDrop(pile(d.id).slice(d.i), to)) move(d.id, d.i, to); else render();

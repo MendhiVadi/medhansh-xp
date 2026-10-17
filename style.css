@@ -579,3 +579,11 @@ button { font: inherit; }
 .fitem span { overflow-wrap: anywhere; }
 .titlebar, .resize { touch-action: none; }
 @media print { body * { visibility: hidden; } .paper, .paper * { visibility: visible; } .paper { position: absolute; left: 0; top: 0; box-shadow: none; margin: 0; } html, body { overflow: visible; height: auto; background: #fff; } }
+
+/* screen saver */
+.saver { position: fixed; inset: 0; z-index: 100000; background: #000; cursor: none; }
+.saver-logo { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 10px; color: #fff; font: italic bold 34px "Franklin Gothic Medium", Arial, sans-serif; will-change: transform; }
+.saver-logo .xp-logo { width: 60px; height: 52px; }
+.saver-logo sup { color: #ff7a00; font-size: 18px; }
+.mon-screen.saver-mini { background: #000; display: flex; align-items: center; justify-content: center; }
+.tabs span[data-tab] { cursor: pointer; }

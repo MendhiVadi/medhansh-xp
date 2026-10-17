@@ -76,7 +76,7 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=12"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=13"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyGame(name) {
@@ -150,6 +150,7 @@
     // any menubar without its own handlers still gets working File / View / Help menus
     el.querySelectorAll(".menubar:not([data-wired])").forEach((mb) => wireMenu(mb, defaultMenus(app, ctx)));
     applyOrder(el, key);
+    el.querySelectorAll(".fitem").forEach((f) => { f.tabIndex = 0; f.setAttribute("role", "button"); });
     focus(key);
     return rec;
   }
@@ -212,6 +213,17 @@
     } } });
   }
 
+  function screenSaver() {
+    const ov = document.createElement("div"); ov.className = "saver";
+    ov.innerHTML = `<div class="saver-logo"><span class="xp-logo"><span></span><span></span><span></span><span></span></span><b>Windows<sup>xp</sup></b></div>`;
+    document.body.appendChild(ov);
+    const logo = ov.firstChild; let x = 40, y = 40, vx = 2.2, vy = 1.7, raf;
+    const step = () => { const w = logo.offsetWidth, h = logo.offsetHeight; x += vx; y += vy; if (x < 0 || x > innerWidth - w) vx *= -1; if (y < 0 || y > innerHeight - h) vy *= -1; logo.style.transform = `translate(${x}px,${y}px)`; raf = requestAnimationFrame(step); };
+    raf = requestAnimationFrame(step);
+    const stop = () => { cancelAnimationFrame(raf); ov.remove(); removeEventListener("keydown", stop, true); };
+    setTimeout(() => { ov.addEventListener("pointermove", stop, { once: true }); ov.addEventListener("pointerdown", stop, { once: true }); addEventListener("keydown", stop, true); }, 400);
+  }
+
   // ---------------- Menus (menubar dropdowns) ----------------
   // menus: [{ label, items: [{ label, act, key, check, disabled } | "-"] or () => items }]
   let openMenu = null;
@@ -259,8 +271,11 @@
   document.addEventListener("click", (e) => {
     const s = e.target.closest("[data-soon]");
     if (s) { e.preventDefault(); msgBox(s.dataset.soon, `The ${esc(s.dataset.soon)} website is coming soon. Check back later!`, "🚧"); return; }
-    const b = e.target.closest("[data-open]"); if (b) openApp(b.dataset.open);
+    const b = e.target.closest("[data-open]");
+    if (b && !(b.classList.contains("fitem") && !matchMedia("(pointer: coarse)").matches)) openApp(b.dataset.open);
   });
+  document.addEventListener("dblclick", (e) => { const f = e.target.closest(".fitem[data-open]"); if (f) openApp(f.dataset.open); });
+  document.addEventListener("keydown", (e) => { const f = e.target.closest?.(".fitem[data-open]"); if (f && e.key === "Enter") openApp(f.dataset.open); });
 
   // ---------------- App renderers ----------------
   function renderAbout(body) {
@@ -316,10 +331,10 @@
     inner.innerHTML = `<div class="wordpad-bg"><div class="paper doc">
       <div class="row" style="align-items:flex-end"><div><h1>${esc(P.name)}</h1><div class="muted">${esc(P.role)}${P.subtitle ? " · " + esc(P.subtitle) : ""} · ${esc(P.location)}</div></div>
       <div style="text-align:right">${links.email ? `<a href="mailto:${esc(links.email)}">${esc(links.email)}</a>` : ""}${[links.linkedin, links.github, links.website].filter(Boolean).map((u) => `<br><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))}</a>`).join("")}</div></div>
-      <h2>Summary</h2><p>${esc(P.bio.join(" "))}</p>
+      <h2>Summary</h2><p>${esc(P.summary || P.bio.join(" "))}</p>
       <h2>Education</h2>${P.education.map((e) => `<div class="row"><h3>${esc(e.school)}</h3><span class="muted">${esc(e.years)}</span></div><div>${esc(e.degree)}</div>${e.detail ? `<div class="muted">${esc(e.detail)}</div>` : ""}${e.points?.length ? `<ul>${e.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}`).join("<div style='height:8px'></div>")}
-      <h2>Experience</h2>${P.experience.map((x) => `<div class="row"><h3>${esc(x.title)} — ${x.org === "Yap-less" ? yap() : esc(x.org)}</h3><span class="muted">${esc(x.years)}</span></div><ul>${x.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`).join("")}
-      <h2>Projects</h2>${P.projects.map((p) => `<div class="row"><h3>${esc(p.name)}${p.stack?.length ? ` <span class="muted" style="font-weight:normal">| ${p.stack.map(esc).join(", ")}</span>` : ""}</h3><span class="muted">${esc(p.year)}</span></div><ul><li>${esc(p.desc)}</li></ul>`).join("")}
+      <h2>Experience</h2>${P.experience.map((x) => `<div class="row"><h3>${esc(x.title)} - ${x.org === "Yap-less" ? yap() : esc(x.org)}${x.location ? ` <span class="muted" style="font-weight:normal">· ${esc(x.location)}</span>` : ""}</h3><span class="muted">${esc(x.years)}</span></div><ul>${x.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`).join("")}
+      <h2>Projects</h2>${P.projects.filter((p) => p.resume !== false).map((p) => `<div class="row"><h3>${esc(p.name)}${p.stack?.length ? ` <span class="muted" style="font-weight:normal">| ${p.stack.map(esc).join(", ")}</span>` : ""}</h3><span class="muted">${esc(p.year)}</span></div><ul><li>${esc(p.desc)}</li></ul>`).join("")}
       <h2>Skills</h2>${Object.entries(P.skills).map(([k, v]) => `<div><b>${esc(k)}:</b> ${v.map(esc).join(", ")}</div>`).join("")}
       ${P.achievements?.length ? `<h2>Honors & Awards</h2><ul>${P.achievements.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
       ${P.certifications?.length ? `<h2>Certifications</h2><ul>${P.certifications.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
@@ -346,16 +361,16 @@
 
   function renderIE(body) {
     const inner = chrome(body, { addr: "https://medhansh.xp/favorites", addrIcon: "ie", menu: ["File", "Edit", "View", "Favorites", "Tools", "Help"] });
-    const L = [["GitHub", links.github, "github"], ["LinkedIn", links.linkedin, "linkedin"], ["X / Twitter", links.twitter, "x"], ["Personal Website", links.website, "globe"], ["Email", "mailto:" + links.email, "mail"], ["Resume (PDF)", links.resumePdf, "pdf"]].filter(([, u]) => u && u !== "mailto:");
+    const L = [["GitHub", links.github, "github"], ["LinkedIn", links.linkedin, "linkedin"], ["X / Twitter", links.twitter, "x"], ["Website", links.website, "globe"], ["Email", "mailto:" + links.email, "mail"], ["Resume (PDF)", links.resumePdf, "pdf"]].filter(([, u]) => u && u !== "mailto:");
     const yapCard = links.yapless
       ? `<a class="link-card" href="${esc(links.yapless)}" target="_blank" rel="noopener">${I.yapless}<span><b>Yap-less</b><small>${esc(links.yapless.replace(/^https?:\/\//, ""))}</small></span></a>`
-      : `<a class="link-card" href="#" data-soon="Yap-less">${I.yapless}<span><b>Yap-less</b><small>Founder &amp; CEO · coming soon</small></span></a>`;
+      : `<a class="link-card" href="#" data-soon="Yap-less">${I.yapless}<span><b>Yap-less</b><small>Founder &amp; CEO (coming soon)</small></span></a>`;
     inner.innerHTML = `<div class="ie-home"><h1>${esc(P.name)}'s Favorites</h1><div class="muted">Click a link to open it in a new tab.</div>
       <div class="link-cards">${yapCard}${L.map(([n, u, ic]) => `<a class="link-card" href="${esc(u)}" target="_blank" rel="noopener">${I[ic]}<span><b>${esc(n)}</b><small>${esc(u.replace(/^(https?:\/\/|mailto:)/, ""))}</small></span></a>`).join("")}</div></div>`;
   }
 
   function renderCmd(body, ctx) {
-    body.innerHTML = `<div class="cmd"><div class="out"></div><div class="line"><span class="prompt">C:\\Users\\Guest&gt;</span><input spellcheck="false" autocomplete="off"></div></div>`;
+    body.innerHTML = `<div class="cmd"><div class="out"></div><div class="line"><span class="prompt">C:\\Documents and Settings\\${esc(P.name.split(" ")[0])}&gt;</span><input spellcheck="false" autocomplete="off"></div></div>`;
     const root = body.querySelector(".cmd"), out = body.querySelector(".out"), input = body.querySelector("input"), prompt = body.querySelector(".prompt").textContent;
     const hist = []; let hi = -1;
     const print = (t = "") => { out.textContent += t + "\n"; root.scrollTop = root.scrollHeight; };
@@ -383,17 +398,17 @@
   SYSTEMINFO  - Displays system configuration
   CLS / CLEAR - Clears the screen
   EXIT        - Closes the window`,
-      about: () => `${P.name} - ${P.role}\nLocation: ${P.location}\n\n${P.bio.join("\n")}`,
-      skills: () => "Technical Proficiencies:\n" + Object.entries(P.skills).map(([k, v]) => `  • ${k.padEnd(10)} ${v.join(", ")}`).join("\n"),
-      projects: () => P.projects.map((p, i) => `${i + 1}. ${p.name} - ${p.desc} (${p.stack.join(", ")})${p.github || p.url ? "\n   " + (p.github || p.url) : ""}`).join("\n"),
+      about: () => `${P.name} - ${P.role}${P.subtitle ? "\n" + P.subtitle : ""}\nLocation: ${P.location}\n\n${P.bio.join("\n")}`,
+      skills: () => "Technical Proficiencies:\n" + Object.entries(P.skills).map(([k, v]) => `  • ${(k + ":").padEnd(13)} ${v.join(", ")}`).join("\n"),
+      projects: () => P.projects.map((p, i) => `${i + 1}. ${p.name} - ${p.desc} (${(p.stack || []).join(", ")})${[p.github, p.url].filter(Boolean).map((u) => "\n   " + u).join("")}`).join("\n"),
       resume: () => (openApp("resume"), "Opening Resume.doc..."),
-      contact: () => "Contact Channels:\n" + [["Email", links.email], ["GitHub", links.github], ["LinkedIn", links.linkedin], ["X", links.twitter], ["Website", links.website]].filter(([, v]) => v).map(([k, v]) => `  ${(k + ":").padEnd(10)}${v}`).join("\n"),
-      whoami: () => `${P.hostname.toLowerCase()}\\${P.name.toLowerCase().replace(/\s+/g, "")}`,
+      contact: () => "Contact Channels:\n" + [["Email", links.email], ["Yap-less", links.yapless || "website coming soon"], ["GitHub", links.github], ["LinkedIn", links.linkedin], ["X / Twitter", links.twitter], ["Website", links.website]].filter(([, v]) => v).map(([k, v]) => `  ${(k + ":").padEnd(10)}${v}`).join("\n"),
+      whoami: () => `${P.hostname.toLowerCase()}\\${P.name.split(" ")[0].toLowerCase()}`,
       date: () => "Current date is: " + new Date().toLocaleDateString(),
       time: () => "Current time is: " + new Date().toLocaleTimeString(),
       ver: () => "Microsoft Windows XP [Version 5.1.2600] - Portfolio Edition",
-      dir: () => ` Volume in drive C has no label.\n\n Directory of C:\\Users\\${P.name}\n\n` + ["About Me.txt", "Resume.doc", ...P.projects.map((p) => p.name)].map((f, i) => `10/17/2026  09:${String(10 + i).padStart(2, "0")} AM    ${f.includes(".") ? "         4,096" : "<DIR>         "} ${f}`).join("\n"),
-      tree: () => `Folder PATH listing for Volume C\nC:.\n├── My Documents\n│   ├── Resume.doc\n│   └── My Projects\n${P.projects.map((p, i) => `│       ${i === P.projects.length - 1 ? "└" : "├"}── ${p.name}`).join("\n")}\n└── Program Files\n    ├── Minesweeper\n    ├── Paint\n    └── MSN Messenger`,
+      dir: () => ` Volume in drive C has no label.\n\n Directory of C:\\Documents and Settings\\${P.name.split(" ")[0]}\n\n` + ["About Me.txt", "Resume.doc", "My Projects"].map((f, i) => `${new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })}  09:${String(10 + i).padStart(2, "0")} AM    ${f.includes(".") ? "         4,096" : "<DIR>         "} ${f}`).join("\n"),
+      tree: () => `Folder PATH listing for Volume C\nC:.\n├── My Documents\n│   ├── About Me.txt\n│   ├── Resume.doc\n│   └── My Projects\n${P.projects.map((p, i) => `│       ${i === P.projects.length - 1 ? "└" : "├"}── ${p.name}`).join("\n")}\n└── Program Files\n    ├── Calendar\n    ├── Games\n    │   ├── Solitaire\n    │   ├── Minesweeper\n    │   ├── Snake\n    │   ├── Brick Breaker\n    │   └── Tic-Tac-Toe\n    ├── MSN Messenger\n    ├── Notepad\n    └── Paint`,
       systeminfo: () => `Host Name:                 ${P.hostname}\nOS Name:                   Microsoft Windows XP Professional\nOS Version:                5.1.2600 Service Pack 3\nRegistered Owner:          ${P.name}\nSystem Type:               X86-based PC\nTotal Physical Memory:     65,536 MB\nCoffee Level:              Critically Low`,
       matrix: () => { matrix(); return ""; },
     };
@@ -414,7 +429,7 @@
       if (cmd === "exit") { ctx.close(); return; }
       if (cmd === "echo") { print(arg); return; }
       if (cmd === "color") { const m = { "0a": "#0f0", "0b": "#0ff", "0c": "#f55", "0e": "#ff0", "0f": "#fff", "07": "#c0c0c0" }; if (m[arg]) root.style.color = m[arg]; else print("Usage: color 0a"); return; }
-      if (cmd === "calc") { try { if (!/^[\d+\-*/().%\s^]+$/.test(arg)) throw 0; print(String(Function(`"use strict";return (${arg.replace(/\^/g, "**")})`)())); } catch { print("Invalid expression."); } return; }
+      if (cmd === "calc") { try { if (!/^[\d+\-*/().%\s^]+$/.test(arg)) throw 0; print(String(Function(`"use strict";return (${arg.replace(/\^/g, "**").replace(/(^|[^\w).])-\s*(\d+(?:\.\d+)?)\s*\*\*\s*(\d+(?:\.\d+)?)/g, "$1-($2**$3)")})`)())); } catch { print("Invalid expression."); } return; }
       if (cmd === "start") { const a = ALIAS[arg.toLowerCase().replace(/\s+/g, "")] || arg.toLowerCase(); if (!arg) print("Usage: start <app>  (" + Object.keys(APPS).join(", ") + ")"); else if (Object.hasOwn(APPS, a)) { openApp(a); print(`Starting ${APPS[a].title}...`); } else print(`The system cannot find the program '${arg}'.`); return; }
       if (Object.hasOwn(CMDS, cmd)) { const r = CMDS[cmd](); if (r) print(r); return; }
       print(`'${c}' is not recognized as an internal or external command,\noperable program or batch file. Type "help" for a list of commands.`);
@@ -438,11 +453,16 @@
     body.innerHTML = `<div class="msn"><div class="msn-to">To: <b>${esc(P.name)}</b> &lt;${esc(links.email)}&gt;</div><div class="msn-log"></div>
       <div class="msn-bar"><textarea placeholder="Ask about my skills, projects, education, contact..."></textarea><div style="display:flex;flex-direction:column;gap:4px"><button class="xpbtn send">Send</button><button class="xpbtn nudge">Nudge</button></div></div></div>`;
     const log = body.querySelector(".msn-log"), ta = body.querySelector("textarea");
-    const say = (who, text) => { const p = document.createElement("p"); p.innerHTML = `<b>${esc(who)} says:</b><br><span class="${who === "You" ? "" : "them"}">${esc(text)}</span>`; log.appendChild(p); log.scrollTop = log.scrollHeight; };
+    const say = (who, text) => { const p = document.createElement("p"); p.innerHTML = `<b>${esc(who)} says:</b><br><span class="${who === "You" ? "" : "them"}">${esc(text).replace(/\(Y\)/g, "👍").replace(/\(H\)/g, "😎").replace(/:-D/g, "😄").replace(/:-\)/g, "🙂")}</span>`; log.appendChild(p); log.scrollTop = log.scrollHeight; };
     const first = P.name.split(" ")[0];
     say(first, `Hey there :-) Welcome to my XP portfolio! Ask me about my skills, projects, education or how to reach me. Or click Nudge!`);
     const reply = (q) => {
       q = q.toLowerCase();
+      if (/yap.?less|founder|ceo|company|startup/.test(q)) return `I'm the Founder & CEO of Yap-less. The website is coming soon (Y)`;
+      if (/speak|hindi|french|english|spoken|languages you/.test(q)) return P.languages?.length ? "I speak " + P.languages.join(", ") + "." : "Mostly English!";
+      if (/award|honou?r|achiev|rank|chess|percentile/.test(q)) return P.achievements?.length ? "Highlights: " + P.achievements.slice(0, 3).join("; ") + "." : "Coming soon!";
+      if (/certif|course/.test(q)) return P.certifications?.length ? P.certifications.join("; ") + "." : "Coming soon!";
+      if (/where|location|live|city|based/.test(q)) return `I'm based in ${P.location}.`;
       if (/skill|stack|tech|language/.test(q)) return "My toolbox: " + Object.values(P.skills).flat().slice(0, 12).join(", ") + ".";
       if (/project|built|work on|portfolio/.test(q)) return "Some things I've built: " + P.projects.map((p) => p.name).join(", ") + ". Open 'My Projects' on the desktop for details!";
       if (/educat|study|college|university|degree/.test(q)) return P.education?.[0] ? P.education[0].degree + " at " + P.education[0].school + " (" + P.education[0].years + ")." : "Education details are coming soon.";
@@ -450,7 +470,7 @@
       if (/contact|email|reach|hire|mail/.test(q)) return (links.email ? `Email me at ${links.email}, or use` : "Use") + " the Contact Me app. I'm open to new opportunities (Y)";
       if (/resume|cv/.test(q)) { openApp("resume"); return "Opening my resume for you!"; }
       if (/\b(hi|hello|hey|yo)\b/.test(q)) return "Hello! :-D What would you like to know?";
-      return "Good question! Try asking about my skills, projects, education, experience or contact details.";
+      return "Good question! Try asking about my skills, projects, Yap-less, education, awards or how to contact me.";
     };
     const send = () => { const t = ta.value.trim(); if (!t) return; ta.value = ""; say("You", t); setTimeout(() => wins.has(ctx.key) && say(first, reply(t)), 600); };
     body.querySelector(".send").onclick = send;
@@ -581,7 +601,7 @@
     }
     g.addEventListener("click", (e) => {
       const c = e.target.closest(".cell"); if (!c || over || lpFired) return;
-      const i = +c.dataset.i; if (!started) plant(i);
+      const i = +c.dataset.i; if (flags.has(i)) return; if (!started) plant(i);
       if (opened.has(i)) chord(i); else open(i);
       check(i);
     });
@@ -604,7 +624,7 @@
 
   function renderNotepad(body, ctx) {
     const inner = chrome(body, { menus: [
-      { label: "File", items: [{ label: "New", act: () => { ta.value = ""; save(); } }, { label: "Save As...", key: "Ctrl+S", act: () => download(new Blob([ta.value], { type: "text/plain" }), "note.txt") }, "-", { label: "Exit", act: ctx.close }] },
+      { label: "File", items: [{ label: "New", act: () => { if (!ta.value.trim() || confirm("Discard the current note?")) { ta.value = ""; save(); } } }, { label: "Save As...", key: "Ctrl+S", act: () => download(new Blob([ta.value], { type: "text/plain" }), "note.txt") }, "-", { label: "Exit", act: ctx.close }] },
       { label: "Edit", items: [{ label: "Select All", key: "Ctrl+A", act: () => ta.select() }, { label: "Time/Date", key: "F5", act: () => insert(new Date().toLocaleString()) }] },
       { label: "Format", items: () => [{ label: "Word Wrap", check: wrap, act: () => { wrap = !wrap; ta.style.whiteSpace = wrap ? "pre-wrap" : "pre"; } }, { label: "Bigger font", act: () => font(2) }, { label: "Smaller font", act: () => font(-2) }] },
       { label: "Help", items: [{ label: "About Notepad", act: () => msgBox("About Notepad", "Your text is saved automatically in this browser.") }] },
@@ -617,7 +637,7 @@
     const save = () => store.lset("xp-notepad", ta.value);
     const insert = (t) => { ta.setRangeText(t, ta.selectionStart, ta.selectionEnd, "end"); save(); ta.focus(); };
     const font = (d) => { size = Math.max(10, Math.min(28, size + d)); ta.style.fontSize = size + "px"; };
-    ta.value = saved ?? `Hi! Thanks for visiting my portfolio.\n\nThings to try:\n - Open "Command Prompt" and type help\n - Play Solitaire, Snake, Brick Breaker or Minesweeper\n - Chat with me on MSN Messenger\n - Draw something in Paint\n - Right-click the desktop > Properties to change the wallpaper\n\n- ${P.name}`;
+    ta.value = saved ?? `Hi! Thanks for visiting my portfolio.\n\nThings to try:\n - Open "Command Prompt" and type help\n - Play Solitaire, Minesweeper, Snake, Brick Breaker or Tic-Tac-Toe\n - Add tasks and reminders in the Calendar\n - Chat with me on MSN Messenger\n - Draw something in Paint\n - Right-click the desktop > Properties to change the wallpaper\n\n- ${P.name}`;
     let t; ta.addEventListener("input", () => { clearTimeout(t); t = setTimeout(save, 300); });
     ctx.onClose(() => { clearTimeout(t); save(); });
     ta.addEventListener("keydown", (e) => {
@@ -635,8 +655,8 @@
                     "#ffffff", "#c0c0c0", "#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff", "#ffff80", "#00ff80", "#80ffff", "#8080ff", "#ff0080", "#ff8040"];
     const TOOLS = [["pencil", "✏️", "Pencil"], ["brush", "🖌️", "Brush"], ["spray", "💨", "Airbrush"], ["eraser", "🧽", "Eraser"], ["fill", "🪣", "Fill"], ["picker", "💧", "Pick color"], ["line", "╱", "Line"], ["rect", "▭", "Rectangle"], ["ellipse", "◯", "Ellipse"], ["text", "A", "Text"]];
     const inner = chrome(body, { menus: [
-      { label: "File", items: [{ label: "New", key: "Ctrl+N", act: () => { snap(); clear(); } }, { label: "Open...", act: () => fileIn.click() }, { label: "Save As PNG...", key: "Ctrl+S", act: () => save() }, "-", { label: "Exit", act: ctx.close }] },
-      { label: "Edit", items: () => [{ label: "Undo", key: "Ctrl+Z", disabled: !undo.length, act: () => doUndo() }, { label: "Redo", key: "Ctrl+Y", disabled: !redo.length, act: () => doRedo() }, "-", { label: "Clear Image", key: "Ctrl+Shift+N", act: () => { snap(); clear(); } }] },
+      { label: "File", items: [{ label: "New", act: () => { snap(); clear(); } }, { label: "Open...", act: () => fileIn.click() }, { label: "Save As PNG...", key: "Ctrl+S", act: () => save() }, "-", { label: "Exit", act: ctx.close }] },
+      { label: "Edit", items: () => [{ label: "Undo", key: "Ctrl+Z", disabled: !undo.length, act: () => doUndo() }, { label: "Redo", key: "Ctrl+Y", disabled: !redo.length, act: () => doRedo() }, "-", { label: "Clear Image", act: () => { snap(); clear(); } }] },
       { label: "View", items: () => [{ label: "Tool Box", check: !toolsEl.hidden, act: () => (toolsEl.hidden = !toolsEl.hidden) }, { label: "Color Box", check: !paletteEl.hidden, act: () => (paletteEl.hidden = !paletteEl.hidden) }] },
       { label: "Image", items: [{ label: "Flip Horizontal", act: () => transform(-1, 1) }, { label: "Flip Vertical", act: () => transform(1, -1) }, { label: "Invert Colors", key: "Ctrl+I", act: () => invert() }, "-", { label: "Clear Image", act: () => { snap(); clear(); } }] },
       { label: "Colors", items: [{ label: "Edit Colors...", act: () => { editingFg = true; picker.value = fg; picker.click(); } }, { label: "Swap fore/back", act: () => { [fg, bg] = [bg, fg]; paintSwatch(); } }] },
@@ -784,11 +804,20 @@
   setWall(store.lget("xp-wall") || "bliss");
   function renderDisplay(body, ctx) {
     let pick = store.lget("xp-wall") || "bliss";
-    body.innerHTML = `<div class="disp"><div class="tabs"><span class="on">Desktop</span><span>Themes</span><span>Screen Saver</span></div>
+    body.innerHTML = `<div class="disp"><div class="tabs"><span class="on" data-tab="desk">Desktop</span><span data-tab="theme">Themes</span><span data-tab="saver">Screen Saver</span></div>
       <div class="disp-pane"><div class="monitor"><div class="mon-screen wp-${pick}"></div><div class="mon-base"></div></div>
       <label>Background:</label><div class="wall-list">${Object.entries(WALLS).map(([k, v]) => `<div data-w="${k}" class="${k === pick ? "sel" : ""}"><i class="wp-${k}"></i>${v}</div>`).join("")}</div></div>
       <div class="disp-actions"><button class="xpbtn ok">OK</button><button class="xpbtn cancel">Cancel</button><button class="xpbtn apply">Apply</button></div></div>`;
-    const screen = body.querySelector(".mon-screen");
+    const screen = body.querySelector(".mon-screen"), pane = body.querySelector(".disp-pane"), deskHTML = pane.innerHTML;
+    body.querySelector(".tabs").addEventListener("click", (e) => {
+      const t = e.target.closest("[data-tab]"); if (!t) return;
+      body.querySelectorAll("[data-tab]").forEach((x) => x.classList.toggle("on", x === t));
+      if (t.dataset.tab === "desk") { pane.innerHTML = deskHTML; return renderDisplay(body, ctx); }
+      pane.innerHTML = t.dataset.tab === "theme"
+        ? `<label>Theme:</label><div class="wall-list"><div class="sel"><i class="wp-bliss"></i>Windows XP (Luna Blue)</div></div><p class="muted">Luna is the only theme on this machine. Change the wallpaper on the Desktop tab.</p>`
+        : `<div class="monitor"><div class="mon-screen saver-mini"><span class="xp-logo tiny"><span></span><span></span><span></span><span></span></span></div><div class="mon-base"></div></div><label>Screen saver: Windows XP</label><button class="xpbtn preview" style="align-self:flex-start">Preview</button><p class="muted">Move the mouse or press a key to stop the preview.</p>`;
+      pane.querySelector(".preview")?.addEventListener("click", screenSaver);
+    });
     body.querySelector(".wall-list").addEventListener("click", (e) => {
       const d = e.target.closest("[data-w]"); if (!d) return; pick = d.dataset.w;
       body.querySelectorAll("[data-w]").forEach((x) => x.classList.toggle("sel", x === d)); screen.className = "mon-screen wp-" + pick;
@@ -946,7 +975,7 @@
         grid.insertBefore(it, ev.clientX > r.left + r.width / 2 ? over.nextSibling : over);
       }
       const bin = under?.closest('.dicon[data-id="recycle"]');
-      const desk = !under?.closest(".win, .taskbar") ? desktopEl : null;
+      const desk = it.dataset.open && !under?.closest(".win, .taskbar") ? desktopEl : null;
       const tgt = bin || desk;
       if (tgt !== hover) { hover?.classList.remove("drop-over"); hover = tgt; hover?.classList.add("drop-over"); }
     };
@@ -993,7 +1022,7 @@
   $("#smLeft").innerHTML = left.map((x) => x ? `<li data-open="${x[0]}">${I[APPS[x[0]].icon]}<span>${x[2] ? `<b>${x[1]}</b><small>${x[2]}</small>` : x[1]}</span></li>` : "<hr>").join("");
   $("#smRight").innerHTML = [
     `<li data-open="about">${I.user}<b>${esc(P.name)}</b></li>`, `<li data-open="resume">${I.resume}My Resume</li>`, `<li data-open="projects">${I.project}My Projects</li>`, `<li data-open="computer">${I.computer}<b>My Computer</b></li>`, "<hr>",
-    links.yapless ? `<li data-href="${esc(links.yapless)}">${I.yapless}Yap-less</li>` : `<li data-soon="Yap-less">${I.yapless}Yap-less <small class="muted">soon</small></li>`,
+    links.yapless ? `<li data-href="${esc(links.yapless)}">${I.yapless}Yap-less</li>` : `<li data-soon="Yap-less">${I.yapless}Yap-less <small class="muted">(coming soon)</small></li>`,
     links.github ? `<li data-href="${esc(links.github)}">${I.github}GitHub</li>` : "", links.linkedin ? `<li data-href="${esc(links.linkedin)}">${I.linkedin}LinkedIn</li>` : "", links.twitter ? `<li data-href="${esc(links.twitter)}">${I.x}X / Twitter</li>` : "", links.website ? `<li data-href="${esc(links.website)}">${I.globe}My Website</li>` : "", "<hr>",
     `<li data-open="display">${I.display}Display Properties</li>`, `<li data-reset>${I.showdesk}Reset Desktop</li>`, `<li data-help>${I.help}Help and Support</li>`,
   ].join("");
@@ -1010,8 +1039,12 @@
   addEventListener("keydown", (e) => {
     if (e.key === "Escape") { toggleStart(false); closeTray(); closeMenus(); hideCtx(); shut.classList.add("hidden"); }
     if (activeKey && ((e.altKey && e.key === "F4") || ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "w"))) { e.preventDefault(); close(activeKey); }
-    if (e.key === "Meta" || (e.ctrlKey && e.key === "Escape")) toggleStart(sm.classList.contains("hidden"));
+    if (e.ctrlKey && e.key === "Escape") toggleStart(sm.classList.contains("hidden"));
+    metaAlone = e.key === "Meta" && !e.repeat;
   });
+
+  let metaAlone = false;
+  addEventListener("keyup", (e) => { if (e.key === "Meta" && metaAlone) toggleStart(sm.classList.contains("hidden")); metaAlone = false; });
 
   // ---------------- Context menu ----------------
   const ctxEl = $("#ctxMenu");
@@ -1023,8 +1056,9 @@
     ctxEl.innerHTML = icon
       ? `<div data-c="open" data-id="${icon.dataset.id}"><b>Open</b></div><hr><div data-c="arrange">Arrange Icons</div>`
       : `<div data-c="arrange">Arrange Icons</div><div data-c="refresh">Refresh</div><hr><div data-c="notepad">New Text Document</div><div data-c="cmd">Open Command Prompt</div><div data-c="games">Games</div><hr><div data-c="reset">Reset Desktop</div><div data-c="display">Properties</div>`;
-    ctxEl.style.left = Math.min(e.clientX, innerWidth - 160) + "px"; ctxEl.style.top = Math.min(e.clientY, innerHeight - 190) + "px";
     ctxEl.classList.remove("hidden");
+    ctxEl.style.left = Math.max(0, Math.min(e.clientX, innerWidth - ctxEl.offsetWidth - 4)) + "px";
+    ctxEl.style.top = Math.max(0, Math.min(e.clientY, innerHeight - 30 - ctxEl.offsetHeight - 4)) + "px";
   });
   ctxEl.addEventListener("click", (e) => {
     const t = e.target.closest("[data-c]"); if (!t) return; const c = t.dataset.c; hideCtx();
@@ -1049,7 +1083,7 @@
   let trayOpen = null;
   function closeTray() { trayPop.classList.add("hidden"); trayOpen = null; }
   const net = { on: true, ssid: "Portfolio_5G", list: [["Portfolio_5G", 4, true], ["Hackathon-Guest", 3, false], ["FBI Surveillance Van", 2, true], ["Pretty Fly for a WiFi", 2, true], ["Free_Coffee_WiFi", 1, false]] };
-  let vol = parseInt(store.lget("xp-vol"), 10), muted = false; if (!(vol >= 0 && vol <= 100)) vol = 70;
+  let vol = parseInt(store.lget("xp-vol"), 10), muted = store.lget("xp-mute") === "1"; if (!(vol >= 0 && vol <= 100)) vol = 70;
   const bars = (n) => `<span class="sig">${[1, 2, 3, 4].map((k) => `<i class="${k <= n ? "on" : ""}" style="height:${k * 3}px"></i>`).join("")}</span>`;
   const POPS = {
     vol: () => `<h4>Volume</h4><div class="vol"><input type="range" min="0" max="100" value="${vol}" class="vslider" aria-label="Volume"><b class="vval">${vol}</b></div><label><input type="checkbox" class="mute" ${muted ? "checked" : ""}> Mute</label>`,
@@ -1107,7 +1141,7 @@
     if (e.target.classList.contains("vslider")) { vol = +e.target.value; trayPop.querySelector(".vval").textContent = vol; store.lset("xp-vol", vol); paintTray(); }
   });
   trayPop.addEventListener("change", (e) => {
-    if (e.target.classList.contains("mute")) muted = e.target.checked;
+    if (e.target.classList.contains("mute")) { muted = e.target.checked; store.lset("xp-mute", muted ? "1" : "0"); }
     if (e.target.classList.contains("wifi")) { net.on = e.target.checked; renderPop(); }
     if (e.target.name === "pp") { powerPlan = e.target.value; store.lset("xp-power", powerPlan); }
     paintTray();
@@ -1253,7 +1287,7 @@
     });
     if (changed) Tasks.save();
   }
-  setInterval(checkReminders, 15000);
+  setInterval(() => { checkReminders(); paintBell(); }, 15000);
   document.addEventListener("visibilitychange", () => !document.hidden && checkReminders());
   function paintBell() {
     const today = dkey(new Date()), n = Tasks.list.filter((t) => t.date === today && !t.done).length, el = $("#tBell");
