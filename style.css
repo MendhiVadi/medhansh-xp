@@ -578,7 +578,7 @@ button { font: inherit; }
 .fitem { user-select: none; -webkit-user-select: none; }
 .fitem span { overflow-wrap: anywhere; }
 .titlebar, .resize { touch-action: none; }
-@media print { .screen, .desktop, .win, .wbody, .inner, .wordpad-bg { position: static !important; overflow: visible !important; height: auto !important; transform: none !important; contain: none !important; } body * { visibility: hidden; } .paper, .paper * { visibility: visible; } .paper { position: static; box-shadow: none; margin: 0; } html, body { overflow: visible; height: auto; background: #fff; } }
+@media print { .win:not(:has(.paper)), #icons, .taskbar, .balloons, .dropdown, .start-menu, .tray-pop, .ctx, .marquee, .toolbar, .ruler, .titlebar, .menubar, .statusbar { display: none !important; } .screen, .desktop, .win, .wbody, .inner, .wordpad-bg { position: static !important; overflow: visible !important; height: auto !important; transform: none !important; contain: none !important; } body * { visibility: hidden; } .paper, .paper * { visibility: visible; } .paper { position: static; box-shadow: none; margin: 0; } html, body { overflow: visible; height: auto; background: #fff; } }
 
 /* screen saver */
 .saver { position: fixed; inset: 0; z-index: 100000; background: #000; cursor: none; }
