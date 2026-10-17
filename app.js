@@ -1,0 +1,1301 @@
+(() => {
+  const P = window.PROFILE;
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const store = {
+    get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { sessionStorage.setItem(k, v); } catch {} },
+    lget(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    lset(k, v) { try { localStorage.setItem(k, v); return true; } catch { return false; } },
+  };
+
+  // Profile photo with initials fallback (if photo.jpg is missing the initials stay visible)
+  const avatar = (cls = "") => `<span class="avatar ${cls}">${esc(P.initials)}${P.photo ? `<img src="${esc(P.photo)}" alt="${esc(P.name)}" decoding="async" onerror="this.remove()">` : ""}</span>`;
+
+  // ---------------- Icons (inline SVG) ----------------
+  const I = {
+    computer: `<svg viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="17" rx="2" fill="#d8d8d0" stroke="#666"/><rect x="6" y="6" width="20" height="13" fill="url(#gsky)"/><path d="M12 21h8l2 5H10z" fill="#bbb" stroke="#666"/><rect x="7" y="26" width="18" height="3" rx="1" fill="#ccc" stroke="#666"/><defs><linearGradient id="gsky" x2="0" y2="1"><stop offset="0" stop-color="#2a6ee7"/><stop offset=".7" stop-color="#8fc3f5"/><stop offset=".71" stop-color="#5aa83a"/></linearGradient></defs></svg>`,
+    user: `<svg viewBox="0 0 32 32"><circle cx="16" cy="11" r="6" fill="#f7c58a" stroke="#a66b2b"/><path d="M5 29c1-7 5-10 11-10s10 3 11 10z" fill="#2f71cd" stroke="#0a3c8c"/><path d="M10 9c1-5 11-5 12 0-3-2-9-2-12 0z" fill="#6b3d17"/></svg>`,
+    folder: `<svg viewBox="0 0 32 32"><path d="M3 8h10l2 3h14v16H3z" fill="#f2c94c" stroke="#b8860b"/><path d="M3 13h26l-2 14H3z" fill="#ffe08a" stroke="#b8860b"/></svg>`,
+    doc: `<svg viewBox="0 0 32 32"><path d="M7 3h13l6 6v20H7z" fill="#fff" stroke="#555"/><path d="M20 3v6h6" fill="#ddd" stroke="#555"/><path d="M10 13h12M10 16h12M10 19h12M10 22h8" stroke="#2f71cd" stroke-width="1.5"/></svg>`,
+    resume: `<svg viewBox="0 0 32 32"><path d="M7 3h13l6 6v20H7z" fill="#fff" stroke="#555"/><path d="M20 3v6h6" fill="#ddd" stroke="#555"/><circle cx="13" cy="12" r="2.5" fill="#f7c58a" stroke="#a66b2b"/><path d="M9.5 18c.5-2 2-3 3.5-3s3 1 3.5 3z" fill="#2f71cd"/><path d="M18 11h5M18 14h5M10 21h13M10 24h10" stroke="#888" stroke-width="1.3"/></svg>`,
+    mail: `<svg viewBox="0 0 32 32"><rect x="3" y="7" width="26" height="18" rx="1" fill="#fff8dc" stroke="#8a6d1f"/><path d="M3 8l13 10L29 8" fill="none" stroke="#8a6d1f" stroke-width="1.4"/><circle cx="25" cy="23" r="5" fill="#2f71cd"/><path d="M22.5 23h5M25 20.5v5" stroke="#fff" stroke-width="1.6"/></svg>`,
+    cmd: `<svg viewBox="0 0 32 32"><rect x="3" y="5" width="26" height="22" rx="1" fill="#000" stroke="#777"/><rect x="3" y="5" width="26" height="4" fill="#2f71cd"/><path d="M7 14l4 3-4 3M13 21h6" stroke="#ddd" stroke-width="1.6" fill="none"/></svg>`,
+    mine: `<svg viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" fill="#c0c0c0" stroke="#666"/><circle cx="16" cy="16" r="7" fill="#111"/><path d="M16 5v22M5 16h22M8 8l16 16M24 8L8 24" stroke="#111" stroke-width="2"/><rect x="13" y="13" width="2.5" height="2.5" fill="#fff"/></svg>`,
+    msn: `<svg viewBox="0 0 32 32"><circle cx="12" cy="9" r="5" fill="#4cbf2f" stroke="#1f7a0e"/><path d="M3 26c0-7 4-10 9-10s9 3 9 10z" fill="#4cbf2f" stroke="#1f7a0e"/><circle cx="21" cy="11" r="5" fill="#2f8cf0" stroke="#0a4fa0"/><path d="M13 28c0-7 4-10 8-10s9 3 9 10z" fill="#2f8cf0" stroke="#0a4fa0"/></svg>`,
+    ie: `<svg viewBox="0 0 32 32"><circle cx="16" cy="17" r="10" fill="none" stroke="#1e7ae6" stroke-width="4"/><path d="M8 17h16" stroke="#1e7ae6" stroke-width="4"/><path d="M3 22c4-10 18-18 26-16-3-3-12 2-17 6" fill="none" stroke="#f2a900" stroke-width="2"/></svg>`,
+    recycle: `<svg viewBox="0 0 32 32"><path d="M8 9h16l-2 19H10z" fill="#d7e6f7" stroke="#4a6fa0"/><rect x="6" y="6" width="20" height="3" rx="1" fill="#b9d0ef" stroke="#4a6fa0"/><path d="M13 13l-1 11M16 13v11M19 13l1 11" stroke="#4a6fa0"/></svg>`,
+    notepad: `<svg viewBox="0 0 32 32"><rect x="6" y="5" width="20" height="24" fill="#fff" stroke="#555"/><rect x="6" y="3" width="20" height="5" fill="#5aa0e6" stroke="#2a5a9a"/><path d="M9 12h14M9 15h14M9 18h14M9 21h10" stroke="#999"/></svg>`,
+    paint: `<svg viewBox="0 0 32 32"><path d="M5 22c0-9 7-16 14-16 6 0 9 4 9 8 0 5-5 4-7 6-2 3 1 7-5 7-6 0-11-1-11-5z" fill="#f4e2c4" stroke="#8a6d3b"/><circle cx="12" cy="14" r="2" fill="#e53"/><circle cx="18" cy="11" r="2" fill="#3a3"/><circle cx="23" cy="14" r="2" fill="#36e"/><circle cx="11" cy="21" r="2" fill="#fc0"/></svg>`,
+    github: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="#24292e"/><path d="M12 26v-3c-3 1-4-1-4.5-2M20 26v-3.5c0-1-.3-1.6-.8-2 3-.4 5-1.6 5-5.5 0-1.2-.4-2.2-1.1-3 .2-.6.3-1.7-.1-3 0 0-1-.3-3.2 1.2a11 11 0 0 0-5.6 0C12 8.7 11 9 11 9c-.4 1.3-.3 2.4-.1 3-.7.8-1.1 1.8-1.1 3 0 3.9 2 5.1 5 5.5-.4.4-.7 1-.8 1.8" fill="none" stroke="#fff" stroke-width="1.5"/></svg>`,
+    linkedin: `<svg viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" rx="4" fill="#0a66c2"/><path d="M9 13v10M9 9v.5M14 23v-10M14 17c0-2.5 1.5-4 3.5-4s3.5 1 3.5 4v6" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>`,
+    x: `<svg viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" rx="4" fill="#000"/><path d="M9 8l14 16M23 8L9 24" stroke="#fff" stroke-width="2.2"/></svg>`,
+    globe: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12" fill="#4aa3ff" stroke="#1a5aa8"/><path d="M4 16h24M16 4c-5 6-5 18 0 24M16 4c5 6 5 18 0 24" stroke="#fff" fill="none"/><path d="M9 9c2 2 5 0 6 3s-3 3-2 6 4 1 4 5" stroke="#3cae2c" stroke-width="2.5" fill="none"/></svg>`,
+    pdf: `<svg viewBox="0 0 32 32"><path d="M7 3h13l6 6v20H7z" fill="#fff" stroke="#555"/><rect x="5" y="16" width="18" height="8" fill="#d0021b"/><text x="14" y="22.5" font-size="6" font-family="Arial" font-weight="bold" fill="#fff" text-anchor="middle">PDF</text></svg>`,
+    project: `<svg viewBox="0 0 32 32"><path d="M3 8h10l2 3h14v16H3z" fill="#f2c94c" stroke="#b8860b"/><path d="M3 13h26l-2 14H3z" fill="#ffe08a" stroke="#b8860b"/><rect x="15" y="16" width="11" height="8" rx="1" fill="#2f71cd"/><path d="M18 19l-1.5 1.5L18 22M23 19l1.5 1.5L23 22" stroke="#fff" fill="none"/></svg>`,
+    help: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12" fill="#2f71cd" stroke="#0a3c8c"/><text x="16" y="22" font-size="17" font-family="Arial" font-weight="bold" fill="#fff" text-anchor="middle">?</text></svg>`,
+    info: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12" fill="#2f71cd" stroke="#0a3c8c"/><text x="16" y="22" font-size="16" font-family="Georgia" font-weight="bold" fill="#fff" text-anchor="middle">i</text></svg>`,
+    solitaire: `<svg viewBox="0 0 32 32"><rect x="4" y="6" width="15" height="21" rx="2" fill="#2f5fd0" stroke="#123" transform="rotate(-12 11 16)"/><rect x="12" y="5" width="15" height="21" rx="2" fill="#fff" stroke="#333"/><text x="19.5" y="20" font-size="11" font-family="Arial" fill="#d00" text-anchor="middle">♥</text><text x="14.5" y="11" font-size="6" font-family="Arial" font-weight="bold" fill="#d00">A</text></svg>`,
+    snake: `<svg viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" rx="3" fill="#0b3d0b"/><path d="M8 24V14h8v-6h8" stroke="#7fdb3b" stroke-width="4" fill="none" stroke-linejoin="round"/><circle cx="24" cy="8" r="2.5" fill="#c8ff6a"/><circle cx="12" cy="8" r="2" fill="#ff4136"/></svg>`,
+    breakout: `<svg viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" rx="2" fill="#0a1f5c"/><rect x="5" y="6" width="6" height="3" fill="#e5410c"/><rect x="13" y="6" width="6" height="3" fill="#f2a900"/><rect x="21" y="6" width="6" height="3" fill="#5ca50a"/><rect x="5" y="11" width="6" height="3" fill="#1e7ae6"/><rect x="21" y="11" width="6" height="3" fill="#8a4fd8"/><circle cx="17" cy="19" r="2" fill="#fff"/><rect x="11" y="24" width="10" height="2.5" fill="#c0c0c0"/></svg>`,
+    ttt: `<svg viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" rx="3" fill="#fff" stroke="#7f9db9"/><path d="M12 6v20M20 6v20M6 12h20M6 20h20" stroke="#333" stroke-width="1.5"/><path d="M7 7l3 3M10 7l-3 3M22 22l3 3M25 22l-3 3" stroke="#d00" stroke-width="1.6"/><circle cx="16" cy="16" r="2.2" fill="none" stroke="#1e7ae6" stroke-width="1.6"/></svg>`,
+    games: `<svg viewBox="0 0 32 32"><path d="M3 8h10l2 3h14v16H3z" fill="#f2c94c" stroke="#b8860b"/><path d="M3 13h26l-2 14H3z" fill="#ffe08a" stroke="#b8860b"/><rect x="11" y="16" width="14" height="8" rx="4" fill="#555"/><path d="M14 18v4M12 20h4" stroke="#fff" stroke-width="1.4"/><circle cx="21" cy="19" r="1" fill="#f55"/><circle cx="23" cy="21" r="1" fill="#5f5"/></svg>`,
+    display: `<svg viewBox="0 0 32 32"><rect x="3" y="5" width="26" height="18" rx="2" fill="#d8d8d0" stroke="#666"/><rect x="5" y="7" width="22" height="14" fill="url(#gsky2)"/><path d="M12 23h8l1 4H11z" fill="#bbb" stroke="#666"/><defs><linearGradient id="gsky2" x2="0" y2="1"><stop offset="0" stop-color="#2a6ee7"/><stop offset=".65" stop-color="#8fc3f5"/><stop offset=".66" stop-color="#5aa83a"/></linearGradient></defs></svg>`,
+    showdesk: `<svg viewBox="0 0 32 32"><rect x="3" y="6" width="26" height="18" rx="2" fill="#4f95ea" stroke="#fff"/><path d="M3 18c8-5 18-5 26 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="#4c9b2d"/><rect x="9" y="26" width="14" height="2" fill="#fff"/></svg>`,
+    calendar: `<svg viewBox="0 0 32 32"><rect x="4" y="6" width="24" height="22" rx="2" fill="#fff" stroke="#555"/><rect x="4" y="6" width="24" height="6" fill="#d0362f"/><rect x="9" y="3" width="2.5" height="6" rx="1" fill="#555"/><rect x="20.5" y="3" width="2.5" height="6" rx="1" fill="#555"/><text x="16" y="25" font-size="11" font-family="Arial" font-weight="bold" fill="#0a246a" text-anchor="middle">${new Date().getDate()}</text></svg>`,
+    yapless: `<svg viewBox="0 0 32 32"><rect x="3" y="5" width="26" height="19" rx="6" fill="#ff7a32"/><path d="M10 24l-2 5 7-5" fill="#ff7a32"/><path d="M10 12h12M10 17h7" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>`,
+  };
+
+  // ---------------- Apps ----------------
+  const links = P.links;
+  const APPS = {
+    about:    { title: "About Me", icon: "user", w: 640, h: 470, render: renderAbout },
+    projects: { title: "My Projects", icon: "project", w: 660, h: 440, render: renderProjects },
+    resume:   { title: "Resume.doc - WordPad", icon: "resume", w: 720, h: 540, render: renderResume },
+    contact:  { title: "New Message - Contact Me", icon: "mail", w: 520, h: 420, render: renderContact },
+    ie:       { title: "My Links - Internet Explorer", icon: "ie", w: 640, h: 440, render: renderIE },
+    cmd:      { title: "Command Prompt", icon: "cmd", w: 620, h: 380, render: renderCmd },
+    msn:      { title: "MSN Messenger - Chat", icon: "msn", w: 420, h: 460, render: renderMSN },
+    mine:     { title: "Minesweeper", icon: "mine", w: 0, h: 0, render: renderMine, fixed: true },
+    notepad:  { title: "Untitled - Notepad", icon: "notepad", w: 520, h: 380, render: renderNotepad },
+    paint:    { title: "untitled - Paint", icon: "paint", w: 640, h: 460, render: renderPaint },
+    recycle:  { title: "Recycle Bin", icon: "recycle", w: 560, h: 360, render: renderRecycle },
+    computer: { title: "My Computer", icon: "computer", w: 600, h: 400, render: renderComputer },
+    calendar: { title: "Calendar", icon: "calendar", w: 640, h: 470, render: (b, c) => renderCalendar(b, c) },
+    games:    { title: "Games", icon: "games", w: 560, h: 340, render: renderGames },
+    display:  { title: "Display Properties", icon: "display", w: 420, h: 470, render: renderDisplay },
+    solitaire:{ title: "Solitaire", icon: "solitaire", w: 640, h: 520, render: lazyGame("solitaire") },
+    snake:    { title: "Snake", icon: "snake", w: 420, h: 480, render: lazyGame("snake") },
+    breakout: { title: "Brick Breaker", icon: "breakout", w: 520, h: 460, render: lazyGame("breakout") },
+    ttt:      { title: "Tic-Tac-Toe", icon: "ttt", w: 320, h: 400, render: lazyGame("tictactoe") },
+  };
+  const GAME_IDS = ["solitaire", "mine", "snake", "breakout", "ttt"];
+  const DESKTOP = ["about", "projects", "resume", "ie", "contact", "msn", "cmd", "calendar", "games", "solitaire", "mine", "snake", "paint", "notepad", "recycle"];
+  const DESK_LABEL = { about: "About Me", resume: "Resume", projects: "My Projects", contact: "Contact Me", ie: "My Links", cmd: "Command Prompt", msn: "MSN Messenger", mine: "Minesweeper", paint: "Paint", notepad: "Notepad", recycle: "Recycle Bin", computer: "My Computer", games: "Games", calendar: "Calendar", solitaire: "Solitaire", snake: "Snake", breakout: "Brick Breaker", ttt: "Tic-Tac-Toe", display: "Display" };
+
+  // Games live in games.js and are fetched only when first opened
+  let gamesReady;
+  const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
+    const s = document.createElement("script"); s.src = "games.js?v=12"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    document.head.appendChild(s);
+  });
+  function lazyGame(name) {
+    return (body, ctx) => {
+      body.innerHTML = `<div class="loading">Loading…</div>`;
+      loadGames().then(() => { if (wins.get(ctx.key)?.el === ctx.el) { body.innerHTML = ""; window.GAMES[name](body, ctx); } })
+        .catch(() => (body.innerHTML = `<div class="loading">Could not load the game. Check your connection.</div>`));
+    };
+  }
+
+  // ---------------- Window manager ----------------
+  const wins = new Map(); // key -> {el, task, app, cleanups}
+  let z = 10, activeKey = null, cascade = 0;
+  const winLayer = $("#windows");
+
+  function openApp(id, opts = {}) {
+    const key = opts.key || id;
+    if (wins.has(key)) { const w = wins.get(key); w.el.classList.remove("min"); focus(key); if (opts.date) w.goto?.(opts.date); return w; }
+    const app = opts.app || APPS[id];
+    if (!app) return;
+    closeMenus();
+    const el = document.createElement("div");
+    el.className = "win";
+    el.dataset.key = key;
+    const dw = innerWidth, dh = innerHeight - 30;
+    // size windows relative to the screen so small laptop screens still fit them
+    const w = Math.round(Math.min(app.w || 300, dw * 0.92)), h = Math.round(Math.min(app.h || 200, dh * 0.9));
+    const off = (cascade++ % 6) * 24;
+    el.style.left = Math.round(Math.max(6, Math.min(dw - w - 6, (dw - w) / 2 + off - 60))) + "px";
+    el.style.top = Math.round(Math.max(6, Math.min(dh - h - 6, (dh - h) / 2 + off - 50))) + "px";
+    if (!app.fixed) { el.style.width = w + "px"; el.style.height = h + "px"; }
+    el.innerHTML = `
+      <div class="titlebar">${I[app.icon]}<span class="ttl">${esc(app.title)}</span>
+        <button class="tbtn" data-a="min" title="Minimize" aria-label="Minimize">_</button>
+        ${app.fixed ? "" : `<button class="tbtn" data-a="max" title="Maximize" aria-label="Maximize">□</button>`}
+        <button class="tbtn close" data-a="close" title="Close" aria-label="Close">×</button>
+      </div><div class="wbody"></div>${app.fixed ? "" : `<div class="resize"></div>`}`;
+    winLayer.appendChild(el);
+    const task = document.createElement("div");
+    task.className = "task";
+    task.innerHTML = `${I[app.icon]}<span>${esc(app.title)}</span>`;
+    $("#tasks").appendChild(task);
+    const rec = { el, task, app, cleanups: [] };
+    wins.set(key, rec);
+
+    el.addEventListener("pointerdown", () => focus(key));
+    task.addEventListener("click", () => {
+      if (activeKey === key && !el.classList.contains("min")) minimize(key);
+      else { el.classList.remove("min"); focus(key); }
+    });
+    el.querySelector(".titlebar").addEventListener("click", (e) => {
+      const a = e.target.closest(".tbtn")?.dataset.a;
+      if (a === "close") close(key);
+      if (a === "min") minimize(key);
+      if (a === "max") el.classList.toggle("max");
+    });
+    el.querySelector(".titlebar").addEventListener("dblclick", (e) => { if (!app.fixed && !e.target.closest(".tbtn")) el.classList.toggle("max"); });
+    drag(el.querySelector(".titlebar"), el, false);
+    if (!app.fixed) drag(el.querySelector(".resize"), el, true);
+
+    const ctx = {
+      key, el, store, ...opts,
+      setTitle: (t) => { el.querySelector(".ttl").textContent = t; task.querySelector("span").textContent = t; },
+      close: () => close(key),
+      onClose: (fn) => rec.cleanups.push(fn),
+      isVisible: () => !document.hidden && !el.classList.contains("min") && wins.has(key),
+      isActive: () => activeKey === key,
+      menu: (bar, menus) => wireMenu(bar, menus),
+    };
+    app.render(el.querySelector(".wbody"), ctx);
+    // any menubar without its own handlers still gets working File / View / Help menus
+    el.querySelectorAll(".menubar:not([data-wired])").forEach((mb) => wireMenu(mb, defaultMenus(app, ctx)));
+    applyOrder(el, key);
+    focus(key);
+    return rec;
+  }
+  function minimize(key) { const w = wins.get(key); if (!w) return; w.el.classList.add("min"); if (activeKey === key) activeKey = null; paintActive(); }
+  function focus(key) {
+    const w = wins.get(key); if (!w) return;
+    if (activeKey !== key) w.el.style.zIndex = ++z;
+    activeKey = key; paintActive();
+  }
+  function paintActive() {
+    wins.forEach((w, k) => { const on = k === activeKey; w.el.classList.toggle("inactive", !on); w.task.classList.toggle("active", on); });
+  }
+  function close(key) {
+    const w = wins.get(key); if (!w) return;
+    w.cleanups.forEach((fn) => { try { fn(); } catch {} });
+    w.el.remove(); w.task.remove(); wins.delete(key);
+    closeMenus();
+    if (activeKey === key) {
+      activeKey = null;
+      const top = [...wins].filter(([, x]) => !x.el.classList.contains("min")).sort((a, b) => (+a[1].el.style.zIndex || 0) - (+b[1].el.style.zIndex || 0)).pop();
+      if (top) focus(top[0]); else paintActive();
+    }
+  }
+  // keep windows reachable after the browser is resized
+  let wz; addEventListener("resize", () => { clearTimeout(wz); wz = setTimeout(() => wins.forEach(({ el, app }) => {
+    if (el.classList.contains("max")) return;
+    if (!app.fixed) { if (el.offsetWidth > innerWidth) el.style.width = innerWidth + "px"; if (el.offsetHeight > innerHeight - 30) el.style.height = innerHeight - 30 + "px"; }
+    const w = el.offsetWidth || parseFloat(el.style.width) || 300, x = parseFloat(el.style.left) || 0, y = parseFloat(el.style.top) || 0;
+    el.style.left = Math.min(innerWidth - 60, Math.max(80 - w, x)) + "px"; el.style.top = Math.min(innerHeight - 90, Math.max(0, y)) + "px";
+  }), 100); });
+  // Drag / resize with pointer capture; updates are batched to one per animation frame
+  function drag(handle, el, resize) {
+    handle.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0 || e.target.closest(".tbtn") || el.classList.contains("max") || innerWidth <= 640) return;
+      e.preventDefault();
+      handle.setPointerCapture(e.pointerId);
+      const sx = e.clientX, sy = e.clientY, r = el.getBoundingClientRect();
+      let dx = 0, dy = 0, raf = 0;
+      const pos = () => [Math.min(innerWidth - 60, Math.max(-r.width + 80, r.left + dx)), Math.min(innerHeight - 60, Math.max(0, r.top + dy))];
+      el.classList.add("moving");
+      const apply = () => {
+        raf = 0;
+        if (resize) { el.style.width = Math.max(260, r.width + dx) + "px"; el.style.height = Math.max(140, r.height + dy) + "px"; }
+        else { const [x, y] = pos(); el.style.transform = `translate3d(${x - r.left}px,${y - r.top}px,0)`; }
+      };
+      const move = (ev) => { dx = ev.clientX - sx; dy = ev.clientY - sy; raf ||= requestAnimationFrame(apply); };
+      const up = () => {
+        handle.removeEventListener("pointermove", move); handle.removeEventListener("pointerup", up); handle.removeEventListener("pointercancel", up);
+        cancelAnimationFrame(raf); el.classList.remove("moving");
+        if (resize) apply();
+        else { const [x, y] = pos(); el.style.transform = ""; el.style.left = x + "px"; el.style.top = y + "px"; }
+      };
+      handle.addEventListener("pointermove", move); handle.addEventListener("pointerup", up); handle.addEventListener("pointercancel", up);
+    });
+  }
+  function msgBox(title, text, icon = "ℹ️") {
+    openApp(null, { key: "msg" + Date.now() + "_" + cascade, app: { title, icon: "info", w: 360, h: 170, render: (b, ctx) => {
+      b.innerHTML = `<div class="msgbox"><span class="msgbox-ico">${icon}</span><div>${text}</div></div><div class="msgbox-actions"><button class="xpbtn">OK</button></div>`;
+      const ok = b.querySelector("button"); ok.onclick = ctx.close; setTimeout(() => ok.focus(), 0);
+    } } });
+  }
+
+  // ---------------- Menus (menubar dropdowns) ----------------
+  // menus: [{ label, items: [{ label, act, key, check, disabled } | "-"] or () => items }]
+  let openMenu = null;
+  function closeMenus() { openMenu?.remove(); openMenu = null; document.querySelectorAll(".menubar .on").forEach((s) => s.classList.remove("on")); }
+  function wireMenu(bar, menus) {
+    bar.dataset.wired = "1";
+    bar.innerHTML = menus.map((m, i) => `<span data-mi="${i}">${esc(m.label)}</span>`).join("");
+    const show = (span) => {
+      closeMenus();
+      const m = menus[+span.dataset.mi]; span.classList.add("on");
+      const items = typeof m.items === "function" ? m.items() : m.items;
+      const dd = document.createElement("div"); dd.className = "dropdown";
+      dd.innerHTML = items.map((it, k) => it === "-" ? "<hr>" : `<div data-k="${k}" class="${it.disabled ? "dis" : ""}"><i>${it.check ? "✓" : ""}</i><span>${esc(it.label)}</span>${it.key ? `<kbd>${esc(it.key)}</kbd>` : ""}</div>`).join("");
+      const r = span.getBoundingClientRect();
+      dd.style.top = r.bottom + "px";
+      dd.addEventListener("pointerdown", (e) => e.stopPropagation());
+      dd.addEventListener("click", (e) => { const d = e.target.closest("[data-k]"); if (!d || d.classList.contains("dis")) return; closeMenus(); items[+d.dataset.k].act?.(); });
+      document.body.appendChild(dd); openMenu = dd;
+      dd.style.left = Math.max(0, Math.min(r.left, innerWidth - dd.offsetWidth - 2)) + "px";
+    };
+    bar.addEventListener("pointerdown", (e) => { const s = e.target.closest("[data-mi]"); if (!s) return; e.stopPropagation(); s.classList.contains("on") ? closeMenus() : show(s); });
+    bar.addEventListener("pointerover", (e) => { const s = e.target.closest("[data-mi]"); if (s && openMenu && !s.classList.contains("on")) show(s); });
+  }
+  document.addEventListener("pointerdown", (e) => { if (openMenu && !e.target.closest(".dropdown")) closeMenus(); });
+  const defaultMenus = (app, ctx) => [
+    { label: "File", items: [{ label: "Close", key: "Alt+F4", act: ctx.close }] },
+    { label: "View", items: [{ label: "Maximize", act: () => ctx.el.classList.toggle("max") }, { label: "Minimize", act: () => minimize(ctx.key) }] },
+    { label: "Help", items: [{ label: `About ${app.title}`, act: () => msgBox("About", `<b>${esc(app.title)}</b><br>Part of ${esc(P.name)}'s portfolio.`) }] },
+  ];
+  const chrome = (body, { menu = ["File", "Edit", "View", "Favorites", "Tools", "Help"], menus, addr, addrIcon = "folder" } = {}) => {
+    body.style.display = "flex"; body.style.flexDirection = "column"; body.style.overflow = "hidden";
+    body.innerHTML = `<div class="menubar">${menu.map((m) => `<span>${m}</span>`).join("")}</div>
+      ${addr ? `<div class="toolbar"><button disabled>◀ Back</button><button disabled>▶</button><button class="up" data-open="computer">⬆ Up</button></div>
+      <div class="addr">Address <div class="field">${I[addrIcon]}<span class="addr-text">${esc(addr)}</span></div></div>` : ""}
+      <div class="wbody inner" style="flex:1"></div>`;
+    if (menus) wireMenu(body.querySelector(".menubar"), menus);
+    return body.querySelector(".inner");
+  };
+  const taskPane = (sections) => `<div class="taskpane">${sections.map(([h, items]) => `<div class="tp-box"><h4>${h}</h4><div>${items}</div></div>`).join("")}</div>`;
+  const yap = (label = "Yap-less") => links.yapless
+    ? `<a href="${esc(links.yapless)}" target="_blank" rel="noopener">${I.yapless}${esc(label)}</a>`
+    : `<a href="#" data-soon="Yap-less" title="Website coming soon">${I.yapless}${esc(label)} <small class="muted">(coming soon)</small></a>`;
+  const ext = (href, label, icon) => !href ? "" : `<a href="${esc(href)}" target="_blank" rel="noopener">${icon ? I[icon] : ""}${esc(label)}</a>`;
+  const appLink = (id, label) => `<button class="link" data-open="${id}">${I[APPS[id].icon]}${esc(label)}</button>`;
+  document.addEventListener("click", (e) => {
+    const s = e.target.closest("[data-soon]");
+    if (s) { e.preventDefault(); msgBox(s.dataset.soon, `The ${esc(s.dataset.soon)} website is coming soon. Check back later!`, "🚧"); return; }
+    const b = e.target.closest("[data-open]"); if (b) openApp(b.dataset.open);
+  });
+
+  // ---------------- App renderers ----------------
+  function renderAbout(body) {
+    const inner = chrome(body, { addr: "C:\\Documents and Settings\\" + P.name + "\\About Me", addrIcon: "user" });
+    inner.innerHTML = `<div class="explorer">
+      ${taskPane([
+        ["Quick Links", appLink("resume", "View my resume") + appLink("projects", "Browse my projects") + appLink("contact", "Send me a message")],
+        ["Elsewhere", yap() + ext(links.github, "GitHub", "github") + ext(links.linkedin, "LinkedIn", "linkedin") + ext(links.twitter, "X / Twitter", "x") + ext(links.website, "Website", "globe") || "<span class='muted'>Links coming soon</span>"],
+        ["Details", `<span><b>${esc(P.name)}</b><br>${esc(P.role)}<br>${esc(P.location)}</span>`],
+      ])}
+      <div class="ex-main doc">
+        <div class="about-head">${avatar()}
+          <div><h1>${esc(P.name)}</h1><div class="muted">${esc(P.role)}${P.subtitle ? " · " + esc(P.subtitle) : ""} · ${esc(P.location)}</div><p style="margin:6px 0 0">${esc(P.tagline)}</p></div></div>
+        <h2>About</h2>${P.bio.map((p) => `<p>${esc(p)}</p>`).join("")}
+        <h2>Skills</h2>${Object.entries(P.skills).map(([k, v]) => `<p style="margin:4px 0"><b>${esc(k)}:</b></p><div class="chips">${v.map((s) => `<span class="chip">${esc(s)}</span>`).join("")}</div>`).join("")}
+        <h2>Education</h2>${P.education.map((e) => `<div class="row"><h3>${esc(e.school)}</h3><span class="muted">${esc(e.years)}</span></div><div>${esc(e.degree)}</div>${e.detail ? `<div class="muted">${esc(e.detail)}</div>` : ""}`).join("<br>")}
+        ${P.certifications?.length ? `<h2>Certifications</h2><ul>${P.certifications.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
+        ${P.languages?.length ? `<h2>Languages</h2><p>${P.languages.map(esc).join(" · ")}</p>` : ""}
+      </div></div>`;
+  }
+
+  function renderProjects(body, ctx) {
+    const inner = chrome(body, { addr: "C:\\My Documents\\My Projects" });
+    inner.innerHTML = `<div class="explorer">
+      ${taskPane([
+        ["File and Folder Tasks", `<span>Double-click a project to open it.</span>`],
+        ["Other Places", ext(links.github, "All repositories", "github") + appLink("about", "About Me") + appLink("resume", "Resume")],
+        ["Details", `<span><b>My Projects</b><br>File Folder<br>${P.projects.length} objects</span>`],
+      ])}
+      <div class="ex-main"><div class="grid-items">${P.projects.map((p, i) => `<div class="fitem" data-i="${i}">${I.project}<span>${esc(p.name)}</span><small>${esc(p.year)}</small></div>`).join("")}</div></div></div>`;
+    const items = inner.querySelectorAll(".fitem");
+    items.forEach((it) => {
+      it.addEventListener("click", () => { items.forEach((x) => x.classList.remove("sel")); it.classList.add("sel"); });
+      it.addEventListener("dblclick", () => openProject(+it.dataset.i));
+      it.addEventListener("keydown", (e) => e.key === "Enter" && openProject(+it.dataset.i));
+      if (matchMedia("(pointer: coarse)").matches) it.addEventListener("click", () => openProject(+it.dataset.i));
+    });
+  }
+  function openProject(i) {
+    const p = P.projects[i];
+    openApp(null, { key: "proj" + i, app: { title: p.name + " - Project", icon: "project", w: 520, h: 360, render: (b) => {
+      const inner = chrome(b, { addr: "C:\\My Documents\\My Projects\\" + p.name });
+      inner.innerHTML = `<div class="doc"><h1>${esc(p.name)}</h1><div class="muted">${esc(p.year)}</div>
+        <h2>Description</h2><p>${esc(p.desc)}</p>
+        <h2>Built with</h2><div class="chips">${(p.stack || []).map((s) => `<span class="chip">${esc(s)}</span>`).join("")}</div>
+        <h2>Links</h2><p>${[p.github && `<a href="${esc(p.github)}" target="_blank" rel="noopener">Source code on GitHub</a>`, p.url && `<a href="${esc(p.url)}" target="_blank" rel="noopener">Live demo</a>`].filter(Boolean).join(" &nbsp;·&nbsp; ") || '<span class="muted">Links coming soon</span>'}</p></div>`;
+    } } });
+  }
+
+  function renderResume(body) {
+    const inner = chrome(body, { menu: ["File", "Edit", "View", "Insert", "Format", "Help"] });
+    inner.insertAdjacentHTML("beforebegin", `<div class="toolbar">${links.resumePdf ? `<a class="xpbtn" style="text-decoration:none;color:#000" href="${esc(links.resumePdf)}" download="${esc(P.name.replace(/\s+/g, "_"))}_Resume.pdf">⬇ Download PDF</a>` : ""}<button onclick="window.print()">🖨 Print</button></div><div class="ruler"></div>`);
+    inner.innerHTML = `<div class="wordpad-bg"><div class="paper doc">
+      <div class="row" style="align-items:flex-end"><div><h1>${esc(P.name)}</h1><div class="muted">${esc(P.role)}${P.subtitle ? " · " + esc(P.subtitle) : ""} · ${esc(P.location)}</div></div>
+      <div style="text-align:right">${links.email ? `<a href="mailto:${esc(links.email)}">${esc(links.email)}</a>` : ""}${[links.linkedin, links.github, links.website].filter(Boolean).map((u) => `<br><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))}</a>`).join("")}</div></div>
+      <h2>Summary</h2><p>${esc(P.bio.join(" "))}</p>
+      <h2>Education</h2>${P.education.map((e) => `<div class="row"><h3>${esc(e.school)}</h3><span class="muted">${esc(e.years)}</span></div><div>${esc(e.degree)}</div>${e.detail ? `<div class="muted">${esc(e.detail)}</div>` : ""}${e.points?.length ? `<ul>${e.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}`).join("<div style='height:8px'></div>")}
+      <h2>Experience</h2>${P.experience.map((x) => `<div class="row"><h3>${esc(x.title)} — ${x.org === "Yap-less" ? yap() : esc(x.org)}</h3><span class="muted">${esc(x.years)}</span></div><ul>${x.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`).join("")}
+      <h2>Projects</h2>${P.projects.map((p) => `<div class="row"><h3>${esc(p.name)}${p.stack?.length ? ` <span class="muted" style="font-weight:normal">| ${p.stack.map(esc).join(", ")}</span>` : ""}</h3><span class="muted">${esc(p.year)}</span></div><ul><li>${esc(p.desc)}</li></ul>`).join("")}
+      <h2>Skills</h2>${Object.entries(P.skills).map(([k, v]) => `<div><b>${esc(k)}:</b> ${v.map(esc).join(", ")}</div>`).join("")}
+      ${P.achievements?.length ? `<h2>Honors & Awards</h2><ul>${P.achievements.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
+      ${P.certifications?.length ? `<h2>Certifications</h2><ul>${P.certifications.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
+      ${P.languages?.length ? `<h2>Languages</h2><p>${P.languages.map(esc).join(" · ")}</p>` : ""}
+    </div></div>`;
+  }
+
+  function renderContact(body, ctx) {
+    const inner = chrome(body, { menu: ["File", "Edit", "View", "Insert", "Format", "Tools", "Message", "Help"] });
+    inner.innerHTML = `<form class="form">
+      <label><span>To:</span><input value="${esc(P.name)} <${esc(links.email)}>" readonly></label>
+      <label><span>From:</span><input name="from" placeholder="your name" required></label>
+      <label><span>Subject:</span><input name="subject" placeholder="a subject" required></label>
+      <textarea name="msg" placeholder="Write your message..." required></textarea>
+      <div style="display:flex;gap:6px;justify-content:space-between;align-items:center">
+        <span class="muted">Opens your email app with the message filled in.</span><button class="xpbtn" type="submit">✉ Send</button></div></form>`;
+    inner.querySelector("form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const f = new FormData(e.target);
+      const bodyTxt = `${f.get("msg")}\n\n- ${f.get("from")}`;
+      location.href = `mailto:${links.email}?subject=${encodeURIComponent(f.get("subject"))}&body=${encodeURIComponent(bodyTxt)}`;
+    });
+  }
+
+  function renderIE(body) {
+    const inner = chrome(body, { addr: "https://medhansh.xp/favorites", addrIcon: "ie", menu: ["File", "Edit", "View", "Favorites", "Tools", "Help"] });
+    const L = [["GitHub", links.github, "github"], ["LinkedIn", links.linkedin, "linkedin"], ["X / Twitter", links.twitter, "x"], ["Personal Website", links.website, "globe"], ["Email", "mailto:" + links.email, "mail"], ["Resume (PDF)", links.resumePdf, "pdf"]].filter(([, u]) => u && u !== "mailto:");
+    const yapCard = links.yapless
+      ? `<a class="link-card" href="${esc(links.yapless)}" target="_blank" rel="noopener">${I.yapless}<span><b>Yap-less</b><small>${esc(links.yapless.replace(/^https?:\/\//, ""))}</small></span></a>`
+      : `<a class="link-card" href="#" data-soon="Yap-less">${I.yapless}<span><b>Yap-less</b><small>Founder &amp; CEO · coming soon</small></span></a>`;
+    inner.innerHTML = `<div class="ie-home"><h1>${esc(P.name)}'s Favorites</h1><div class="muted">Click a link to open it in a new tab.</div>
+      <div class="link-cards">${yapCard}${L.map(([n, u, ic]) => `<a class="link-card" href="${esc(u)}" target="_blank" rel="noopener">${I[ic]}<span><b>${esc(n)}</b><small>${esc(u.replace(/^(https?:\/\/|mailto:)/, ""))}</small></span></a>`).join("")}</div></div>`;
+  }
+
+  function renderCmd(body, ctx) {
+    body.innerHTML = `<div class="cmd"><div class="out"></div><div class="line"><span class="prompt">C:\\Users\\Guest&gt;</span><input spellcheck="false" autocomplete="off"></div></div>`;
+    const root = body.querySelector(".cmd"), out = body.querySelector(".out"), input = body.querySelector("input"), prompt = body.querySelector(".prompt").textContent;
+    const hist = []; let hi = -1;
+    const print = (t = "") => { out.textContent += t + "\n"; root.scrollTop = root.scrollHeight; };
+    print(`Windows XP Portfolio Edition Command Interpreter\n(C) Copyright 1985-2001 Microsoft Corp.\n\nType "help" for a list of commands.\n`);
+    root.addEventListener("click", () => input.focus());
+    setTimeout(() => input.focus(), 50);
+    const CMDS = {
+      help: () => `Available commands:
+  ABOUT       - Displays biography
+  SKILLS      - Displays technical skills
+  PROJECTS    - Lists showcase projects
+  RESUME      - Opens the resume
+  CONTACT     - Lists contact email and profiles
+  WHOAMI      - Displays current user
+  DATE / TIME - Displays current date and time
+  DIR / LS    - Lists files in current folder
+  TREE        - Displays folder hierarchy
+  CALC [expr] - Evaluates maths (e.g. calc 24*7)
+  ECHO [text] - Prints text
+  COLOR [code]- 0a=green 0b=cyan 0c=red 0e=yellow 0f=white 07=default
+  GAMES       - Lists the games you can play
+  START [app] - Launches an app: ${Object.keys(APPS).filter((k) => k !== "recycle").join(", ")}
+  MATRIX      - Digital rain
+  VER         - Displays version
+  SYSTEMINFO  - Displays system configuration
+  CLS / CLEAR - Clears the screen
+  EXIT        - Closes the window`,
+      about: () => `${P.name} - ${P.role}\nLocation: ${P.location}\n\n${P.bio.join("\n")}`,
+      skills: () => "Technical Proficiencies:\n" + Object.entries(P.skills).map(([k, v]) => `  • ${k.padEnd(10)} ${v.join(", ")}`).join("\n"),
+      projects: () => P.projects.map((p, i) => `${i + 1}. ${p.name} - ${p.desc} (${p.stack.join(", ")})${p.github || p.url ? "\n   " + (p.github || p.url) : ""}`).join("\n"),
+      resume: () => (openApp("resume"), "Opening Resume.doc..."),
+      contact: () => "Contact Channels:\n" + [["Email", links.email], ["GitHub", links.github], ["LinkedIn", links.linkedin], ["X", links.twitter], ["Website", links.website]].filter(([, v]) => v).map(([k, v]) => `  ${(k + ":").padEnd(10)}${v}`).join("\n"),
+      whoami: () => `${P.hostname.toLowerCase()}\\${P.name.toLowerCase().replace(/\s+/g, "")}`,
+      date: () => "Current date is: " + new Date().toLocaleDateString(),
+      time: () => "Current time is: " + new Date().toLocaleTimeString(),
+      ver: () => "Microsoft Windows XP [Version 5.1.2600] - Portfolio Edition",
+      dir: () => ` Volume in drive C has no label.\n\n Directory of C:\\Users\\${P.name}\n\n` + ["About Me.txt", "Resume.doc", ...P.projects.map((p) => p.name)].map((f, i) => `10/17/2026  09:${String(10 + i).padStart(2, "0")} AM    ${f.includes(".") ? "         4,096" : "<DIR>         "} ${f}`).join("\n"),
+      tree: () => `Folder PATH listing for Volume C\nC:.\n├── My Documents\n│   ├── Resume.doc\n│   └── My Projects\n${P.projects.map((p, i) => `│       ${i === P.projects.length - 1 ? "└" : "├"}── ${p.name}`).join("\n")}\n└── Program Files\n    ├── Minesweeper\n    ├── Paint\n    └── MSN Messenger`,
+      systeminfo: () => `Host Name:                 ${P.hostname}\nOS Name:                   Microsoft Windows XP Professional\nOS Version:                5.1.2600 Service Pack 3\nRegistered Owner:          ${P.name}\nSystem Type:               X86-based PC\nTotal Physical Memory:     65,536 MB\nCoffee Level:              Critically Low`,
+      matrix: () => { matrix(); return ""; },
+    };
+    CMDS.games = () => "Games:\n" + GAME_IDS.map((id) => `  ${id.padEnd(10)} ${APPS[id].title}`).join("\n") + "\n\nType START <name> to play, e.g. start snake";
+    CMDS.ls = CMDS.dir;
+    const ALIAS = { minesweeper: "mine", tictactoe: "ttt", "tic-tac-toe": "ttt", brick: "breakout", bricks: "breakout", brickbreaker: "breakout", wordpad: "resume", explorer: "computer", mycomputer: "computer", settings: "display", properties: "display", terminal: "cmd" };
+    let mx;
+    ctx.onClose(() => clearInterval(mx));
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowUp" && hist.length) { hi = hi <= 0 ? hist.length - 1 : hi - 1; input.value = hist[hi]; e.preventDefault(); return; }
+      if (e.key === "ArrowDown" && hist.length) { hi = hi === -1 || hi >= hist.length - 1 ? -1 : hi + 1; input.value = hi === -1 ? "" : hist[hi]; e.preventDefault(); return; }
+      if (e.key !== "Enter") return;
+      const raw = input.value; input.value = ""; print(prompt + raw);
+      const line = raw.trim(); if (!line) return;
+      hist.push(line); hi = -1;
+      const [c, ...rest] = line.split(/\s+/); const arg = rest.join(" "); const cmd = c.toLowerCase();
+      if (cmd === "cls" || cmd === "clear") { out.textContent = ""; return; }
+      if (cmd === "exit") { ctx.close(); return; }
+      if (cmd === "echo") { print(arg); return; }
+      if (cmd === "color") { const m = { "0a": "#0f0", "0b": "#0ff", "0c": "#f55", "0e": "#ff0", "0f": "#fff", "07": "#c0c0c0" }; if (m[arg]) root.style.color = m[arg]; else print("Usage: color 0a"); return; }
+      if (cmd === "calc") { try { if (!/^[\d+\-*/().%\s^]+$/.test(arg)) throw 0; print(String(Function(`"use strict";return (${arg.replace(/\^/g, "**")})`)())); } catch { print("Invalid expression."); } return; }
+      if (cmd === "start") { const a = ALIAS[arg.toLowerCase().replace(/\s+/g, "")] || arg.toLowerCase(); if (!arg) print("Usage: start <app>  (" + Object.keys(APPS).join(", ") + ")"); else if (Object.hasOwn(APPS, a)) { openApp(a); print(`Starting ${APPS[a].title}...`); } else print(`The system cannot find the program '${arg}'.`); return; }
+      if (Object.hasOwn(CMDS, cmd)) { const r = CMDS[cmd](); if (r) print(r); return; }
+      print(`'${c}' is not recognized as an internal or external command,\noperable program or batch file. Type "help" for a list of commands.`);
+    });
+    function matrix() {
+      const cv = document.createElement("canvas");
+      cv.style.cssText = "position:absolute;inset:0;width:100%;height:100%";
+      body.style.position = "relative"; body.appendChild(cv);
+      const g = cv.getContext("2d"); cv.width = body.clientWidth; cv.height = body.clientHeight;
+      const cols = Math.floor(cv.width / 12), drops = Array(cols).fill(0);
+      let n = 0;
+      clearInterval(mx); mx = setInterval(() => {
+        g.fillStyle = "rgba(0,0,0,.08)"; g.fillRect(0, 0, cv.width, cv.height); g.fillStyle = "#0f0"; g.font = "12px monospace";
+        drops.forEach((y, i) => { g.fillText(String.fromCharCode(0x30a0 + Math.random() * 96), i * 12, y * 12); drops[i] = y * 12 > cv.height && Math.random() > .97 ? 0 : y + 1; });
+        if (++n > 150) { clearInterval(mx); cv.remove(); print("[Matrix Stream Completed]"); input.focus(); }
+      }, 33);
+    }
+  }
+
+  function renderMSN(body, ctx) {
+    body.innerHTML = `<div class="msn"><div class="msn-to">To: <b>${esc(P.name)}</b> &lt;${esc(links.email)}&gt;</div><div class="msn-log"></div>
+      <div class="msn-bar"><textarea placeholder="Ask about my skills, projects, education, contact..."></textarea><div style="display:flex;flex-direction:column;gap:4px"><button class="xpbtn send">Send</button><button class="xpbtn nudge">Nudge</button></div></div></div>`;
+    const log = body.querySelector(".msn-log"), ta = body.querySelector("textarea");
+    const say = (who, text) => { const p = document.createElement("p"); p.innerHTML = `<b>${esc(who)} says:</b><br><span class="${who === "You" ? "" : "them"}">${esc(text)}</span>`; log.appendChild(p); log.scrollTop = log.scrollHeight; };
+    const first = P.name.split(" ")[0];
+    say(first, `Hey there :-) Welcome to my XP portfolio! Ask me about my skills, projects, education or how to reach me. Or click Nudge!`);
+    const reply = (q) => {
+      q = q.toLowerCase();
+      if (/skill|stack|tech|language/.test(q)) return "My toolbox: " + Object.values(P.skills).flat().slice(0, 12).join(", ") + ".";
+      if (/project|built|work on|portfolio/.test(q)) return "Some things I've built: " + P.projects.map((p) => p.name).join(", ") + ". Open 'My Projects' on the desktop for details!";
+      if (/educat|study|college|university|degree/.test(q)) return P.education?.[0] ? P.education[0].degree + " at " + P.education[0].school + " (" + P.education[0].years + ")." : "Education details are coming soon.";
+      if (/experience|intern|job/.test(q)) return P.experience?.length ? P.experience.map((x) => `${x.title} @ ${x.org}`).join("; ") + "." : "Experience details are coming soon.";
+      if (/contact|email|reach|hire|mail/.test(q)) return (links.email ? `Email me at ${links.email}, or use` : "Use") + " the Contact Me app. I'm open to new opportunities (Y)";
+      if (/resume|cv/.test(q)) { openApp("resume"); return "Opening my resume for you!"; }
+      if (/\b(hi|hello|hey|yo)\b/.test(q)) return "Hello! :-D What would you like to know?";
+      return "Good question! Try asking about my skills, projects, education, experience or contact details.";
+    };
+    const send = () => { const t = ta.value.trim(); if (!t) return; ta.value = ""; say("You", t); setTimeout(() => wins.has(ctx.key) && say(first, reply(t)), 600); };
+    body.querySelector(".send").onclick = send;
+    ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+    body.querySelector(".nudge").onclick = () => {
+      ctx.el.classList.remove("shake"); void ctx.el.offsetWidth; ctx.el.classList.add("shake");
+      say("You", "*sent a nudge*"); setTimeout(() => wins.has(ctx.key) && say(first, "Whoa, that shook my screen! I'm awake and ready to code! (H)"), 700);
+    };
+  }
+
+  function renderMine(body, ctx) {
+    const LEVELS = { Beginner: [9, 9, 10], Intermediate: [16, 16, 40], Expert: [30, 16, 99] };
+    let level = ctx.store.lget("xp-mine-level") || "Beginner"; if (!LEVELS[level]) level = "Beginner";
+    let best = {}; try { best = JSON.parse(ctx.store.lget("xp-mine-best") || "{}"); } catch {}
+    let W, H, M, grid, opened, flags, over, started, timer, secs, t0, fx = 0;
+    body.classList.add("mine-body");
+    body.innerHTML = `<div class="menubar"></div>
+      <div class="mine-levels" role="radiogroup" aria-label="Difficulty">${Object.keys(LEVELS).map((l) => `<button data-l="${l}" role="radio">${l}</button>`).join("")}<span class="mine-best"></span></div>
+      <div class="mine-area"><div class="mine-wrap"><div class="mine-top"><span class="lcd left">010</span><button class="smiley" aria-label="New game">🙂</button><span class="lcd time">000</span></div>
+        <div class="mine-board"><div class="mine-grid"></div><div class="mine-end hidden"></div><canvas class="mine-fx"></canvas></div></div></div>`;
+    const g = body.querySelector(".mine-grid"), smile = body.querySelector(".smiley"), lLeft = body.querySelector(".left"), lTime = body.querySelector(".time");
+    const endEl = body.querySelector(".mine-end"), fxCv = body.querySelector(".mine-fx"), bestEl = body.querySelector(".mine-best");
+    const setLevel = (l) => { level = l; ctx.store.lset("xp-mine-level", l); reset(true); };
+    ctx.menu(body.querySelector(".menubar"), [
+      { label: "Game", items: () => [{ label: "New", key: "F2", act: () => reset() }, "-", ...Object.keys(LEVELS).map((l) => ({ label: l, check: l === level, act: () => setLevel(l) })), "-", { label: "Best Times...", act: showBest }, "-", { label: "Exit", act: ctx.close }] },
+      { label: "Help", items: [{ label: "How to play", act: () => msgBox("Minesweeper", "Left-click to reveal a square, right-click (or long-press) to flag a mine.<br>Click a revealed number to chord when its flags are placed.<br>Pick a difficulty with the buttons above the board.") }] },
+    ]);
+    body.querySelector(".mine-levels").addEventListener("click", (e) => { const b = e.target.closest("[data-l]"); if (b && b.dataset.l !== level) setLevel(b.dataset.l); });
+    function showBest() { msgBox("Fastest Mine Sweepers", Object.keys(LEVELS).map((l) => `<b>${l}:</b> ${best[l] != null ? best[l] + " seconds" : "—"}`).join("<br>"), "🏆"); }
+    const paintLevel = () => {
+      body.querySelectorAll("[data-l]").forEach((b) => { const on = b.dataset.l === level; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
+      bestEl.textContent = best[level] != null ? `Best: ${best[level]}s` : "";
+    };
+    const pad = (n) => String(Math.max(-99, Math.min(999, n))).padStart(3, "0");
+    const nb = (i) => { const x = i % W, y = (i / W) | 0, r = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = x + dx, ny = y + dy; if ((dx || dy) && nx >= 0 && ny >= 0 && nx < W && ny < H) r.push(ny * W + nx); } return r; };
+    // keep the auto-sized window centred on screen whenever the board size changes
+    const recenter = () => requestAnimationFrame(() => {
+      if (ctx.el.classList.contains("max") || innerWidth <= 640) return;
+      const r = ctx.el.getBoundingClientRect();
+      ctx.el.style.left = Math.round(Math.max(6, (innerWidth - r.width) / 2)) + "px";
+      ctx.el.style.top = Math.round(Math.max(6, (innerHeight - 30 - r.height) / 2)) + "px";
+    });
+    function reset(resized) {
+      [W, H, M] = LEVELS[level];
+      clearInterval(timer); cancelAnimationFrame(fx); grid = Array(W * H).fill(0); opened = new Set(); flags = new Set(); over = false; started = false; secs = 0;
+      smile.textContent = "🙂"; lLeft.textContent = pad(M); lTime.textContent = "000";
+      endEl.classList.add("hidden"); g.classList.remove("won", "lost");
+      fxCv.getContext("2d").clearRect(0, 0, fxCv.width, fxCv.height);
+      g.style.gridTemplateColumns = `repeat(${W}, 18px)`;
+      g.innerHTML = grid.map((_, i) => `<button class="cell" data-i="${i}" aria-label="Square ${(i % W) + 1}, ${((i / W) | 0) + 1}"></button>`).join("");
+      paintLevel();
+      if (resized) recenter();
+    }
+    function plant(safe) {
+      const avoid = new Set([safe, ...nb(safe)]); let n = 0;
+      while (n < M) { const i = (Math.random() * W * H) | 0; if (grid[i] !== -1 && !avoid.has(i)) { grid[i] = -1; n++; } }
+      grid.forEach((v, i) => { if (v !== -1) grid[i] = nb(i).filter((j) => grid[j] === -1).length; });
+      started = true; t0 = performance.now(); timer = setInterval(() => (lTime.textContent = pad(++secs)), 1000);
+    }
+    function open(i) {
+      // iterative flood fill (avoids deep recursion on Expert boards)
+      const stack = [i];
+      while (stack.length) {
+        const k = stack.pop();
+        if (opened.has(k) || flags.has(k)) continue;
+        opened.add(k); const c = g.children[k]; c.classList.add("open");
+        if (grid[k] === -1) { c.classList.add("boom"); lose(k); return; }
+        if (grid[k]) { c.textContent = grid[k]; c.classList.add("n" + grid[k]); } else stack.push(...nb(k));
+      }
+    }
+    function chord(i) {
+      const around = nb(i);
+      if (grid[i] > 0 && around.filter((j) => flags.has(j)).length === grid[i]) around.forEach((j) => !over && open(j));
+    }
+    // ripple delay: cells light up outward from where the game ended
+    const wave = (from, cls) => {
+      const fx0 = from % W, fy0 = (from / W) | 0;
+      [...g.children].forEach((c, i) => { c.style.animationDelay = Math.hypot(i % W - fx0, ((i / W) | 0) - fy0) * 28 + "ms"; c.classList.add(cls); });
+    };
+    function lose(at) {
+      over = true; clearInterval(timer); smile.textContent = "😵"; g.classList.add("lost");
+      grid.forEach((v, i) => {
+        const c = g.children[i];
+        if (v === -1 && !flags.has(i)) { c.textContent = "💣"; c.classList.add("open"); }
+        if (v !== -1 && flags.has(i)) { c.textContent = "❌"; c.classList.add("open"); }
+      });
+      wave(at, "shock");
+      ctx.el.classList.remove("shake"); void ctx.el.offsetWidth; ctx.el.classList.add("shake");
+      setTimeout(() => over && !g.classList.contains("won") && showEnd(false), 700);
+    }
+    function check(last) {
+      if (over || opened.size !== W * H - M) return;
+      over = true; clearInterval(timer); smile.textContent = "😎"; lLeft.textContent = "000"; g.classList.add("won");
+      const time = Math.max(1, Math.round((performance.now() - t0) / 1000));
+      grid.forEach((v, i) => { if (v === -1) { flags.add(i); g.children[i].textContent = "🚩"; } });
+      const record = best[level] == null || time < best[level];
+      if (record) { best[level] = time; ctx.store.lset("xp-mine-best", JSON.stringify(best)); }
+      wave(last, "glow"); confetti(); paintLevel();
+      setTimeout(() => over && g.classList.contains("won") && showEnd(true, time, record), 450);
+    }
+    function showEnd(won, time, record) {
+      endEl.innerHTML = won
+        ? `<b>🎉 You win!</b><span>${level} cleared in <b>${time}s</b></span>${record ? `<span class="rec">🏆 New best time!</span>` : `<span>Best: ${best[level]}s</span>`}<div><button class="xpbtn again">Play again</button>${level !== "Expert" ? `<button class="xpbtn harder">Try ${level === "Beginner" ? "Intermediate" : "Expert"}</button>` : ""}</div>`
+        : `<b>💥 Boom!</b><span>You hit a mine.</span><div><button class="xpbtn again">Try again</button></div>`;
+      endEl.classList.remove("hidden");
+      endEl.querySelector(".again").onclick = () => reset();
+      endEl.querySelector(".harder")?.addEventListener("click", () => setLevel(level === "Beginner" ? "Intermediate" : "Expert"));
+      endEl.querySelector(".again").focus();
+    }
+    function confetti() {
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const board = fxCv.parentElement, w = board.clientWidth, h = board.clientHeight;
+      fxCv.width = w; fxCv.height = h;
+      const c = fxCv.getContext("2d"), colors = ["#e5410c", "#f2a900", "#ffd640", "#5ca50a", "#1e7ae6", "#8a4fd8", "#fff"];
+      const ps = Array.from({ length: Math.min(160, 40 + W * H / 3) }, () => ({ x: w / 2 + (Math.random() - .5) * 40, y: h * .55, vx: (Math.random() - .5) * 9, vy: -Math.random() * 9 - 4, r: Math.random() * 6.3, vr: (Math.random() - .5) * .4, s: 4 + Math.random() * 5, col: colors[(Math.random() * colors.length) | 0] }));
+      const end = performance.now() + 2600;
+      const step = (t) => {
+        c.clearRect(0, 0, w, h);
+        ps.forEach((p) => { p.vy += .28; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr; c.save(); c.translate(p.x, p.y); c.rotate(p.r); c.fillStyle = p.col; c.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); c.restore(); });
+        if (t < end && ctx.isVisible()) fx = requestAnimationFrame(step); else c.clearRect(0, 0, w, h);
+      };
+      fx = requestAnimationFrame(step);
+    }
+    function flag(c) {
+      const i = +c.dataset.i; if (opened.has(i) || over) return;
+      if (flags.has(i)) { flags.delete(i); c.textContent = ""; } else { flags.add(i); c.textContent = "🚩"; }
+      lLeft.textContent = pad(M - flags.size);
+    }
+    g.addEventListener("click", (e) => {
+      const c = e.target.closest(".cell"); if (!c || over || lpFired) return;
+      const i = +c.dataset.i; if (!started) plant(i);
+      if (opened.has(i)) chord(i); else open(i);
+      check(i);
+    });
+    let lp, lpFired = false;
+    g.addEventListener("contextmenu", (e) => { e.preventDefault(); const c = e.target.closest(".cell"); if (c && !lpFired) flag(c); });
+    // long-press to flag on touch screens
+    g.addEventListener("pointerdown", (e) => {
+      if (!over) smile.textContent = "😮";
+      const c = e.target.closest(".cell");
+      if (c && e.pointerType === "touch") lp = setTimeout(() => { lpFired = true; flag(c); }, 400);
+    });
+    const pup = () => { clearTimeout(lp); if (lpFired) setTimeout(() => (lpFired = false), 150); if (!over) smile.textContent = "🙂"; };
+    addEventListener("pointerup", pup); addEventListener("pointercancel", pup);
+    const f2 = (e) => { if (e.key === "F2" && ctx.isActive()) { e.preventDefault(); reset(); } };
+    addEventListener("keydown", f2);
+    smile.onclick = () => reset();
+    ctx.onClose(() => { clearInterval(timer); clearTimeout(lp); cancelAnimationFrame(fx); removeEventListener("keydown", f2); removeEventListener("pointerup", pup); removeEventListener("pointercancel", pup); });
+    reset(true);
+  }
+
+  function renderNotepad(body, ctx) {
+    const inner = chrome(body, { menus: [
+      { label: "File", items: [{ label: "New", act: () => { ta.value = ""; save(); } }, { label: "Save As...", key: "Ctrl+S", act: () => download(new Blob([ta.value], { type: "text/plain" }), "note.txt") }, "-", { label: "Exit", act: ctx.close }] },
+      { label: "Edit", items: [{ label: "Select All", key: "Ctrl+A", act: () => ta.select() }, { label: "Time/Date", key: "F5", act: () => insert(new Date().toLocaleString()) }] },
+      { label: "Format", items: () => [{ label: "Word Wrap", check: wrap, act: () => { wrap = !wrap; ta.style.whiteSpace = wrap ? "pre-wrap" : "pre"; } }, { label: "Bigger font", act: () => font(2) }, { label: "Smaller font", act: () => font(-2) }] },
+      { label: "Help", items: [{ label: "About Notepad", act: () => msgBox("About Notepad", "Your text is saved automatically in this browser.") }] },
+    ] });
+    inner.style.overflow = "hidden";
+    const saved = store.lget("xp-notepad");
+    inner.innerHTML = `<textarea class="notepad" spellcheck="false" placeholder="Start typing... (saved automatically in this browser)"></textarea>`;
+    const ta = inner.querySelector("textarea");
+    let wrap = true, size = 14;
+    const save = () => store.lset("xp-notepad", ta.value);
+    const insert = (t) => { ta.setRangeText(t, ta.selectionStart, ta.selectionEnd, "end"); save(); ta.focus(); };
+    const font = (d) => { size = Math.max(10, Math.min(28, size + d)); ta.style.fontSize = size + "px"; };
+    ta.value = saved ?? `Hi! Thanks for visiting my portfolio.\n\nThings to try:\n - Open "Command Prompt" and type help\n - Play Solitaire, Snake, Brick Breaker or Minesweeper\n - Chat with me on MSN Messenger\n - Draw something in Paint\n - Right-click the desktop > Properties to change the wallpaper\n\n- ${P.name}`;
+    let t; ta.addEventListener("input", () => { clearTimeout(t); t = setTimeout(save, 300); });
+    ctx.onClose(() => { clearTimeout(t); save(); });
+    ta.addEventListener("keydown", (e) => {
+      if (e.key === "F5") { e.preventDefault(); insert(new Date().toLocaleString()); }
+      if (e.key === "s" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); download(new Blob([ta.value], { type: "text/plain" }), "note.txt"); }
+    });
+  }
+  function download(blob, name) {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  function renderPaint(body, ctx) {
+    const colors = ["#000000", "#808080", "#800000", "#808000", "#008000", "#008080", "#000080", "#800080", "#808040", "#004040", "#0080ff", "#004080", "#8000ff", "#804000",
+                    "#ffffff", "#c0c0c0", "#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff", "#ffff80", "#00ff80", "#80ffff", "#8080ff", "#ff0080", "#ff8040"];
+    const TOOLS = [["pencil", "✏️", "Pencil"], ["brush", "🖌️", "Brush"], ["spray", "💨", "Airbrush"], ["eraser", "🧽", "Eraser"], ["fill", "🪣", "Fill"], ["picker", "💧", "Pick color"], ["line", "╱", "Line"], ["rect", "▭", "Rectangle"], ["ellipse", "◯", "Ellipse"], ["text", "A", "Text"]];
+    const inner = chrome(body, { menus: [
+      { label: "File", items: [{ label: "New", key: "Ctrl+N", act: () => { snap(); clear(); } }, { label: "Open...", act: () => fileIn.click() }, { label: "Save As PNG...", key: "Ctrl+S", act: () => save() }, "-", { label: "Exit", act: ctx.close }] },
+      { label: "Edit", items: () => [{ label: "Undo", key: "Ctrl+Z", disabled: !undo.length, act: () => doUndo() }, { label: "Redo", key: "Ctrl+Y", disabled: !redo.length, act: () => doRedo() }, "-", { label: "Clear Image", key: "Ctrl+Shift+N", act: () => { snap(); clear(); } }] },
+      { label: "View", items: () => [{ label: "Tool Box", check: !toolsEl.hidden, act: () => (toolsEl.hidden = !toolsEl.hidden) }, { label: "Color Box", check: !paletteEl.hidden, act: () => (paletteEl.hidden = !paletteEl.hidden) }] },
+      { label: "Image", items: [{ label: "Flip Horizontal", act: () => transform(-1, 1) }, { label: "Flip Vertical", act: () => transform(1, -1) }, { label: "Invert Colors", key: "Ctrl+I", act: () => invert() }, "-", { label: "Clear Image", act: () => { snap(); clear(); } }] },
+      { label: "Colors", items: [{ label: "Edit Colors...", act: () => { editingFg = true; picker.value = fg; picker.click(); } }, { label: "Swap fore/back", act: () => { [fg, bg] = [bg, fg]; paintSwatch(); } }] },
+      { label: "Help", items: [{ label: "Help Topics", act: () => msgBox("Paint", "Left-click draws with the foreground color, right-click with the background color.<br>Pick a size below the tools. Shapes: hold Shift for squares/circles.") }] },
+    ] });
+    inner.style.overflow = "hidden";
+    inner.innerHTML = `<div class="paint">
+        <div class="paint-tools">${TOOLS.map(([id, ic, t]) => `<button data-t="${id}" title="${t}" aria-label="${t}">${ic}</button>`).join("")}
+          <div class="sizes">${[1, 3, 6, 12].map((s) => `<button data-s="${s}" title="${s}px"><i style="height:${Math.min(s, 10)}px"></i></button>`).join("")}</div>
+          <label class="fillshape"><input type="checkbox"> Fill</label></div>
+        <div class="paint-area"><canvas width="800" height="520"></canvas></div></div>
+      <div class="paint-bottom"><div class="swatch"><i class="bgc"></i><i class="fgc"></i></div><div class="palette">${colors.map((c) => `<i style="background:${c}" data-c="${c}"></i>`).join("")}</div>
+        <input type="color" class="picker" hidden><input type="file" accept="image/*" class="filein" hidden></div>
+      <div class="statusbar"><span class="pstat">For Help, click Help Topics on the Help Menu.</span><span class="ppos"></span></div>`;
+    body.appendChild(inner.querySelector(".paint-bottom")); body.appendChild(inner.querySelector(".statusbar"));
+    const cv = inner.querySelector("canvas"), g = cv.getContext("2d", { willReadFrequently: true });
+    const toolsEl = inner.querySelector(".paint-tools"), paletteEl = body.querySelector(".paint-bottom"), picker = body.querySelector(".picker"), fileIn = body.querySelector(".filein");
+    const posEl = body.querySelector(".ppos"), fillBox = inner.querySelector(".fillshape input");
+    let tool = "pencil", size = 3, fg = "#000000", bg = "#ffffff", undo = [], redo = [], drawing = null, editingFg = true;
+    const clear = () => { g.save(); g.globalCompositeOperation = "source-over"; g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.restore(); };
+    const snap = () => { undo.push(g.getImageData(0, 0, cv.width, cv.height)); if (undo.length > 30) undo.shift(); redo = []; };
+    const doUndo = () => { if (!undo.length) return; redo.push(g.getImageData(0, 0, cv.width, cv.height)); g.putImageData(undo.pop(), 0, 0); };
+    const doRedo = () => { if (!redo.length) return; undo.push(g.getImageData(0, 0, cv.width, cv.height)); g.putImageData(redo.pop(), 0, 0); };
+    const save = () => cv.toBlob((b) => b && download(b, "untitled.png"));
+    function transform(sx, sy) { snap(); const img = document.createElement("canvas"); img.width = cv.width; img.height = cv.height; img.getContext("2d").drawImage(cv, 0, 0); g.save(); g.setTransform(sx, 0, 0, sy, sx < 0 ? cv.width : 0, sy < 0 ? cv.height : 0); g.drawImage(img, 0, 0); g.restore(); }
+    function invert() { snap(); const d = g.getImageData(0, 0, cv.width, cv.height), a = d.data; for (let i = 0; i < a.length; i += 4) { a[i] = 255 - a[i]; a[i + 1] = 255 - a[i + 1]; a[i + 2] = 255 - a[i + 2]; } g.putImageData(d, 0, 0); }
+    const paintSwatch = () => { body.querySelector(".fgc").style.background = fg; body.querySelector(".bgc").style.background = bg; };
+    const setTool = (t) => { tool = t; toolsEl.querySelectorAll("[data-t]").forEach((b) => b.classList.toggle("on", b.dataset.t === t)); cv.style.cursor = t === "text" ? "text" : "crosshair"; };
+    const setSize = (s) => { size = s; toolsEl.querySelectorAll("[data-s]").forEach((b) => b.classList.toggle("on", +b.dataset.s === s)); };
+    setTool("pencil"); setSize(3); clear(); paintSwatch();
+    toolsEl.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; b.dataset.t ? setTool(b.dataset.t) : setSize(+b.dataset.s); });
+    paletteEl.addEventListener("click", (e) => { const c = e.target.dataset.c; if (c) { fg = c; paintSwatch(); } });
+    paletteEl.addEventListener("contextmenu", (e) => { const c = e.target.dataset.c; if (c) { e.preventDefault(); bg = c; paintSwatch(); } });
+    paletteEl.addEventListener("dblclick", (e) => { if (e.target.dataset.c) { editingFg = true; picker.value = fg; picker.click(); } });
+    picker.addEventListener("input", () => { if (editingFg) fg = picker.value; else bg = picker.value; paintSwatch(); });
+    body.querySelector(".fgc").onclick = () => { editingFg = true; picker.value = fg; picker.click(); };
+    body.querySelector(".bgc").onclick = () => { editingFg = false; picker.value = bg; picker.click(); };
+    fileIn.addEventListener("change", () => {
+      const f = fileIn.files[0]; if (!f) return;
+      const img = new Image(); img.onload = () => { snap(); clear(); const s = Math.min(cv.width / img.width, cv.height / img.height, 1); g.drawImage(img, 0, 0, img.width * s, img.height * s); URL.revokeObjectURL(img.src); };
+      img.src = URL.createObjectURL(f); fileIn.value = "";
+    });
+
+    const pos = (e) => { const r = cv.getBoundingClientRect(); return [Math.min(cv.width - 1, Math.max(0, Math.round((e.clientX - r.left) * cv.width / r.width))), Math.min(cv.height - 1, Math.max(0, Math.round((e.clientY - r.top) * cv.height / r.height)))]; };
+    const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+    function flood(x, y, color) {
+      const d = g.getImageData(0, 0, cv.width, cv.height), a = d.data, W = cv.width, H = cv.height;
+      const i0 = (y * W + x) * 4, t = [a[i0], a[i0 + 1], a[i0 + 2], a[i0 + 3]], c = [...hex(color), 255];
+      if (t.every((v, k) => v === c[k])) return;
+      const seen = new Uint8Array(W * H);
+      const same = (i) => !seen[i >> 2] && Math.abs(a[i] - t[0]) < 24 && Math.abs(a[i + 1] - t[1]) < 24 && Math.abs(a[i + 2] - t[2]) < 24 && Math.abs(a[i + 3] - t[3]) < 24;
+      const stack = [[x, y]];
+      while (stack.length) {
+        let [px, py] = stack.pop(), i = (py * W + px) * 4;
+        while (py >= 0 && same(i)) { py--; i -= W * 4; }
+        py++; i += W * 4; let l = false, r = false;
+        while (py < H && same(i)) {
+          a[i] = c[0]; a[i + 1] = c[1]; a[i + 2] = c[2]; a[i + 3] = 255; seen[i >> 2] = 1;
+          if (px > 0) { if (same(i - 4)) { if (!l) { stack.push([px - 1, py]); l = true; } } else l = false; }
+          if (px < W - 1) { if (same(i + 4)) { if (!r) { stack.push([px + 1, py]); r = true; } } else r = false; }
+          py++; i += W * 4;
+        }
+      }
+      g.putImageData(d, 0, 0);
+    }
+    function shape(d, x, y, shift) {
+      g.putImageData(d.base, 0, 0);
+      g.strokeStyle = d.color; g.fillStyle = d.alt; g.lineWidth = size; g.lineCap = "round";
+      let w = x - d.x, h = y - d.y;
+      if (shift && d.tool !== "line") { const m = Math.max(Math.abs(w), Math.abs(h)); w = Math.sign(w) * m; h = Math.sign(h) * m; }
+      g.beginPath();
+      if (d.tool === "line") { g.moveTo(d.x, d.y); g.lineTo(d.x + w, d.y + h); }
+      else if (d.tool === "rect") g.rect(d.x, d.y, w, h);
+      else g.ellipse(d.x + w / 2, d.y + h / 2, Math.abs(w / 2), Math.abs(h / 2), 0, 0, 7);
+      if (fillBox.checked && d.tool !== "line") g.fill();
+      g.stroke();
+    }
+    cv.addEventListener("contextmenu", (e) => e.preventDefault());
+    cv.addEventListener("pointerdown", (e) => {
+      const [x, y] = pos(e), color = e.button === 2 ? bg : fg, alt = e.button === 2 ? fg : bg;
+      if (tool === "picker") { const p = g.getImageData(x, y, 1, 1).data; const c = "#" + [p[0], p[1], p[2]].map((v) => v.toString(16).padStart(2, "0")).join(""); if (e.button === 2) bg = c; else fg = c; paintSwatch(); setTool("pencil"); return; }
+      if (tool === "text") { const t = prompt("Text:"); if (t) { snap(); g.fillStyle = color; g.font = `${10 + size * 3}px Tahoma, sans-serif`; g.fillText(t, x, y); } return; }
+      snap();
+      if (tool === "fill") { flood(x, y, color); return; }
+      cv.setPointerCapture(e.pointerId);
+      drawing = { tool, x, y, lx: x, ly: y, color, alt, base: ["line", "rect", "ellipse"].includes(tool) ? g.getImageData(0, 0, cv.width, cv.height) : null };
+      if (tool === "pencil" || tool === "brush" || tool === "eraser") { g.fillStyle = tool === "eraser" ? bg : color; const s = tool === "pencil" ? Math.max(1, size / 2) : tool === "brush" ? size * 1.5 : size * 3; g.fillRect(x - s / 2, y - s / 2, s, s); }
+    });
+    cv.addEventListener("pointermove", (e) => {
+      const [x, y] = pos(e); posEl.textContent = `${x}, ${y}`;
+      const d = drawing; if (!d) return;
+      if (d.base) return shape(d, x, y, e.shiftKey);
+      if (d.tool === "spray") { g.fillStyle = d.color; const r = size * 3 + 4; for (let k = 0; k < 18; k++) { const a = Math.random() * 6.283, m = Math.random() * r; g.fillRect(x + Math.cos(a) * m, y + Math.sin(a) * m, 1, 1); } return; }
+      g.strokeStyle = d.tool === "eraser" ? bg : d.color; g.lineCap = g.lineJoin = d.tool === "pencil" ? "square" : "round";
+      g.lineWidth = d.tool === "pencil" ? Math.max(1, size / 2) : d.tool === "brush" ? size * 1.5 : size * 3;
+      g.beginPath(); g.moveTo(d.lx, d.ly); g.lineTo(x, y); g.stroke(); d.lx = x; d.ly = y;
+    });
+    const end = () => (drawing = null);
+    cv.addEventListener("lostpointercapture", end);
+    cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
+    cv.addEventListener("pointerleave", () => (posEl.textContent = ""));
+    const keys = (e) => {
+      if (!ctx.isActive() || !(e.ctrlKey || e.metaKey)) return;
+      const k = e.key.toLowerCase();
+      if (k === "z") { e.preventDefault(); doUndo(); } else if (k === "y") { e.preventDefault(); doRedo(); } else if (k === "s") { e.preventDefault(); save(); } else if (k === "i") { e.preventDefault(); invert(); }
+    };
+    addEventListener("keydown", keys); ctx.onClose(() => removeEventListener("keydown", keys));
+  }
+
+  function renderRecycle(body) {
+    const inner = chrome(body, { addr: "Recycle Bin", addrIcon: "recycle", menus: [
+      { label: "File", items: [{ label: "Restore all", act: () => [...trash].forEach((id) => addToDesktop(id)) }, { label: "Empty Recycle Bin", act: emptyBin }] },
+      { label: "Help", items: [{ label: "About Recycle Bin", act: () => msgBox("Recycle Bin", "Drag desktop icons or folder items here to delete their shortcuts. Drag them back out, or click Restore, to undo.") }] },
+    ] });
+    const junk = [["old_resume_FINAL_v7.doc", "doc"], ["bugs_i_fixed_at_3am.txt", "notepad"], ["hackathon_sleep_schedule", "folder"], ["tabs_vs_spaces_debate.txt", "notepad"]];
+    inner.innerHTML = `<div class="explorer">${taskPane([["Recycle Bin Tasks", `<button class="link empty">${I.recycle}Empty the Recycle Bin</button>${trash.length ? `<button class="link restore">${I.folder}Restore all items</button>` : ""}`],
+        ["Details", `<span>${trash.length + junk.length} objects<br>Drag an item onto the desktop to restore it.</span>`]])}
+      <div class="ex-main"><div class="grid-items">${trash.map((id) => `<div class="fitem" data-open="${id}" title="Deleted shortcut">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id] || APPS[id].title)}</span><small>Shortcut</small></div>`).join("")}${junk.map(([n, ic]) => `<div class="fitem" data-id="${esc(n)}">${I[ic]}<span>${esc(n)}</span></div>`).join("")}</div></div></div>`;
+    inner.querySelector(".empty").onclick = emptyBin;
+    inner.querySelector(".restore")?.addEventListener("click", () => [...trash].forEach((id) => addToDesktop(id)));
+  }
+  function emptyBin() {
+    if (trash.length) { trash = []; saveDesk(); refreshRecycle(); msgBox("Recycle Bin", "Deleted shortcuts are gone (the apps are still in the Start menu and My Computer).<br>The joke files stay — they're part of my character development.", "🗑️"); }
+    else msgBox("Recycle Bin", "Nice try. These files are part of my character development.", "⚠️");
+  }
+
+  function renderComputer(body) {
+    const inner = chrome(body, { addr: "My Computer", addrIcon: "computer" });
+    const items = ["about", "resume", "projects", "contact", "ie", "cmd", "msn", "games", "paint", "notepad", "display", "recycle"];
+    inner.innerHTML = `<div class="explorer">${taskPane([["System Tasks", `<span>Owner: <b>${esc(P.name)}</b><br>Host: ${esc(P.hostname)}</span>` + appLink("display", "Change wallpaper")], ["Other Places", appLink("about", "About Me") + appLink("projects", "My Projects")]])}
+      <div class="ex-main"><div class="grid-items">${items.map((id) => `<div class="fitem" data-open="${id}">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id])}</span></div>`).join("")}</div></div></div>`;
+  }
+
+  function renderGames(body) {
+    const inner = chrome(body, { addr: "C:\\Program Files\\Games", addrIcon: "games" });
+    const blurb = { solitaire: "Classic Klondike", mine: "3 difficulty levels", snake: "Eat, grow, repeat", breakout: "Smash every brick", ttt: "Beat the AI (you can't)" };
+    inner.innerHTML = `<div class="explorer">${taskPane([["Games", `<span>Double-click a game to play. High scores are saved in this browser.</span>`]])}
+      <div class="ex-main"><div class="grid-items">${GAME_IDS.map((id) => `<div class="fitem" data-open="${id}" title="${esc(blurb[id])}">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id])}</span><small>${esc(blurb[id])}</small></div>`).join("")}</div></div></div>`;
+  }
+
+  // ---------------- Wallpapers / Display Properties ----------------
+  const WALLS = { bliss: "Bliss", azul: "Azul", autumn: "Autumn", ripple: "Ripple", sunset: "Sunset", stars: "Starfield", teal: "Classic Teal", black: "Black" };
+  const desktopEl = $("#desktop");
+  const setWall = (w) => { if (!WALLS[w]) w = "bliss"; Object.keys(WALLS).forEach((k) => desktopEl.classList.toggle("wp-" + k, k === w)); store.lset("xp-wall", w); };
+  setWall(store.lget("xp-wall") || "bliss");
+  function renderDisplay(body, ctx) {
+    let pick = store.lget("xp-wall") || "bliss";
+    body.innerHTML = `<div class="disp"><div class="tabs"><span class="on">Desktop</span><span>Themes</span><span>Screen Saver</span></div>
+      <div class="disp-pane"><div class="monitor"><div class="mon-screen wp-${pick}"></div><div class="mon-base"></div></div>
+      <label>Background:</label><div class="wall-list">${Object.entries(WALLS).map(([k, v]) => `<div data-w="${k}" class="${k === pick ? "sel" : ""}"><i class="wp-${k}"></i>${v}</div>`).join("")}</div></div>
+      <div class="disp-actions"><button class="xpbtn ok">OK</button><button class="xpbtn cancel">Cancel</button><button class="xpbtn apply">Apply</button></div></div>`;
+    const screen = body.querySelector(".mon-screen");
+    body.querySelector(".wall-list").addEventListener("click", (e) => {
+      const d = e.target.closest("[data-w]"); if (!d) return; pick = d.dataset.w;
+      body.querySelectorAll("[data-w]").forEach((x) => x.classList.toggle("sel", x === d)); screen.className = "mon-screen wp-" + pick;
+    });
+    body.querySelector(".wall-list").addEventListener("dblclick", () => { setWall(pick); ctx.close(); });
+    body.querySelector(".apply").onclick = () => setWall(pick);
+    body.querySelector(".ok").onclick = () => { setWall(pick); ctx.close(); };
+    body.querySelector(".cancel").onclick = ctx.close;
+  }
+
+  // ---------------- Desktop icons (draggable, snap to grid, positions saved) ----------------
+  // The desktop holds the default icons plus any shortcuts dragged out of folders; icons dropped on the Recycle Bin move there.
+  const iconsEl = $("#icons");
+  const FIXED = ["computer", "recycle"];
+  const readList = (k) => { try { return JSON.parse(store.lget(k) || "[]").filter((id) => APPS[id]); } catch { return []; } };
+  let trash = readList("xp-trash"), extra = readList("xp-desk-extra");
+  let ICONS = [], iconEls = [];
+  const CELL_W = 84, CELL_H = 86, PAD = 6;
+  function buildIcons() {
+    ICONS = [...new Set(["computer", ...DESKTOP, ...extra])].filter((id) => !trash.includes(id));
+    iconsEl.innerHTML = ICONS.map((id) => `<div class="dicon" tabindex="0" data-id="${id}" role="button" aria-label="${esc(DESK_LABEL[id] || APPS[id].title)}">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id] || APPS[id].title)}</span></div>`).join("");
+    iconEls = [...iconsEl.children];
+    layoutIcons(false);
+  }
+  const saveDesk = () => { store.lset("xp-trash", JSON.stringify(trash)); store.lset("xp-desk-extra", JSON.stringify(extra)); };
+  function addToDesktop(id, x, y) {
+    if (!APPS[id]) return;
+    trash = trash.filter((t) => t !== id);
+    if (!DESKTOP.includes(id) && id !== "computer" && !extra.includes(id)) extra.push(id);
+    if (x != null) iconPos[id] = { c: Math.max(0, Math.min(cols() - 1, Math.round((x - PAD - 40) / CELL_W))), r: Math.max(0, Math.min(rows() - 1, Math.round((y - PAD - 40) / CELL_H))) };
+    Object.keys(iconPos).forEach((k) => k !== id && iconPos[k].c === iconPos[id]?.c && iconPos[k].r === iconPos[id]?.r && delete iconPos[k]);
+    saveDesk(); store.lset("xp-icons", JSON.stringify(iconPos)); buildIcons(); refreshRecycle();
+  }
+  function moveToTrash(ids) {
+    ids = ids.filter((id) => !FIXED.includes(id));
+    if (!ids.length) return;
+    trash = [...new Set([...trash, ...ids])]; ids.forEach((id) => delete iconPos[id]);
+    saveDesk(); store.lset("xp-icons", JSON.stringify(iconPos)); buildIcons(); refreshRecycle();
+  }
+  let iconPos = {};
+  try { iconPos = JSON.parse(store.lget("xp-icons") || "{}"); } catch {}
+  const rows = () => Math.max(1, Math.floor((innerHeight - 30 - PAD) / CELL_H));
+  const cols = () => Math.max(1, Math.floor((innerWidth - PAD) / CELL_W));
+  const cellKey = (c, r) => c + "," + r;
+  function layoutIcons(reset) {
+    if (reset) iconPos = {};
+    const R = rows(), C = cols(), taken = new Set();
+    // keep saved spots that still fit on screen, then flow the rest top-to-bottom
+    ICONS.forEach((id) => { const p = iconPos[id]; if (p && p.c < C && p.r < R && !taken.has(cellKey(p.c, p.r))) taken.add(cellKey(p.c, p.r)); else delete iconPos[id]; });
+    // like real XP: Recycle Bin lives in the bottom-right corner unless the user moved it
+    if (ICONS.includes("recycle") && !iconPos.recycle) {
+      let c = C - 1, r = R - 1; while (taken.has(cellKey(c, r)) && r > 0) r--;
+      iconPos.recycle = { c, r }; taken.add(cellKey(c, r));
+    }
+    let n = 0;
+    ICONS.forEach((id) => {
+      if (iconPos[id]) return;
+      while (taken.has(cellKey((n / R) | 0, n % R))) n++;
+      iconPos[id] = { c: (n / R) | 0, r: n % R }; taken.add(cellKey(iconPos[id].c, iconPos[id].r));
+    });
+    iconEls.forEach((el) => { const p = iconPos[el.dataset.id]; el.style.transform = `translate(${PAD + p.c * CELL_W}px,${PAD + p.r * CELL_H}px)`; });
+    if (reset) store.lset("xp-icons", JSON.stringify(iconPos));
+  }
+  function resetDesktop() {
+    [...wins.keys()].forEach(close);
+    try { Object.keys(localStorage).filter((k) => /^xp-(icons|trash|desk-extra|order-|wall)/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch {}
+    trash = []; extra = []; iconPos = {}; setWall("bliss");
+    buildIcons(); layoutIcons(true);
+  }
+  buildIcons();
+  let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => layoutIcons(false), 150); });
+
+  const coarse = matchMedia("(pointer: coarse)").matches;
+  const selectIcons = (els) => iconEls.forEach((x) => x.classList.toggle("sel", els.includes(x)));
+  // what is under the pointer, ignoring whatever is being dragged
+  const dropTarget = (x, y, skip) => document.elementsFromPoint(x, y).find((el) => !skip.some((s) => s.contains(el)));
+  iconsEl.addEventListener("pointerdown", (e) => {
+    const d = e.target.closest(".dicon"); if (!d || e.button !== 0) return;
+    e.stopPropagation(); closeMenus(); closeTray(); hideCtx();
+    if (e.ctrlKey || e.metaKey) { d.classList.toggle("sel"); return; }
+    if (!d.classList.contains("sel")) selectIcons([d]);
+    const group = iconEls.filter((x) => x.classList.contains("sel"));
+    const sx = e.clientX, sy = e.clientY; let moved = false, raf = 0, dx = 0, dy = 0, hover = null;
+    d.setPointerCapture(e.pointerId);
+    const move = (ev) => {
+      dx = ev.clientX - sx; dy = ev.clientY - sy;
+      if (!moved && Math.hypot(dx, dy) < 5) return;
+      if (!moved) { moved = true; group.forEach((x) => x.classList.add("dragging")); }
+      const t = dropTarget(ev.clientX, ev.clientY, group)?.closest('.dicon[data-id="recycle"]');
+      if (t !== hover) { hover?.classList.remove("drop-over"); hover = t; hover?.classList.add("drop-over"); }
+      raf ||= requestAnimationFrame(() => { raf = 0; group.forEach((x) => { const p = iconPos[x.dataset.id]; x.style.transform = `translate(${PAD + p.c * CELL_W + dx}px,${PAD + p.r * CELL_H + dy}px)`; }); });
+    };
+    const up = (ev) => {
+      d.removeEventListener("pointermove", move); d.removeEventListener("pointerup", up); d.removeEventListener("pointercancel", up);
+      cancelAnimationFrame(raf); hover?.classList.remove("drop-over");
+      if (!moved) { if (coarse) openApp(d.dataset.id); else selectIcons([d]); return; }
+      group.forEach((x) => x.classList.remove("dragging"));
+      if (hover) { moveToTrash(group.map((x) => x.dataset.id)); return layoutIcons(false); }
+      const R = rows(), C = cols(), dc = Math.round(dx / CELL_W), dr = Math.round(dy / CELL_H);
+      const others = new Set(ICONS.filter((id) => !group.some((x) => x.dataset.id === id)).map((id) => cellKey(iconPos[id].c, iconPos[id].r)));
+      group.forEach((x) => {
+        const p = iconPos[x.dataset.id];
+        let c = Math.max(0, Math.min(C - 1, p.c + dc)), r = Math.max(0, Math.min(R - 1, p.r + dr));
+        // find the nearest free cell if the drop spot is taken
+        for (let ring = 0; others.has(cellKey(c, r)) && ring < 40; ring++) {
+          let found = false;
+          for (let oc = -ring; oc <= ring && !found; oc++) for (let or = -ring; or <= ring && !found; or++) {
+            const nc = c + oc, nr = r + or;
+            if (nc >= 0 && nr >= 0 && nc < C && nr < R && !others.has(cellKey(nc, nr))) { c = nc; r = nr; found = true; }
+          }
+        }
+        iconPos[x.dataset.id] = { c, r }; others.add(cellKey(c, r));
+      });
+      store.lset("xp-icons", JSON.stringify(iconPos));
+      layoutIcons(false);
+    };
+    d.addEventListener("pointermove", move); d.addEventListener("pointerup", up); d.addEventListener("pointercancel", up);
+  });
+  iconsEl.addEventListener("dblclick", (e) => { const d = e.target.closest(".dicon"); if (d) openApp(d.dataset.id); });
+  iconsEl.addEventListener("keydown", (e) => {
+    const d = e.target.closest(".dicon"); if (!d) return;
+    if (e.key === "Enter") openApp(d.dataset.id);
+    if (e.key === "Delete") { const sel = iconEls.filter((x) => x.classList.contains("sel")); moveToTrash((sel.length ? sel : [d]).map((x) => x.dataset.id)); }
+    if (e.key.startsWith("Arrow")) { e.preventDefault(); const i = iconEls.indexOf(d) + (e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : -1); const n = iconEls[(i + iconEls.length) % iconEls.length]; selectIcons([n]); n.focus(); }
+  });
+
+  // ---------------- Files and folders inside windows ----------------
+  // Drag an item to reorder it (order is remembered per window), drop it on the desktop to make a shortcut,
+  // or on the Recycle Bin icon to delete its shortcut.
+  const itemId = (it) => it.dataset.open || it.dataset.i || it.dataset.id || it.textContent.trim();
+  function applyOrder(winEl, key) {
+    let order; try { order = JSON.parse(store.lget("xp-order-" + key) || "null"); } catch {}
+    if (!order) return;
+    winEl.querySelectorAll(".grid-items").forEach((grid) => {
+      const items = [...grid.children];
+      items.sort((a, b) => ((order.indexOf(itemId(a)) + 1) || 999) - ((order.indexOf(itemId(b)) + 1) || 999)).forEach((it) => grid.appendChild(it));
+    });
+  }
+  document.addEventListener("pointerdown", (e) => {
+    const it = e.target.closest(".grid-items .fitem"); if (!it || e.button !== 0 || e.pointerType === "touch") return;
+    const grid = it.parentElement, winEl = it.closest(".win"), key = winEl?.dataset.key;
+    grid.querySelectorAll(".fitem").forEach((x) => x.classList.toggle("sel", x === it));
+    const sx = e.clientX, sy = e.clientY; let ghost = null, hover = null;
+    const move = (ev) => {
+      if (!ghost && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return;
+      if (!ghost) {
+        ghost = it.cloneNode(true); ghost.className = "fitem drag-ghost"; document.body.appendChild(ghost);
+        it.classList.add("drag-src");
+      }
+      ghost.style.transform = `translate(${ev.clientX - 46}px,${ev.clientY - 30}px)`;
+      const under = dropTarget(ev.clientX, ev.clientY, [ghost]);
+      const over = under?.closest(".fitem");
+      if (over && over !== it && over.parentElement === grid) {
+        const r = over.getBoundingClientRect();
+        grid.insertBefore(it, ev.clientX > r.left + r.width / 2 ? over.nextSibling : over);
+      }
+      const bin = under?.closest('.dicon[data-id="recycle"]');
+      const desk = !under?.closest(".win, .taskbar") ? desktopEl : null;
+      const tgt = bin || desk;
+      if (tgt !== hover) { hover?.classList.remove("drop-over"); hover = tgt; hover?.classList.add("drop-over"); }
+    };
+    const up = (ev) => {
+      removeEventListener("pointermove", move); removeEventListener("pointerup", up); removeEventListener("pointercancel", up);
+      if (!ghost) return;
+      ghost.remove(); it.classList.remove("drag-src"); hover?.classList.remove("drop-over");
+      const id = it.dataset.open;
+      if (hover?.classList.contains("dicon") && id) moveToTrash([id]);
+      else if (hover === desktopEl && id && APPS[id]) addToDesktop(id, ev.clientX, ev.clientY);
+      if (key) store.lset("xp-order-" + key, JSON.stringify([...grid.children].map(itemId)));
+      lastDrag = performance.now();
+    };
+    addEventListener("pointermove", move); addEventListener("pointerup", up); addEventListener("pointercancel", up);
+  });
+  // swallow the click that follows a drag (only if it arrives right away) so the item doesn't also open
+  let lastDrag = -1e9;
+  addEventListener("click", (c) => { if (performance.now() - lastDrag < 80) { lastDrag = -1e9; c.stopPropagation(); c.preventDefault(); } }, true);
+  function refreshRecycle() {
+    const w = wins.get("recycle"); if (!w) return;
+    const b = w.el.querySelector(".wbody"); w.cleanups.forEach((f) => f()); w.cleanups = []; renderRecycle(b); applyOrder(w.el, "recycle");
+  }
+
+  // rubber-band selection on empty desktop
+  const marquee = document.createElement("div"); marquee.className = "marquee hidden"; desktopEl.appendChild(marquee);
+  desktopEl.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || e.target !== desktopEl && e.target !== iconsEl && e.target !== winLayer) return;
+    selectIcons([]);
+    if (e.pointerType !== "mouse") return;
+    const sx = e.clientX, sy = e.clientY;
+    const move = (ev) => {
+      const x = Math.min(sx, ev.clientX), y = Math.min(sy, ev.clientY), w = Math.abs(ev.clientX - sx), h = Math.abs(ev.clientY - sy);
+      if (w + h < 4) return;
+      marquee.classList.remove("hidden"); Object.assign(marquee.style, { left: x + "px", top: y + "px", width: w + "px", height: h + "px" });
+      selectIcons(iconEls.filter((el) => { const r = el.getBoundingClientRect(); return r.right > x && r.left < x + w && r.bottom > y && r.top < y + h; }));
+    };
+    const up = () => { marquee.classList.add("hidden"); removeEventListener("pointermove", move); removeEventListener("pointerup", up); removeEventListener("pointercancel", up); };
+    addEventListener("pointermove", move); addEventListener("pointerup", up); addEventListener("pointercancel", up);
+  });
+
+  // ---------------- Start menu ----------------
+  const sm = $("#startMenu"), startBtn = $("#startBtn");
+  const left = [["ie", "My Links", "Internet Explorer"], ["contact", "Contact Me", "Outlook Express"], null, ["about", "About Me"], ["resume", "Resume"], ["projects", "My Projects"], ["cmd", "Command Prompt"], ["msn", "MSN Messenger"], ["games", "Games", "Solitaire, Snake & more"], ["paint", "Paint"]];
+  $("#smLeft").innerHTML = left.map((x) => x ? `<li data-open="${x[0]}">${I[APPS[x[0]].icon]}<span>${x[2] ? `<b>${x[1]}</b><small>${x[2]}</small>` : x[1]}</span></li>` : "<hr>").join("");
+  $("#smRight").innerHTML = [
+    `<li data-open="about">${I.user}<b>${esc(P.name)}</b></li>`, `<li data-open="resume">${I.resume}My Resume</li>`, `<li data-open="projects">${I.project}My Projects</li>`, `<li data-open="computer">${I.computer}<b>My Computer</b></li>`, "<hr>",
+    links.yapless ? `<li data-href="${esc(links.yapless)}">${I.yapless}Yap-less</li>` : `<li data-soon="Yap-less">${I.yapless}Yap-less <small class="muted">soon</small></li>`,
+    links.github ? `<li data-href="${esc(links.github)}">${I.github}GitHub</li>` : "", links.linkedin ? `<li data-href="${esc(links.linkedin)}">${I.linkedin}LinkedIn</li>` : "", links.twitter ? `<li data-href="${esc(links.twitter)}">${I.x}X / Twitter</li>` : "", links.website ? `<li data-href="${esc(links.website)}">${I.globe}My Website</li>` : "", "<hr>",
+    `<li data-open="display">${I.display}Display Properties</li>`, `<li data-reset>${I.showdesk}Reset Desktop</li>`, `<li data-help>${I.help}Help and Support</li>`,
+  ].join("");
+  const toggleStart = (on) => { sm.classList.toggle("hidden", !on); startBtn.classList.toggle("on", on); if (on) closeTray(); };
+  startBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleStart(sm.classList.contains("hidden")); });
+  sm.addEventListener("click", (e) => {
+    const li = e.target.closest("li"); if (!li) return;
+    if (li.dataset.href) window.open(li.dataset.href, "_blank", "noopener");
+    if ("reset" in li.dataset) resetDesktop();
+    if ("help" in li.dataset) msgBox("Help and Support", "Double-click desktop icons to open apps, or drag them to rearrange. Drag windows by their title bar. Try the Command Prompt and type <b>help</b>.");
+    toggleStart(false);
+  });
+  document.addEventListener("click", (e) => { if (!sm.contains(e.target) && !startBtn.contains(e.target)) toggleStart(false); hideCtx(); });
+  addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { toggleStart(false); closeTray(); closeMenus(); hideCtx(); shut.classList.add("hidden"); }
+    if (activeKey && ((e.altKey && e.key === "F4") || ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "w"))) { e.preventDefault(); close(activeKey); }
+    if (e.key === "Meta" || (e.ctrlKey && e.key === "Escape")) toggleStart(sm.classList.contains("hidden"));
+  });
+
+  // ---------------- Context menu ----------------
+  const ctxEl = $("#ctxMenu");
+  const hideCtx = () => ctxEl.classList.add("hidden");
+  desktopEl.addEventListener("contextmenu", (e) => {
+    if (e.target.closest(".win, .taskbar, .start-menu, .tray-pop")) return hideCtx();
+    e.preventDefault();
+    const icon = e.target.closest(".dicon");
+    ctxEl.innerHTML = icon
+      ? `<div data-c="open" data-id="${icon.dataset.id}"><b>Open</b></div><hr><div data-c="arrange">Arrange Icons</div>`
+      : `<div data-c="arrange">Arrange Icons</div><div data-c="refresh">Refresh</div><hr><div data-c="notepad">New Text Document</div><div data-c="cmd">Open Command Prompt</div><div data-c="games">Games</div><hr><div data-c="reset">Reset Desktop</div><div data-c="display">Properties</div>`;
+    ctxEl.style.left = Math.min(e.clientX, innerWidth - 160) + "px"; ctxEl.style.top = Math.min(e.clientY, innerHeight - 190) + "px";
+    ctxEl.classList.remove("hidden");
+  });
+  ctxEl.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-c]"); if (!t) return; const c = t.dataset.c; hideCtx();
+    if (c === "refresh") { iconsEl.style.opacity = 0; setTimeout(() => (iconsEl.style.opacity = 1), 120); }
+    if (c === "arrange") layoutIcons(true);
+    if (c === "reset") resetDesktop();
+    if (c === "open") openApp(t.dataset.id);
+    if (["notepad", "cmd", "games", "display"].includes(c)) openApp(c);
+  });
+
+  // ---------------- Taskbar: show desktop, tray popups, clock ----------------
+  $("#showDesk").addEventListener("click", () => {
+    const vis = [...wins.values()].filter((w) => !w.el.classList.contains("min"));
+    if (vis.length) { vis.forEach((w) => w.el.classList.add("min")); desktopEl._restore = vis; activeKey = null; paintActive(); }
+    else {
+      const back = (desktopEl._restore || []).filter((w) => w.el.isConnected); desktopEl._restore = null;
+      back.forEach((w) => w.el.classList.remove("min"));
+      const top = back.sort((a, b) => (+a.el.style.zIndex || 0) - (+b.el.style.zIndex || 0)).pop(); if (top) focus(top.el.dataset.key);
+    }
+  });
+  const trayPop = $("#trayPop");
+  let trayOpen = null;
+  function closeTray() { trayPop.classList.add("hidden"); trayOpen = null; }
+  const net = { on: true, ssid: "Portfolio_5G", list: [["Portfolio_5G", 4, true], ["Hackathon-Guest", 3, false], ["FBI Surveillance Van", 2, true], ["Pretty Fly for a WiFi", 2, true], ["Free_Coffee_WiFi", 1, false]] };
+  let vol = parseInt(store.lget("xp-vol"), 10), muted = false; if (!(vol >= 0 && vol <= 100)) vol = 70;
+  const bars = (n) => `<span class="sig">${[1, 2, 3, 4].map((k) => `<i class="${k <= n ? "on" : ""}" style="height:${k * 3}px"></i>`).join("")}</span>`;
+  const POPS = {
+    vol: () => `<h4>Volume</h4><div class="vol"><input type="range" min="0" max="100" value="${vol}" class="vslider" aria-label="Volume"><b class="vval">${vol}</b></div><label><input type="checkbox" class="mute" ${muted ? "checked" : ""}> Mute</label>`,
+    net: () => `<h4>Wireless Network Connection</h4><label class="row"><span>Wi-Fi</span><input type="checkbox" class="wifi" ${net.on ? "checked" : ""}></label>
+      ${net.on ? `<div class="nets">${net.list.map(([n, s, lock]) => `<div class="net ${n === net.ssid ? "cur" : ""}" data-n="${esc(n)}">${bars(s)}<span>${esc(n)}${n === net.ssid ? "<small>Connected</small>" : ""}</span>${lock ? "🔒" : ""}</div>`).join("")}</div>` : `<p class="muted">Wi-Fi is turned off.</p>`}
+      <p class="muted">${navigator.onLine ? "You are online." : "You appear to be offline."}</p>`,
+    bat: () => `<h4>Power Meter</h4><div class="bat-big"><div class="bat-shell"><i style="width:${bat.level}%" class="${bat.level < 20 ? "low" : ""}"></i></div><b>${bat.level}%</b></div>
+      <p>${bat.charging ? "⚡ Plugged in, charging" : "On battery"}${bat.real ? "" : " <small class='muted'>(simulated)</small>"}</p>
+      <label><input type="radio" name="pp" ${powerPlan === "bal" ? "checked" : ""} value="bal"> Balanced</label><label><input type="radio" name="pp" ${powerPlan === "save" ? "checked" : ""} value="save"> Power saver</label><label><input type="radio" name="pp" ${powerPlan === "perf" ? "checked" : ""} value="perf"> High performance</label>`,
+    clock: () => {
+      const now = new Date(), y = calMonth.getFullYear(), m = calMonth.getMonth(), first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
+      const cells = Array(first).fill("").concat(Array.from({ length: days }, (_, i) => i + 1));
+      return `<h4>Date and Time</h4><div class="bigtime">${now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })}</div><div class="muted">${now.toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</div>
+        <div class="cal-head"><button class="cprev" aria-label="Previous month">◀</button><b>${calMonth.toLocaleDateString([], { month: "long", year: "numeric" })}</b><button class="cnext" aria-label="Next month">▶</button></div>
+        <div class="cal">${["S", "M", "T", "W", "T", "F", "S"].map((d) => `<b>${d}</b>`).join("")}${cells.map((d) => { if (!d) return "<span></span>"; const k = dkey(new Date(y, m, d)); return `<button data-day="${k}" class="${y === now.getFullYear() && m === now.getMonth() && d === now.getDate() ? "today" : ""} ${Tasks.list.some((t) => t.date === k && !t.done) ? "busy" : ""}">${d}</button>`; }).join("")}</div>
+        <div class="cal-today-list">${Tasks.on(dkey(now)).filter((t) => !t.done).slice(0, 3).map((t) => `<div>${t.time ? `<small>${fmtTime(t.time)}</small> ` : ""}${esc(t.text)}</div>`).join("") || `<small class="muted">No tasks today.</small>`}</div>
+        <button class="xpbtn copen">📅 Open Calendar</button>
+        <div class="muted" style="margin-top:6px">Time zone: ${esc(Intl.DateTimeFormat().resolvedOptions().timeZone || "Local")}</div>`;
+    },
+  };
+  let calMonth = new Date(); calMonth.setDate(1);
+  let powerPlan = store.lget("xp-power") || "bal";
+  const bat = { level: 87, charging: true, real: false };
+  if (navigator.getBattery) navigator.getBattery().then((b) => {
+    const upd = () => { bat.level = Math.round(b.level * 100); bat.charging = b.charging; bat.real = true; paintTray(); if (trayOpen === "bat") renderPop(); };
+    upd(); b.addEventListener("levelchange", upd); b.addEventListener("chargingchange", upd);
+  }).catch(() => {});
+  function paintTray() {
+    $("#tVol").textContent = muted || vol === 0 ? "🔇" : vol < 40 ? "🔈" : "🔊";
+    $("#tNet").classList.toggle("off", !net.on || !navigator.onLine);
+    $("#tBat").innerHTML = `<span class="bat-mini"><i style="width:${bat.level}%" class="${bat.level < 20 ? "low" : ""}"></i></span>${bat.charging ? "<small>⚡</small>" : ""}`;
+    $("#tBat").title = `${bat.level}% ${bat.charging ? "(charging)" : "remaining"}`;
+  }
+  function renderPop() {
+    trayPop.innerHTML = POPS[trayOpen]();
+    const btn = $("#t" + { vol: "Vol", net: "Net", bat: "Bat", clock: "Clock" }[trayOpen]).getBoundingClientRect();
+    trayPop.style.right = Math.max(4, innerWidth - btn.right - 30) + "px";
+  }
+  function toggleTray(which) {
+    if (trayOpen === which) return closeTray();
+    toggleStart(false); trayOpen = which; trayPop.classList.remove("hidden"); renderPop();
+  }
+  [["tVol", "vol"], ["tNet", "net"], ["tBat", "bat"], ["tClock", "clock"]].forEach(([id, w]) => $("#" + id).addEventListener("click", (e) => { e.stopPropagation(); toggleTray(w); }));
+  trayPop.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const day = e.target.closest("[data-day]");
+    if (day) { closeTray(); openApp("calendar", { date: day.dataset.day }); return; }
+    if (e.target.closest(".copen")) { closeTray(); openApp("calendar"); return; }
+    if (e.target.closest(".cprev")) { calMonth.setMonth(calMonth.getMonth() - 1); renderPop(); }
+    if (e.target.closest(".cnext")) { calMonth.setMonth(calMonth.getMonth() + 1); renderPop(); }
+    const n = e.target.closest(".net");
+    if (n && n.dataset.n !== net.ssid) { net.ssid = n.dataset.n; renderPop(); }
+  });
+  trayPop.addEventListener("input", (e) => {
+    if (e.target.classList.contains("vslider")) { vol = +e.target.value; trayPop.querySelector(".vval").textContent = vol; store.lset("xp-vol", vol); paintTray(); }
+  });
+  trayPop.addEventListener("change", (e) => {
+    if (e.target.classList.contains("mute")) muted = e.target.checked;
+    if (e.target.classList.contains("wifi")) { net.on = e.target.checked; renderPop(); }
+    if (e.target.name === "pp") { powerPlan = e.target.value; store.lset("xp-power", powerPlan); }
+    paintTray();
+  });
+  document.addEventListener("click", (e) => { if (trayOpen && !trayPop.contains(e.target)) closeTray(); });
+  addEventListener("online", paintTray); addEventListener("offline", paintTray);
+  paintTray();
+
+  // Clock: update exactly on the minute instead of polling
+  let clockT;
+  const tick = () => {
+    clearTimeout(clockT);
+    const now = new Date();
+    $("#clock").textContent = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    $("#tClock").title = now.toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    if (trayOpen === "clock") { const bt = trayPop.querySelector(".bigtime"); if (bt) bt.textContent = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }); }
+    clockT = setTimeout(tick, trayOpen === "clock" ? 1000 - now.getMilliseconds() : 60000 - now.getSeconds() * 1000 - now.getMilliseconds());
+  };
+  tick();
+  $("#tClock").addEventListener("click", () => setTimeout(tick, 0));
+
+  // ---------------- Calendar, tasks and reminders ----------------
+  // Tasks live in this browser: [{ id, date: "YYYY-MM-DD", time: "HH:MM" | "", text, done, remind, notified, snooze }]
+  const dkey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const Tasks = {
+    list: (() => { try { const v = JSON.parse(store.lget("xp-tasks") || "[]"); return Array.isArray(v) ? v : []; } catch { return []; } })(),
+    save() { store.lset("xp-tasks", JSON.stringify(this.list)); paintBell(); wins.forEach((w, k) => k === "calendar" && w.refresh?.()); },
+    on(date) { return this.list.filter((t) => t.date === date).sort((a, b) => (a.time || "99").localeCompare(b.time || "99")); },
+    due(t) { return t.snooze || (t.time ? new Date(`${t.date}T${t.time}`).getTime() : null); },
+    add(t) { this.list.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), done: false, notified: false, ...t }); this.save(); },
+    update(id, patch) { const t = this.list.find((x) => x.id === id); if (t) { Object.assign(t, patch); this.save(); } },
+    remove(id) { this.list = this.list.filter((x) => x.id !== id); this.save(); },
+  };
+  const fmtTime = (hm) => { if (!hm) return ""; const [h, m] = hm.split(":").map(Number); return new Date(2000, 0, 1, h, m).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); };
+
+  function renderCalendar(body, ctx) {
+    let view = new Date(); view.setDate(1);
+    let sel = ctx.date || dkey(new Date()), editing = null;
+    if (ctx.date) { const d = new Date(ctx.date + "T00:00"); view = new Date(d.getFullYear(), d.getMonth(), 1); }
+    body.classList.add("calapp");
+    const inner = chrome(body, { menus: [
+      { label: "File", items: [{ label: "New Task", key: "Ctrl+N", act: () => input.focus() }, { label: "Export tasks (.json)", act: () => download(new Blob([JSON.stringify(Tasks.list, null, 2)], { type: "application/json" }), "tasks.json") }, "-", { label: "Exit", act: ctx.close }] },
+      { label: "View", items: [{ label: "Today", act: () => { const n = new Date(); view = new Date(n.getFullYear(), n.getMonth(), 1); sel = dkey(n); paint(); } }, { label: "Previous Month", act: () => move(-1) }, { label: "Next Month", act: () => move(1) }] },
+      { label: "Tools", items: () => [{ label: "Clear completed tasks", act: () => { Tasks.list = Tasks.list.filter((t) => !t.done); Tasks.save(); } },
+        { label: notifyLabel(), disabled: !("Notification" in window) || Notification.permission !== "default", act: askNotify }] },
+      { label: "Help", items: [{ label: "About Calendar", act: () => msgBox("Calendar", "Click a day, type a task and press Enter. Give it a time and tick 🔔 to get a reminder.<br>Tasks are saved in this browser only.") }] },
+    ] });
+    inner.innerHTML = `<div class="cal-app">
+      <div class="cal-left"><div class="cal-head"><button class="cprev" aria-label="Previous month">◀</button><b class="cmonth"></b><button class="cnext" aria-label="Next month">▶</button></div>
+        <div class="cal big"></div><button class="xpbtn ctoday">Today</button>
+        <div class="cal-up"><h5>Upcoming reminders</h5><div class="uplist"></div></div></div>
+      <div class="cal-right"><h3 class="cday"></h3>
+        <form class="cal-add"><input class="ctext" placeholder="Add a task… (press Enter)" maxlength="140" required>
+          <input type="time" class="ctime" aria-label="Time"><label title="Remind me"><input type="checkbox" class="crem" checked> 🔔</label><button class="xpbtn">Add</button></form>
+        <ul class="task-list"></ul><p class="muted cempty">No tasks for this day.</p></div></div>`;
+    const $c = (s) => inner.querySelector(s), input = $c(".ctext"), timeIn = $c(".ctime"), remIn = $c(".crem");
+    const move = (n) => { view.setMonth(view.getMonth() + n); paint(); };
+    function paint() {
+      const now = new Date(), y = view.getFullYear(), m = view.getMonth(), first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
+      $c(".cmonth").textContent = view.toLocaleDateString([], { month: "long", year: "numeric" });
+      const busy = new Set(Tasks.list.filter((t) => !t.done).map((t) => t.date));
+      $c(".cal.big").innerHTML = ["S", "M", "T", "W", "T", "F", "S"].map((d) => `<b>${d}</b>`).join("") + Array(first).fill("<span></span>").join("") +
+        Array.from({ length: days }, (_, i) => { const k = dkey(new Date(y, m, i + 1)); return `<button data-d="${k}" class="${k === dkey(now) ? "today" : ""} ${k === sel ? "sel" : ""} ${busy.has(k) ? "busy" : ""}">${i + 1}</button>`; }).join("");
+      const sd = new Date(sel + "T00:00");
+      $c(".cday").textContent = sd.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+      const items = Tasks.on(sel);
+      $c(".task-list").innerHTML = items.map((t) => editing === t.id
+        ? `<li data-id="${t.id}" class="editing"><input class="etext" value="${esc(t.text)}" maxlength="140"><input type="time" class="etime" value="${t.time || ""}"><button class="xpbtn esave">Save</button></li>`
+        : `<li data-id="${t.id}" class="${t.done ? "done" : ""}"><input type="checkbox" class="tdone" ${t.done ? "checked" : ""} aria-label="Done"><span class="ttext">${esc(t.text)}</span>
+           ${t.time ? `<small class="ttime">${fmtTime(t.time)}</small>` : ""}<button class="tbell ${t.remind && t.time ? "on" : ""}" title="${t.time ? "Toggle reminder" : "Set a time to enable reminders"}" ${t.time ? "" : "disabled"}>🔔</button>
+           <button class="tedit" title="Edit" aria-label="Edit">✏️</button><button class="tdel" title="Delete" aria-label="Delete">✕</button></li>`).join("");
+      $c(".cempty").hidden = items.length > 0;
+      const up = Tasks.list.filter((t) => t.remind && !t.done && !t.notified && Tasks.due(t) > Date.now()).sort((a, b) => Tasks.due(a) - Tasks.due(b)).slice(0, 4);
+      $c(".uplist").innerHTML = up.length ? up.map((t) => `<div data-go="${t.date}"><b>${esc(t.text)}</b><small>${new Date(Tasks.due(t)).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</small></div>`).join("") : `<small class="muted">Nothing scheduled.</small>`;
+    }
+    $c(".cprev").onclick = () => move(-1); $c(".cnext").onclick = () => move(1);
+    $c(".ctoday").onclick = () => { const n = new Date(); view = new Date(n.getFullYear(), n.getMonth(), 1); sel = dkey(n); paint(); };
+    $c(".cal.big").addEventListener("click", (e) => { const b = e.target.closest("[data-d]"); if (b) { sel = b.dataset.d; editing = null; paint(); input.focus(); } });
+    $c(".uplist").addEventListener("click", (e) => { const g = e.target.closest("[data-go]"); if (g) { sel = g.dataset.go; const d = new Date(sel + "T00:00"); view = new Date(d.getFullYear(), d.getMonth(), 1); paint(); } });
+    $c(".cal-add").addEventListener("submit", (e) => {
+      e.preventDefault(); const text = input.value.trim(); if (!text) return;
+      const remind = remIn.checked && !!timeIn.value;
+      Tasks.add({ date: sel, time: timeIn.value, text, remind });
+      if (remind) askNotify(true);
+      input.value = ""; timeIn.value = ""; input.focus();
+    });
+    $c(".task-list").addEventListener("click", (e) => {
+      const li = e.target.closest("li"); if (!li) return; const id = li.dataset.id, t = Tasks.list.find((x) => x.id === id); if (!t) return;
+      if (e.target.closest(".tdel")) Tasks.remove(id);
+      else if (e.target.closest(".tbell")) { Tasks.update(id, { remind: !t.remind, notified: false, snooze: null }); if (!t.remind) askNotify(true); }
+      else if (e.target.closest(".tedit")) { editing = id; paint(); li.parentElement.querySelector(".etext")?.focus(); }
+      else if (e.target.closest(".esave")) saveEdit(li);
+    });
+    $c(".task-list").addEventListener("change", (e) => { if (e.target.classList.contains("tdone")) Tasks.update(e.target.closest("li").dataset.id, { done: e.target.checked }); });
+    $c(".task-list").addEventListener("keydown", (e) => { if (e.target.closest(".editing")) { if (e.key === "Enter") saveEdit(e.target.closest("li")); if (e.key === "Escape") { editing = null; paint(); } } });
+    function saveEdit(li) {
+      const text = li.querySelector(".etext").value.trim(), time = li.querySelector(".etime").value; editing = null;
+      if (text) Tasks.update(li.dataset.id, { text, time, notified: false, snooze: null, remind: Tasks.list.find((x) => x.id === li.dataset.id).remind && !!time }); else paint();
+    }
+    const keys = (e) => { if (ctx.isActive() && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") { e.preventDefault(); input.focus(); } };
+    addEventListener("keydown", keys); ctx.onClose(() => removeEventListener("keydown", keys));
+    wins.get(ctx.key).refresh = () => { if (!editing) paint(); };
+    wins.get(ctx.key).goto = (d) => { sel = d; const x = new Date(d + "T00:00"); view = new Date(x.getFullYear(), x.getMonth(), 1); editing = null; paint(); };
+    paint(); setTimeout(() => input.focus(), 0);
+  }
+  const notifyLabel = () => !("Notification" in window) ? "Desktop notifications unavailable" : Notification.permission === "granted" ? "Desktop notifications: on" : Notification.permission === "denied" ? "Desktop notifications: blocked" : "Enable desktop notifications";
+  function askNotify(quiet) { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().catch(() => {}); else if (!quiet) msgBox("Notifications", notifyLabel()); }
+
+  // Reminder engine: checks every 15s; reminders missed while the site was closed are shown on the next visit
+  function chime() {
+    try {
+      if (muted || vol === 0) return;
+      const A = window.AudioContext || window.webkitAudioContext; const ac = chime.ac ||= new A();
+      [659, 880, 1047].forEach((f, i) => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = f; o.type = "sine"; g.gain.setValueAtTime(0, ac.currentTime + i * .12); g.gain.linearRampToValueAtTime(.12 * vol / 100, ac.currentTime + i * .12 + .02); g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + i * .12 + .35); o.connect(g).connect(ac.destination); o.start(ac.currentTime + i * .12); o.stop(ac.currentTime + i * .12 + .4); });
+    } catch {}
+  }
+  const balloons = document.createElement("div"); balloons.className = "balloons"; desktopEl.appendChild(balloons);
+  function balloon(t, missed) {
+    const b = document.createElement("div"); b.className = "balloon"; b.dataset.id = t.id;
+    b.innerHTML = `<button class="bx" aria-label="Dismiss">✕</button><b>🔔 ${missed ? "Missed reminder" : "Reminder"}</b><p>${esc(t.text)}</p><small>${new Date(Tasks.due(t)).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}</small>
+      <div><button class="xpbtn bsnooze">Snooze 5 min</button><button class="xpbtn bdone">Done</button><button class="xpbtn bopen">Open</button></div>`;
+    balloons.appendChild(b);
+    b.addEventListener("click", (e) => {
+      if (e.target.closest(".bsnooze")) Tasks.update(t.id, { snooze: Date.now() + 5 * 60000, notified: false });
+      else if (e.target.closest(".bdone")) Tasks.update(t.id, { done: true });
+      else if (e.target.closest(".bopen")) openApp("calendar", { date: t.date });
+      else if (!e.target.closest(".bx")) return;
+      b.remove();
+    });
+    setTimeout(() => b.isConnected && b.classList.add("fade"), 60000);
+  }
+  function checkReminders(first) {
+    const now = Date.now();
+    let changed = false;
+    Tasks.list.forEach((t) => {
+      const due = Tasks.due(t);
+      if (!t.remind || t.done || t.notified || !due || due > now) return;
+      const missed = now - due > 2 * 60000;
+      t.notified = true; t.snooze = null; changed = true;
+      if (first && now - due > 7 * 864e5) return; // ignore anything older than a week
+      balloon(t, missed); if (!missed) chime();
+      if (document.hidden && "Notification" in window && Notification.permission === "granted") { try { new Notification("Reminder", { body: t.text, icon: "photo.jpg", tag: t.id }); } catch {} }
+    });
+    if (changed) Tasks.save();
+  }
+  setInterval(checkReminders, 15000);
+  document.addEventListener("visibilitychange", () => !document.hidden && checkReminders());
+  function paintBell() {
+    const today = dkey(new Date()), n = Tasks.list.filter((t) => t.date === today && !t.done).length, el = $("#tBell");
+    if (!el) return; el.hidden = !n; el.querySelector("b").textContent = n; el.title = `${n} task${n === 1 ? "" : "s"} today`;
+  }
+
+  checkReminders(true); paintBell();
+  $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });
+
+  // ---------------- Boot / login / shutdown flow ----------------
+  ["#loginAvatar", "#smAvatar"].forEach((s) => ($(s).outerHTML = avatar().replace('class="avatar ', `id="${s.slice(1)}" class="avatar `)));
+  document.querySelectorAll(".boot-owner").forEach((el) => (el.textContent = P.name));
+  document.title = P.name + " - Portfolio XP";
+  $("#loginName").textContent = $("#smName").textContent = P.name;
+  $("#loginRole").textContent = P.role;
+  const show = (id) => ["#boot", "#login", "#desktop", "#blackout"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
+  function boot(fast) {
+    show("#boot");
+    setTimeout(() => show("#login"), fast ? 400 : 2800);
+  }
+  function logon() {
+    show("#desktop"); store.set("xp-logged", "1");
+    if (!store.get("xp-welcomed")) { store.set("xp-welcomed", "1"); setTimeout(() => openApp("about"), 300); }
+  }
+  $("#userTile").addEventListener("click", logon);
+  const shut = $("#shutdown");
+  $("#smShutdown").onclick = $("#loginOff").onclick = () => { toggleStart(false); shut.classList.remove("hidden"); };
+  $("#smLogoff").onclick = () => { toggleStart(false); closeTray(); [...wins.keys()].forEach((k) => close(k)); store.set("xp-logged", ""); show("#login"); };
+  shut.addEventListener("click", (e) => {
+    const a = e.target.closest("[data-act]")?.dataset.act; if (!a) return;
+    shut.classList.add("hidden");
+    if (a === "cancel") return;
+    closeTray(); hideCtx(); [...wins.keys()].forEach((k) => close(k)); store.set("xp-logged", "");
+    show("#blackout");
+    const msg = $("#blackoutMsg"), on = $("#powerOn");
+    on.classList.add("hidden");
+    msg.textContent = a === "restart" ? "Windows is restarting..." : a === "standby" ? "Computer sleeping... click to wake." : "Windows is shutting down...";
+    if (a === "restart") setTimeout(() => boot(false), 1600);
+    else if (a === "standby") $("#blackout").onclick = () => { $("#blackout").onclick = null; show("#login"); };
+    else setTimeout(() => { msg.textContent = "It is now safe to turn off your computer."; on.classList.remove("hidden"); }, 1600);
+  });
+  $("#powerOn").onclick = (e) => { e.stopPropagation(); boot(false); };
+
+  if (store.get("xp-logged")) logon(); else boot(false);
+})();
