@@ -2,3 +2,5 @@
 .vercel
 .gitignore
 README.md
+node_modules
+*.adminsdk*.json

@@ -1,0 +1,15 @@
+{
+  "name": "medhansh-xp",
+  "private": true,
+  "type": "module",
+  "description": "Medhansh Khattar's Windows XP-style portfolio. Static site plus Vercel API routes backed by Firestore.",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}

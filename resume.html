@@ -26,13 +26,14 @@
     .skills div { margin: 1px 0; }
     .two { columns: 2; column-gap: 22px; }
     .two li { break-inside: avoid; }
+    body.embed { background: transparent; } body.embed main { margin: 12px auto; }
     @media print { body { background: #fff; } main { margin: 0; padding: 0; max-width: none; box-shadow: none; } a { color: #1e4fb8; } }
     @media (max-width: 640px) { main { margin: 0; padding: 18px 16px; } header { flex-direction: column; align-items: flex-start; } .contact { text-align: left; } .two { columns: 1; } }
   </style>
 </head>
 <body>
   <main id="r"></main>
-  <script src="data.js?v=15"></script>
+  <script src="data.js?v=17"></script>
   <script>
     (() => {
       const P = window.PROFILE || {}, L = P.links || {};
@@ -41,6 +42,7 @@
       const list = (a) => a?.length ? `<ul>${a.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
       const sec = (t, body) => body ? `<h2>${t}</h2>${body}` : "";
       document.title = `${P.name} - Resume`;
+      if (/embed=1/.test(location.search)) document.body.classList.add("embed");
       document.getElementById("r").innerHTML = `
         <header><div><h1>${esc(P.name)}</h1><div class="role">${esc(P.role)}${P.subtitle ? " · " + esc(P.subtitle) : ""}</div><div class="muted">${esc(P.location)}</div></div>
           <div class="contact">${L.email ? `<a href="mailto:${esc(L.email)}">${esc(L.email)}</a><br>` : ""}${[L.linkedin, L.github, L.website, L.yapless].filter(Boolean).map(link).join("<br>")}<br><a href="https://medhansh-xp.vercel.app/">medhansh-xp.vercel.app</a></div></header>

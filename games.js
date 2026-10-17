@@ -189,17 +189,36 @@
   //  Snake
   // =====================================================================
   function snake(body, ctx) {
-    const N = 20, CELL = 20, W = N * CELL, SPEEDS = { Slow: 150, Normal: 120, Fast: 85 };
+    const N = 20, CELL = 20, W = N * CELL, SPEEDS = { Slow: 300, Normal: 240, Fast: 170 };
     body.innerHTML = BAR + `<div class="game-hud"><span>Score: <b class="sc">0</b></span><span>Best: <b class="hi">0</b></span></div><div class="game-stage"><canvas width="${W}" height="${W}"></canvas><div class="game-msg"></div></div>`;
     body.classList.add("game-body");
     const cv = body.querySelector("canvas"), g = cv.getContext("2d"), msg = body.querySelector(".game-msg");
     const scEl = body.querySelector(".sc"), hiEl = body.querySelector(".hi");
     let best = Number(ctx.store.lget("xp-snake-best")) || 0; hiEl.textContent = best;
     let level = ctx.store.lget("xp-snake-speed"); if (!SPEEDS[level]) level = "Normal";
-    let sn, dir, queue, food, state = "ready", acc = 0, speed, overAt = 0;
+    let sn, dir, queue, food, bonus, obs, grow, score, state = "ready", acc = 0, speed, overAt = 0;
     const intro = "<b>SNAKE</b><br><small>Arrow keys / WASD or swipe<br>Space or tap to start</small>";
-    const reset = () => { sn = [{ x: 9, y: 10 }, { x: 8, y: 10 }, { x: 7, y: 10 }]; dir = { x: 1, y: 0 }; queue = []; speed = SPEEDS[level]; acc = 0; placeFood(); scEl.textContent = 0; };
-    const placeFood = () => { do food = { x: (Math.random() * N) | 0, y: (Math.random() * N) | 0 }; while (sn.some((p) => p.x === food.x && p.y === food.y)); };
+    const rnd = (n) => (Math.random() * n) | 0;
+    const reset = () => {
+      // random head and heading, kept far enough from every wall that the snake never starts facing one
+      const hx = 5 + rnd(N - 10), hy = 5 + rnd(N - 10), d = [[1, 0], [-1, 0], [0, 1], [0, -1]][rnd(4)];
+      dir = { x: d[0], y: d[1] }; sn = [0, 1, 2].map((i) => ({ x: hx - dir.x * i, y: hy - dir.y * i }));
+      queue = []; obs = []; bonus = null; grow = 0; score = 0; speed = SPEEDS[level]; acc = 0; placeFood(); scEl.textContent = 0;
+    };
+    const free = (pad = -1) => {
+      const h = sn[0], out = [];
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+        if (sn.some((p) => p.x === x && p.y === y) || obs.some((p) => p.x === x && p.y === y) || (food && food.x === x && food.y === y) || (bonus && bonus.x === x && bonus.y === y)) continue;
+        if (pad >= 0 && Math.max(Math.abs(x - h.x), Math.abs(y - h.y)) <= pad) continue;
+        out.push({ x, y });
+      }
+      return out;
+    };
+    const placeFood = () => { food = null; const f = free(); food = f.length ? f[rnd(f.length)] : { x: -1, y: -1 }; };
+    const spawn = () => { // occasional extras after eating
+      if (!bonus && Math.random() < 0.2) { const f = free(); if (f.length) bonus = { ...f[rnd(f.length)], ttl: 5000 }; }
+      if (score >= 10 && obs.length < 10 && Math.random() < 0.3) { const f = free(3); if (f.length) obs.push(f[rnd(f.length)]); }
+    };
     const say = (t) => { msg.innerHTML = t; msg.style.display = t ? "" : "none"; };
     const start = () => { if (state === "over") reset(); state = "run"; say(""); };
     const newGame = () => { reset(); state = "ready"; say(intro); };
@@ -215,28 +234,32 @@
       if (state !== "run") start();
     }
     function end(win) {
-      state = "over"; overAt = performance.now(); const s = sn.length - 3;
+      state = "over"; overAt = performance.now(); const s = score;
       if (s > best) { best = s; ctx.store.lset("xp-snake-best", best); hiEl.textContent = best; }
       say(`<b>${win ? "YOU WIN!" : "GAME OVER"}</b><br>Score ${s}<br><small>Press Space or tap to play again</small>`);
     }
     function tick() {
       if (queue.length) dir = queue.shift();
-      const h = { x: sn[0].x + dir.x, y: sn[0].y + dir.y }, eat = h.x === food.x && h.y === food.y;
+      const h = { x: sn[0].x + dir.x, y: sn[0].y + dir.y }, eat = h.x === food.x && h.y === food.y, eatB = !!bonus && h.x === bonus.x && h.y === bonus.y;
       // the tail cell is free to enter unless we grow this tick
-      if (h.x < 0 || h.y < 0 || h.x >= N || h.y >= N || sn.some((p, i) => (eat || i < sn.length - 1) && p.x === h.x && p.y === h.y)) return end(false);
+      const stay = eat || eatB || grow > 0;
+      if (h.x < 0 || h.y < 0 || h.x >= N || h.y >= N || obs.some((p) => p.x === h.x && p.y === h.y) || sn.some((p, i) => (stay || i < sn.length - 1) && p.x === h.x && p.y === h.y)) return end(false);
       sn.unshift(h);
-      if (!eat) { sn.pop(); return; }
-      scEl.textContent = sn.length - 3;
-      if (sn.length >= N * N) return end(true);
-      placeFood(); speed = Math.max(Math.round(SPEEDS[level] * 0.5), speed - 3);
+      if (eatB) { bonus = null; score += 3; grow += 2; scEl.textContent = score; return; }
+      if (!eat) { if (grow > 0) grow--; else sn.pop(); return; }
+      score++; scEl.textContent = score;
+      if (sn.length >= N * N - obs.length) return end(true);
+      placeFood(); spawn(); speed = Math.max(Math.round(SPEEDS[level] * 0.4), speed * 0.965); // each apple shaves ~3.5% off the tick
     }
     function draw() {
       g.fillStyle = "#0b3d0b"; g.fillRect(0, 0, W, W);
       g.fillStyle = "#0e470e"; for (let y = 0; y < N; y++) for (let x = (y & 1); x < N; x += 2) g.fillRect(x * CELL, y * CELL, CELL, CELL);
+      g.fillStyle = "#6b7280"; for (const o of obs) { g.fillRect(o.x * CELL + 1, o.y * CELL + 1, CELL - 2, CELL - 2); g.fillStyle = "#9ca3af"; g.fillRect(o.x * CELL + 1, o.y * CELL + 1, CELL - 2, 3); g.fillStyle = "#6b7280"; }
       g.fillStyle = "#ff4136"; g.beginPath(); g.arc(food.x * CELL + 10, food.y * CELL + 10, 7, 0, 7); g.fill();
+      if (bonus && (bonus.ttl > 1500 || ((bonus.ttl / 150) | 0) % 2)) { g.fillStyle = "#ffd700"; g.beginPath(); g.arc(bonus.x * CELL + 10, bonus.y * CELL + 10, 8, 0, 7); g.fill(); g.fillStyle = "#fff6b0"; g.beginPath(); g.arc(bonus.x * CELL + 8, bonus.y * CELL + 8, 2.5, 0, 7); g.fill(); }
       sn.forEach((p, i) => { g.fillStyle = i ? "#7fdb3b" : "#c8ff6a"; g.fillRect(p.x * CELL + 1, p.y * CELL + 1, CELL - 2, CELL - 2); });
     }
-    loop(ctx, (dt) => { if (state === "run") { acc += dt; while (acc >= speed && state === "run") { acc -= speed; tick(); } } draw(); });
+    loop(ctx, (dt) => { if (state === "run") { if (bonus && (bonus.ttl -= dt) <= 0) bonus = null; acc += dt; while (acc >= speed && state === "run") { acc -= speed; tick(); } } draw(); });
     const keys = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0] };
     listen(ctx, "keydown", (e) => {
       if (!ctx.isActive() || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -272,81 +295,201 @@
   //  Brick Breaker
   // =====================================================================
   function breakout(body, ctx) {
-    const W = 480, H = 360, COLS = 10, ROWS = 6, BW = W / COLS, BH = 16, PW = 80, PY = H - 24;
+    const W = 480, H = 360, BH = 16, BTOP = 40, PW = 80, PY = H - 24, MAXP = 150;
     const COLORS = ["#e5410c", "#f2a900", "#ffd640", "#5ca50a", "#1e7ae6", "#8a4fd8"];
+    const PU = { W: ["#1e7ae6", "W"], M: ["#e5410c", "M"], S: ["#5ca50a", "S"], L: ["#e0245e", "+"], C: ["#8a4fd8", "C"] };
+    const PU_BAG = "WWWMMMSSCCL";
+    const PATS = [
+      () => 1, // full wall
+      (r, c, R, C) => Math.abs(c - (C - 1) / 2) <= (r + 1) / R * C / 2 ? 1 : 0, // pyramid
+      (r, c) => (r + c) % 2 ? 0 : 1, // checkerboard
+      (r, c) => (r + c) % 3 ? 1 : 0, // diagonal stripes
+      () => (Math.random() < 0.75 ? 1 : 0), // random gaps
+      (r, c, R, C) => (r === 0 || r === R - 1 || c === 0 || c === C - 1 ? 2 : 1), // fortress with steel border
+    ];
     body.innerHTML = BAR + `<div class="game-hud"><span>Score: <b class="sc">0</b></span><span>Lives: <b class="lv">3</b></span><span>Level: <b class="lvl">1</b></span></div><div class="game-stage"><canvas width="${W}" height="${H}"></canvas><div class="game-msg"></div></div>`;
     body.classList.add("game-body");
     const cv = body.querySelector("canvas"), g = cv.getContext("2d"), msg = body.querySelector(".game-msg");
     const $ = (s) => body.querySelector(s);
-    const intro = "<b>BRICK BREAKER</b><br><small>Move the mouse or use ← →<br>Click or Space to launch</small>";
-    let pad = { x: W / 2 - PW / 2, w: PW }, ball, bricks, score = 0, lives = 3, level = 1, state = "ready", kl = false, kr = false;
+    let best = Number(ctx.store.lget("xp-breakout-best")) || 0;
+    const intro = () => `<b>BRICK BREAKER</b><br><small>Move the mouse or use ← →<br>Click or Space to launch${best ? "<br>Best: " + best : ""}</small>`;
+    const rnd = (n) => (Math.random() * n) | 0;
+    const parts = Array.from({ length: MAXP }, () => ({ l: 0, x: 0, y: 0, vx: 0, vy: 0, c: "" }));
+    let pp = 0, pad = { x: W / 2 - PW / 2, w: PW }, balls = [], pups = [], bricks = [], remain = 0, cols = 10;
+    let score = 0, lives = 3, level = 1, state = "ready", kl = false, kr = false, widenT = 0, slowT = 0, stickyT = 0, bannerT = 0, overAt = 0;
     const say = (t) => { msg.innerHTML = t; msg.style.display = t ? "" : "none"; };
     const hud = () => { $(".sc").textContent = score; $(".lv").textContent = lives; $(".lvl").textContent = level; };
-    const build = () => { bricks = []; for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) bricks.push({ x: c * BW, y: 40 + r * BH, c: COLORS[r], alive: true }); };
-    const resetBall = () => { ball = { x: pad.x + pad.w / 2, y: PY - 6, vx: 0, vy: 0, r: 6, stuck: true }; };
-    const newGame = () => { score = 0; lives = 3; level = 1; pad.w = PW; build(); resetBall(); hud(); state = "ready"; say(intro); };
+    const basePW = () => Math.max(50, PW - (level - 1) * 4);
+    const baseSp = () => Math.min(0.6, 0.26 + level * 0.03);
+    const burst = (x, y, c, n) => {
+      for (let i = 0; i < n; i++) {
+        const p = parts[pp], a = Math.random() * 6.283, v = 0.05 + Math.random() * 0.15; pp = (pp + 1) % MAXP;
+        p.l = 350 + Math.random() * 250; p.x = x; p.y = y; p.vx = Math.cos(a) * v; p.vy = Math.sin(a) * v - 0.05; p.c = c;
+      }
+    };
+    function build() {
+      const R = Math.min(10, 4 + level), bw = W / (level >= 5 ? 12 : 10); cols = level >= 5 ? 12 : 10;
+      const pat = PATS[rnd(level < 2 ? PATS.length - 1 : PATS.length)];
+      const pS = Math.min(0.5, (level - 1) * 0.08), pT = level >= 3 ? Math.min(0.3, (level - 2) * 0.06) : 0, pU = level >= 4 ? 0.05 : 0;
+      bricks = []; remain = 0;
+      for (let r = 0; r < R; r++) for (let c = 0; c < cols; c++) {
+        const k = pat(r, c, R, cols); if (!k) continue;
+        let t = 0; const q = Math.random();
+        if (k === 2) t = 2; else if (q < pU) t = 3; else if (q < pU + pT) t = 2; else if (q < pU + pT + pS) t = 1;
+        const hp = t === 3 ? 99 : t + 1;
+        bricks.push({ x: c * bw, y: BTOP + r * BH, w: bw, t, hp, max: hp, f: 0, alive: true, s: Math.random(), col: COLORS[r % 6] });
+        if (t < 3) remain++;
+      }
+      if (!remain) { bricks.push({ x: 0, y: BTOP, w: bw, t: 0, hp: 1, max: 1, f: 0, alive: true, s: 0.5, col: COLORS[0] }); remain = 1; }
+    }
+    const resetBall = () => { balls = [{ x: pad.x + pad.w / 2, y: PY - 6, vx: 0, vy: 0, r: 6, stuck: true, off: pad.w / 2 }]; };
+    function newGame() {
+      score = 0; lives = 3; level = 1; pad.w = basePW(); widenT = slowT = stickyT = 0; pups.length = 0;
+      for (const p of parts) p.l = 0;
+      build(); resetBall(); hud(); state = "ready"; say(intro());
+    }
     const pause = () => {
       if (state === "run") { state = "paused"; say("<b>Paused</b><br><small>Click or Space to resume</small>"); }
       else if (state === "paused") { state = "run"; say(""); }
     };
+    function release() {
+      let any = false;
+      for (const b of balls) if (b.stuck) {
+        if (!b.vx && !b.vy) { const a = (0.25 + Math.random() * 0.45) * (Math.random() < 0.5 ? -1 : 1), sp = baseSp(); b.vx = sp * Math.sin(a); b.vy = -sp * Math.cos(a); }
+        b.stuck = false; b.y = PY - b.r - 1; any = true;
+      }
+      return any;
+    }
     function launch() {
       if (state === "paused") return pause();
-      if (state === "over") { score = 0; lives = 3; level = 1; pad.w = PW; build(); resetBall(); hud(); }
-      if (!ball.stuck) return;
-      const sp = Math.min(0.6, 0.28 + level * 0.03), a = (0.3 + Math.random() * 0.3) * (Math.random() > .5 ? 1 : -1);
-      ball.vx = sp * Math.sin(a); ball.vy = -sp * Math.cos(a); ball.stuck = false; state = "run"; say("");
+      if (state === "over") { if (performance.now() - overAt > 600) newGame(); return; }
+      if ((state === "ready" || state === "run") && release()) { state = "run"; say(""); }
+    }
+    function gameOver() {
+      state = "over"; overAt = performance.now();
+      const nb = score > best; if (nb) { best = score; ctx.store.lset("xp-breakout-best", best); }
+      say(`<b>GAME OVER</b><br>Score ${score}<br><small>${nb ? "New best!" : "Best: " + best}<br>Click to play again</small>`);
+    }
+    function loseLife() {
+      lives--; hud(); pups.length = 0; widenT = slowT = stickyT = 0; resetBall();
+      if (lives <= 0) gameOver(); else { state = "ready"; say("<small>Click to launch</small>"); }
+    }
+    function nextLevel() {
+      level++; pups.length = 0; build(); resetBall(); hud(); state = "banner"; bannerT = 1500;
+      say(`<b>Level ${level}</b><br><small>Get ready</small>`);
+    }
+    function hitBrick(b) {
+      if (b.t === 3) { b.f = 80; return; }
+      if (--b.hp > 0) { b.f = 120; burst(b.x + b.w / 2, b.y + BH / 2, "#fff", 3); return; }
+      b.alive = false; remain--; score += Math.round([10, 20, 40][b.t] * (1 + (level - 1) * 0.25)); hud();
+      burst(b.x + b.w / 2, b.y + BH / 2, b.col, 9);
+      if (Math.random() < 0.12) pups.push({ x: b.x + b.w / 2, y: b.y + BH / 2, k: PU_BAG[rnd(PU_BAG.length)] });
+    }
+    function applyPU(k) {
+      if (k === "W") widenT = 12000;
+      else if (k === "S") slowT = 10000;
+      else if (k === "C") stickyT = 12000;
+      else if (k === "L") { lives = Math.min(5, lives + 1); hud(); }
+      else if (k === "M") {
+        const src = balls.find((b) => !b.stuck) || balls[0];
+        for (const da of [-0.45, 0.45]) {
+          if (balls.length >= 6) break;
+          const c = Math.cos(da), s = Math.sin(da), vx = src.vx || 0.01, vy = src.vy || -baseSp();
+          balls.push({ x: src.x, y: src.y, vx: vx * c - vy * s, vy: vx * s + vy * c, r: 6, stuck: src.stuck, off: src.off });
+        }
+      }
+    }
+    // returns true when this ball should stop stepping (fell out, or caught by a sticky paddle)
+    function stepBall(b, d) {
+      const r = b.r;
+      b.x += b.vx * d; b.y += b.vy * d;
+      if (b.x < r) { b.x = r; b.vx = Math.abs(b.vx); } else if (b.x > W - r) { b.x = W - r; b.vx = -Math.abs(b.vx); }
+      if (b.y < r) { b.y = r; b.vy = Math.abs(b.vy); }
+      if (b.vy > 0 && b.y + r >= PY && b.y < PY + 10 && b.x >= pad.x - r && b.x <= pad.x + pad.w + r) {
+        const hit = clamp((b.x - (pad.x + pad.w / 2)) / (pad.w / 2), -1, 1), sp = Math.min(baseSp() * 1.5, Math.hypot(b.vx, b.vy) * 1.012);
+        b.vx = sp * Math.sin(hit * 1.05); b.vy = -sp * Math.cos(hit * 1.05); b.y = PY - r;
+        if (stickyT > 0) { b.stuck = true; b.off = b.x - pad.x; return true; }
+      }
+      // circle vs rect: nearest overlapping brick only, reflect on its surface normal and push the ball clear
+      let hitB = null, hd = Infinity, hx = 0, hy = 0;
+      for (const k of bricks) {
+        if (!k.alive) continue;
+        const dx = b.x - clamp(b.x, k.x, k.x + k.w), dy = b.y - clamp(b.y, k.y, k.y + BH), q = dx * dx + dy * dy;
+        if (q < r * r && q < hd) { hitB = k; hd = q; hx = dx; hy = dy; }
+      }
+      if (hitB) {
+        hitBrick(hitB);
+        const len = Math.sqrt(hd);
+        if (len > 0) {
+          const nx = hx / len, ny = hy / len, dot = b.vx * nx + b.vy * ny;
+          if (dot < 0) { b.vx -= 2 * dot * nx; b.vy -= 2 * dot * ny; }
+          b.x += nx * (r - len + 0.01); b.y += ny * (r - len + 0.01);
+        } else b.vy = b.y < hitB.y + BH / 2 ? -Math.abs(b.vy) : Math.abs(b.vy);
+        const sp = Math.hypot(b.vx, b.vy), minY = sp * 0.25; // never let the ball go nearly horizontal
+        if (Math.abs(b.vy) < minY) { b.vy = (b.vy < 0 ? -1 : 1) * minY; b.vx = (b.vx < 0 ? -1 : 1) * Math.sqrt(sp * sp - minY * minY); }
+      }
+      return b.y > H + 10;
     }
     function update(dt) {
       if (kl !== kr) pad.x = clamp(pad.x + (kr ? 1 : -1) * 0.5 * dt, 0, W - pad.w);
-      if (ball.stuck) { ball.x = pad.x + pad.w / 2; return; }
-      const steps = Math.ceil(dt / 4), r = ball.r; // steps keep per-step travel well below the ball radius
-      for (let s = 0; s < steps; s++) {
-        const d = dt / steps; ball.x += ball.vx * d; ball.y += ball.vy * d;
-        if (ball.x < r) { ball.x = r; ball.vx = Math.abs(ball.vx); }
-        else if (ball.x > W - r) { ball.x = W - r; ball.vx = -Math.abs(ball.vx); }
-        if (ball.y < r) { ball.y = r; ball.vy = Math.abs(ball.vy); }
-        if (ball.vy > 0 && ball.y + r >= PY && ball.y < PY + 10 && ball.x >= pad.x - r && ball.x <= pad.x + pad.w + r) {
-          const hit = clamp((ball.x - (pad.x + pad.w / 2)) / (pad.w / 2), -1, 1), sp = Math.hypot(ball.vx, ball.vy);
-          ball.vx = sp * Math.sin(hit * 1.05); ball.vy = -sp * Math.cos(hit * 1.05); ball.y = PY - r;
-        }
-        // circle vs rect: take only the nearest overlapping brick and reflect off its surface normal,
-        // pushing the ball clear so neighbouring bricks can't cause a second bounce
-        let hitB = null, hd = Infinity, hx = 0, hy = 0;
-        for (const b of bricks) {
-          if (!b.alive) continue;
-          const dx = ball.x - clamp(ball.x, b.x, b.x + BW), dy = ball.y - clamp(ball.y, b.y, b.y + BH), q = dx * dx + dy * dy;
-          if (q < r * r && q < hd) { hitB = b; hd = q; hx = dx; hy = dy; }
-        }
-        if (hitB) {
-          hitB.alive = false; score += 10; hud();
-          const len = Math.sqrt(hd);
-          if (len > 0) {
-            const nx = hx / len, ny = hy / len, dot = ball.vx * nx + ball.vy * ny;
-            if (dot < 0) { ball.vx -= 2 * dot * nx; ball.vy -= 2 * dot * ny; }
-            ball.x += nx * (r - len + 0.01); ball.y += ny * (r - len + 0.01);
-          } else ball.vy = ball.y < hitB.y + BH / 2 ? -Math.abs(ball.vy) : Math.abs(ball.vy); // centre inside the brick
-          // never let the ball go nearly horizontal
-          const sp = Math.hypot(ball.vx, ball.vy), minY = sp * 0.25;
-          if (Math.abs(ball.vy) < minY) { ball.vy = (ball.vy < 0 ? -1 : 1) * minY; ball.vx = (ball.vx < 0 ? -1 : 1) * Math.sqrt(sp * sp - minY * minY); }
-        }
-        if (ball.y > H + 10) {
-          lives--; hud(); resetBall();
-          if (lives <= 0) { state = "over"; say(`<b>GAME OVER</b><br>Score ${score}<br><small>Click to play again</small>`); }
-          else { state = "ready"; say("<small>Click to launch</small>"); }
-          return;
-        }
+      const want = widenT > 0 ? Math.min(150, basePW() * 1.6) : basePW();
+      if (Math.abs(want - pad.w) > 0.5) { const c = pad.x + pad.w / 2; pad.w += (want - pad.w) * Math.min(1, dt * 0.01); pad.x = clamp(c - pad.w / 2, 0, W - pad.w); }
+      for (const k of bricks) if (k.f > 0) k.f -= dt;
+      for (const p of parts) if (p.l > 0) { p.l -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 0.0006 * dt; }
+      for (const b of balls) if (b.stuck) { b.x = pad.x + clamp(b.off, 0, pad.w); b.y = PY - b.r; }
+      if (state === "banner") { bannerT -= dt; if (bannerT <= 0) { state = "ready"; say("<small>Click to launch</small>"); } return; }
+      if (state !== "run") return;
+      widenT = Math.max(0, widenT - dt); slowT = Math.max(0, slowT - dt); stickyT = Math.max(0, stickyT - dt);
+      for (let i = pups.length - 1; i >= 0; i--) {
+        const p = pups[i]; p.y += 0.09 * dt;
+        if (p.y + 7 >= PY && p.y - 7 <= PY + 10 && p.x >= pad.x - 12 && p.x <= pad.x + pad.w + 12) { applyPU(p.k); pups.splice(i, 1); }
+        else if (p.y > H + 10) pups.splice(i, 1);
       }
-      if (bricks.every((b) => !b.alive)) {
-        level++; pad.w = Math.max(50, PW - (level - 1) * 6); build(); resetBall(); hud(); state = "ready";
-        say(`<b>Level ${level}</b><br><small>Click to launch</small>`);
+      const mult = slowT > 0 ? 0.65 : 1;
+      for (let i = balls.length - 1; i >= 0; i--) {
+        const b = balls[i]; if (b.stuck) continue;
+        const steps = Math.max(1, Math.ceil(Math.hypot(b.vx, b.vy) * dt * mult / 3)), d = dt * mult / steps; // keep per-step travel well below the radius
+        let lost = false;
+        for (let s = 0; s < steps; s++) { if (stepBall(b, d)) { lost = b.y > H + 10; break; } }
+        if (lost) balls.splice(i, 1);
       }
+      if (!balls.length) loseLife(); else if (remain <= 0) nextLevel();
+    }
+    function crack(k, n) {
+      g.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = k.x + k.w * (0.2 + 0.3 * i + 0.15 * k.s);
+        g.moveTo(x, k.y + 1); g.lineTo(x + 4, k.y + BH * 0.4); g.lineTo(x - 3, k.y + BH * 0.7); g.lineTo(x + 2, k.y + BH - 1);
+      }
+      g.stroke();
     }
     function draw() {
       const grd = g.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, "#0a1f5c"); grd.addColorStop(1, "#000");
       g.fillStyle = grd; g.fillRect(0, 0, W, H);
-      for (const b of bricks) if (b.alive) { g.fillStyle = b.c; g.fillRect(b.x + 1, b.y + 1, BW - 2, BH - 2); g.fillStyle = "rgba(255,255,255,.3)"; g.fillRect(b.x + 1, b.y + 1, BW - 2, 3); }
-      g.fillStyle = "#c0c0c0"; g.fillRect(pad.x, PY, pad.w, 10); g.fillStyle = "#fff"; g.fillRect(pad.x, PY, pad.w, 2);
-      g.fillStyle = "#fff"; g.beginPath(); g.arc(ball.x, ball.y, ball.r, 0, 7); g.fill();
+      g.lineWidth = 1;
+      for (const k of bricks) {
+        if (!k.alive) continue;
+        const x = k.x + 1, y = k.y + 1, w = k.w - 2, h = BH - 2, dmg = k.max - k.hp;
+        if (k.t === 3) { g.fillStyle = "#2c2c34"; g.fillRect(x, y, w, h); g.strokeStyle = "#d4a017"; g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1); g.fillStyle = "#d4a017"; g.fillRect(x + 3, y + h / 2 - 1, w - 6, 2); }
+        else if (k.t === 2) { g.fillStyle = "#8d97a3"; g.fillRect(x, y, w, h); g.fillStyle = "#cfd6de"; g.fillRect(x, y, w, 3); g.fillStyle = "#59626d"; g.fillRect(x, y + h - 2, w, 2); g.fillStyle = "#3d444c"; g.fillRect(x + 2, y + 5, 2, 2); g.fillRect(x + w - 4, y + 5, 2, 2); if (dmg) { g.fillStyle = `rgba(0,0,0,${0.12 * dmg})`; g.fillRect(x, y, w, h); } }
+        else { g.fillStyle = k.col; g.fillRect(x, y, w, h); g.fillStyle = "rgba(255,255,255,.3)"; g.fillRect(x, y, w, 3); if (k.t === 1) { g.strokeStyle = "rgba(0,0,0,.55)"; g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1); if (dmg) { g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(x, y, w, h); } } }
+        if (dmg && k.t < 3) { g.strokeStyle = "rgba(0,0,0,.7)"; crack(k, dmg + (k.t === 1 ? 1 : 0)); }
+        if (k.f > 0) { g.globalAlpha = Math.min(0.7, k.f / 120); g.fillStyle = "#fff"; g.fillRect(x, y, w, h); g.globalAlpha = 1; }
+      }
+      for (const p of parts) if (p.l > 0) { g.globalAlpha = Math.min(1, p.l / 300); g.fillStyle = p.c; g.fillRect(p.x, p.y, 3, 3); }
+      g.globalAlpha = 1;
+      g.font = "bold 9px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+      for (const p of pups) {
+        const [c, t] = PU[p.k]; g.fillStyle = c; g.fillRect(p.x - 8, p.y - 6, 16, 12);
+        g.beginPath(); g.arc(p.x - 8, p.y, 6, 0, 7); g.arc(p.x + 8, p.y, 6, 0, 7); g.fill();
+        g.fillStyle = "#fff"; g.fillText(t, p.x, p.y + 0.5);
+      }
+      g.fillStyle = stickyT > 0 ? "#c9a4ff" : "#c0c0c0"; g.fillRect(pad.x, PY, pad.w, 10); g.fillStyle = "#fff"; g.fillRect(pad.x, PY, pad.w, 2);
+      g.fillStyle = slowT > 0 ? "#9fd8ff" : "#fff";
+      for (const b of balls) { g.beginPath(); g.arc(b.x, b.y, b.r, 0, 7); g.fill(); }
+      g.font = "10px sans-serif"; g.textAlign = "left"; g.fillStyle = "rgba(255,255,255,.85)";
+      let tx = 6;
+      for (const [n, t] of [["WIDE", widenT], ["SLOW", slowT], ["CATCH", stickyT]]) if (t > 0) { const s = n + " " + Math.ceil(t / 1000) + "s"; g.fillText(s, tx, H - 6); tx += g.measureText(s).width + 10; }
     }
     loop(ctx, (dt) => { if (state !== "paused") update(dt); draw(); });
     const stage = cv.parentElement;
@@ -372,7 +515,7 @@
       { label: "Exit", act: ctx.close },
     ] }]);
     observe(ctx, stage, () => fitCanvas(cv, W, H));
-    build(); resetBall(); say(intro);
+    build(); resetBall(); say(intro());
   }
 
   // =====================================================================
@@ -398,6 +541,23 @@
       });
       return best;
     }
+    // every move that is equally optimal for O, so play varies between games
+    function bestMoves(b) {
+      let top = -99, mv = [];
+      b.forEach((v, i) => {
+        if (v) return; b[i] = "O"; const r = minimax(b, "X"); b[i] = null;
+        const s = r.s - Math.sign(r.s);
+        if (s > top) { top = s; mv = [i]; } else if (s === top) mv.push(i);
+      });
+      return mv;
+    }
+    // decent heuristic: win, block, centre, corner, edge
+    function okMove(b, empty, rnd) {
+      for (const me of ["O", "X"]) for (const i of empty) { b[i] = me; const w = winner(b); b[i] = null; if (w && w.p === me) return i; }
+      if (empty.includes(4)) return 4;
+      const c = empty.filter((i) => i % 2 === 0);
+      return rnd(c.length ? c : empty);
+    }
     const paint = () => { cells.forEach((c, i) => { c.textContent = b[i] || ""; c.className = b[i] ? "p" + b[i] : ""; }); scoreEl.textContent = `W ${tally.w} · L ${tally.l} · D ${tally.d}`; };
     function finish(w) {
       over = true;
@@ -408,7 +568,8 @@
     function aiMove() {
       const empty = b.map((v, k) => (v ? -1 : k)).filter((k) => k >= 0), rnd = (a) => a[(Math.random() * a.length) | 0];
       // on an empty board every reply scores the same, so skip the search and open on a random corner/centre
-      b[body.querySelector(".hard").checked ? (empty.length === 9 ? rnd([0, 2, 4, 6, 8]) : minimax(b, "O").i) : rnd(empty)] = "O";
+      const hard = body.querySelector(".hard").checked;
+      b[hard ? (empty.length === 9 ? rnd([0, 2, 4, 6, 8]) : rnd(bestMoves(b))) : Math.random() < 0.35 ? rnd(empty) : okMove(b, empty, rnd)] = "O";
     }
     function play(i) {
       if (over || b[i]) return;
