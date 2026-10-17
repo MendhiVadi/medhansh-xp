@@ -150,7 +150,7 @@
     // any menubar without its own handlers still gets working File / View / Help menus
     el.querySelectorAll(".menubar:not([data-wired])").forEach((mb) => wireMenu(mb, defaultMenus(app, ctx)));
     applyOrder(el, key);
-    el.querySelectorAll(".fitem").forEach((f) => { f.tabIndex = 0; f.setAttribute("role", "button"); });
+    focusableItems(el);
     focus(key);
     return rec;
   }
@@ -434,8 +434,10 @@
       if (Object.hasOwn(CMDS, cmd)) { const r = CMDS[cmd](); if (r) print(r); return; }
       print(`'${c}' is not recognized as an internal or external command,\noperable program or batch file. Type "help" for a list of commands.`);
     });
+    let mxCanvas;
     function matrix() {
-      const cv = document.createElement("canvas");
+      mxCanvas?.remove();
+      const cv = mxCanvas = document.createElement("canvas");
       cv.style.cssText = "position:absolute;inset:0;width:100%;height:100%";
       body.style.position = "relative"; body.appendChild(cv);
       const g = cv.getContext("2d"); cv.width = body.clientWidth; cv.height = body.clientHeight;
@@ -504,7 +506,7 @@
       body.querySelectorAll("[data-l]").forEach((b) => { const on = b.dataset.l === level; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
       bestEl.textContent = best[level] != null ? `Best: ${best[level]}s` : "";
     };
-    const pad = (n) => String(Math.max(-99, Math.min(999, n))).padStart(3, "0");
+    const pad = (n) => { n = Math.max(-99, Math.min(999, n)); return n < 0 ? "-" + String(-n).padStart(2, "0") : String(n).padStart(3, "0"); };
     const nb = (i) => { const x = i % W, y = (i / W) | 0, r = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = x + dx, ny = y + dy; if ((dx || dy) && nx >= 0 && ny >= 0 && nx < W && ny < H) r.push(ny * W + nx); } return r; };
     // keep the auto-sized window centred on screen whenever the board size changes
     const recenter = () => requestAnimationFrame(() => {
@@ -720,7 +722,7 @@
           py++; i += W * 4;
         }
       }
-      g.putImageData(d, 0, 0);
+      g.putImageData(d, 0, 0); return true;
     }
     function shape(d, x, y, shift) {
       g.putImageData(d.base, 0, 0);
@@ -739,8 +741,8 @@
       const [x, y] = pos(e), color = e.button === 2 ? bg : fg, alt = e.button === 2 ? fg : bg;
       if (tool === "picker") { const p = g.getImageData(x, y, 1, 1).data; const c = "#" + [p[0], p[1], p[2]].map((v) => v.toString(16).padStart(2, "0")).join(""); if (e.button === 2) bg = c; else fg = c; paintSwatch(); setTool("pencil"); return; }
       if (tool === "text") { const t = prompt("Text:"); if (t) { snap(); g.fillStyle = color; g.font = `${10 + size * 3}px Tahoma, sans-serif`; g.fillText(t, x, y); } return; }
-      snap();
-      if (tool === "fill") { flood(x, y, color); return; }
+      if (tool === "fill") { const prev = g.getImageData(0, 0, cv.width, cv.height); if (flood(x, y, color)) { undo.push(prev); if (undo.length > 30) undo.shift(); redo = []; } return; }
+      if (!["line", "rect", "ellipse"].includes(tool)) snap();
       cv.setPointerCapture(e.pointerId);
       drawing = { tool, x, y, lx: x, ly: y, color, alt, base: ["line", "rect", "ellipse"].includes(tool) ? g.getImageData(0, 0, cv.width, cv.height) : null };
       if (tool === "pencil" || tool === "brush" || tool === "eraser") { g.fillStyle = tool === "eraser" ? bg : color; const s = tool === "pencil" ? Math.max(1, size / 2) : tool === "brush" ? size * 1.5 : size * 3; g.fillRect(x - s / 2, y - s / 2, s, s); }
@@ -748,7 +750,7 @@
     cv.addEventListener("pointermove", (e) => {
       const [x, y] = pos(e); posEl.textContent = `${x}, ${y}`;
       const d = drawing; if (!d) return;
-      if (d.base) return shape(d, x, y, e.shiftKey);
+      if (d.base) { if (!d.snapped) { snap(); d.snapped = true; } return shape(d, x, y, e.shiftKey); }
       if (d.tool === "spray") { g.fillStyle = d.color; const r = size * 3 + 4; for (let k = 0; k < 18; k++) { const a = Math.random() * 6.283, m = Math.random() * r; g.fillRect(x + Math.cos(a) * m, y + Math.sin(a) * m, 1, 1); } return; }
       g.strokeStyle = d.tool === "eraser" ? bg : d.color; g.lineCap = g.lineJoin = d.tool === "pencil" ? "square" : "round";
       g.lineWidth = d.tool === "pencil" ? Math.max(1, size / 2) : d.tool === "brush" ? size * 1.5 : size * 3;
@@ -779,7 +781,7 @@
     inner.querySelector(".restore")?.addEventListener("click", () => [...trash].forEach((id) => addToDesktop(id)));
   }
   function emptyBin() {
-    if (trash.length) { trash = []; saveDesk(); refreshRecycle(); msgBox("Recycle Bin", "Deleted shortcuts are gone (the apps are still in the Start menu and My Computer).<br>The joke files stay — they're part of my character development.", "🗑️"); }
+    if (trash.length) { gone = [...new Set([...gone, ...trash])]; extra = extra.filter((id) => !trash.includes(id)); trash = []; saveDesk(); buildIcons(); refreshRecycle(); msgBox("Recycle Bin", "Deleted shortcuts are gone (the apps are still in the Start menu and My Computer).<br>The joke files stay — they're part of my character development.", "🗑️"); }
     else msgBox("Recycle Bin", "Nice try. These files are part of my character development.", "⚠️");
   }
 
@@ -833,19 +835,19 @@
   const iconsEl = $("#icons");
   const FIXED = ["computer", "recycle"];
   const readList = (k) => { try { return JSON.parse(store.lget(k) || "[]").filter((id) => APPS[id]); } catch { return []; } };
-  let trash = readList("xp-trash"), extra = readList("xp-desk-extra");
+  let trash = readList("xp-trash"), extra = readList("xp-desk-extra"), gone = readList("xp-gone");
   let ICONS = [], iconEls = [];
   const CELL_W = 84, CELL_H = 86, PAD = 6;
   function buildIcons() {
-    ICONS = [...new Set(["computer", ...DESKTOP, ...extra])].filter((id) => !trash.includes(id));
+    ICONS = [...new Set(["computer", ...DESKTOP, ...extra])].filter((id) => !trash.includes(id) && !gone.includes(id));
     iconsEl.innerHTML = ICONS.map((id) => `<div class="dicon" tabindex="0" data-id="${id}" role="button" aria-label="${esc(DESK_LABEL[id] || APPS[id].title)}">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id] || APPS[id].title)}</span></div>`).join("");
     iconEls = [...iconsEl.children];
     layoutIcons(false);
   }
-  const saveDesk = () => { store.lset("xp-trash", JSON.stringify(trash)); store.lset("xp-desk-extra", JSON.stringify(extra)); };
+  const saveDesk = () => { store.lset("xp-trash", JSON.stringify(trash)); store.lset("xp-desk-extra", JSON.stringify(extra)); store.lset("xp-gone", JSON.stringify(gone)); };
   function addToDesktop(id, x, y) {
     if (!APPS[id]) return;
-    trash = trash.filter((t) => t !== id);
+    trash = trash.filter((t) => t !== id); gone = gone.filter((t) => t !== id);
     if (!DESKTOP.includes(id) && id !== "computer" && !extra.includes(id)) extra.push(id);
     if (x != null) iconPos[id] = { c: Math.max(0, Math.min(cols() - 1, Math.round((x - PAD - 40) / CELL_W))), r: Math.max(0, Math.min(rows() - 1, Math.round((y - PAD - 40) / CELL_H))) };
     Object.keys(iconPos).forEach((k) => k !== id && iconPos[k].c === iconPos[id]?.c && iconPos[k].r === iconPos[id]?.r && delete iconPos[k]);
@@ -883,8 +885,8 @@
   }
   function resetDesktop() {
     [...wins.keys()].forEach(close);
-    try { Object.keys(localStorage).filter((k) => /^xp-(icons|trash|desk-extra|order-|wall)/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch {}
-    trash = []; extra = []; iconPos = {}; setWall("bliss");
+    try { Object.keys(localStorage).filter((k) => /^xp-(icons|trash|desk-extra|gone|order-|wall)/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch {}
+    trash = []; extra = []; gone = []; iconPos = {}; setWall("bliss");
     buildIcons(); layoutIcons(true);
   }
   buildIcons();
@@ -994,9 +996,10 @@
   // swallow the click that follows a drag (only if it arrives right away) so the item doesn't also open
   let lastDrag = -1e9;
   addEventListener("click", (c) => { if (performance.now() - lastDrag < 80) { lastDrag = -1e9; c.stopPropagation(); c.preventDefault(); } }, true);
+  function focusableItems(root) { root.querySelectorAll(".fitem").forEach((f) => { f.tabIndex = 0; f.setAttribute("role", "button"); }); }
   function refreshRecycle() {
     const w = wins.get("recycle"); if (!w) return;
-    const b = w.el.querySelector(".wbody"); w.cleanups.forEach((f) => f()); w.cleanups = []; renderRecycle(b); applyOrder(w.el, "recycle");
+    const b = w.el.querySelector(".wbody"); w.cleanups.forEach((f) => f()); w.cleanups = []; renderRecycle(b); applyOrder(w.el, "recycle"); focusableItems(w.el);
   }
 
   // rubber-band selection on empty desktop
@@ -1124,6 +1127,7 @@
   }
   function toggleTray(which) {
     if (trayOpen === which) return closeTray();
+    if (which === "clock") { calMonth = new Date(); calMonth.setDate(1); }
     toggleStart(false); trayOpen = which; trayPop.classList.remove("hidden"); renderPop();
   }
   [["tVol", "vol"], ["tNet", "net"], ["tBat", "bat"], ["tClock", "clock"]].forEach(([id, w]) => $("#" + id).addEventListener("click", (e) => { e.stopPropagation(); toggleTray(w); }));
@@ -1231,7 +1235,7 @@
     $c(".task-list").addEventListener("click", (e) => {
       const li = e.target.closest("li"); if (!li) return; const id = li.dataset.id, t = Tasks.list.find((x) => x.id === id); if (!t) return;
       if (e.target.closest(".tdel")) Tasks.remove(id);
-      else if (e.target.closest(".tbell")) { Tasks.update(id, { remind: !t.remind, notified: false, snooze: null }); if (!t.remind) askNotify(true); }
+      else if (e.target.closest(".tbell")) { const on = !t.remind; Tasks.update(id, { remind: on, notified: false, snooze: null }); if (on) askNotify(true); }
       else if (e.target.closest(".tedit")) { editing = id; paint(); li.parentElement.querySelector(".etext")?.focus(); }
       else if (e.target.closest(".esave")) saveEdit(li);
     });
@@ -1259,9 +1263,9 @@
     } catch {}
   }
   const balloons = document.createElement("div"); balloons.className = "balloons"; desktopEl.appendChild(balloons);
-  function balloon(t, missed) {
+  function balloon(t, missed, when = Tasks.due(t)) {
     const b = document.createElement("div"); b.className = "balloon"; b.dataset.id = t.id;
-    b.innerHTML = `<button class="bx" aria-label="Dismiss">✕</button><b>🔔 ${missed ? "Missed reminder" : "Reminder"}</b><p>${esc(t.text)}</p><small>${new Date(Tasks.due(t)).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}</small>
+    b.innerHTML = `<button class="bx" aria-label="Dismiss">✕</button><b>🔔 ${missed ? "Missed reminder" : "Reminder"}</b><p>${esc(t.text)}</p><small>${new Date(when).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}</small>
       <div><button class="xpbtn bsnooze">Snooze 5 min</button><button class="xpbtn bdone">Done</button><button class="xpbtn bopen">Open</button></div>`;
     balloons.appendChild(b);
     b.addEventListener("click", (e) => {
@@ -1280,9 +1284,9 @@
       const due = Tasks.due(t);
       if (!t.remind || t.done || t.notified || !due || due > now) return;
       const missed = now - due > 2 * 60000;
-      t.notified = true; t.snooze = null; changed = true;
+      const when = due; t.notified = true; t.snooze = null; changed = true;
       if (first && now - due > 7 * 864e5) return; // ignore anything older than a week
-      balloon(t, missed); if (!missed) chime();
+      balloon(t, missed, when); if (!missed) chime();
       if (document.hidden && "Notification" in window && Notification.permission === "granted") { try { new Notification("Reminder", { body: t.text, icon: "photo.jpg", tag: t.id }); } catch {} }
     });
     if (changed) Tasks.save();
