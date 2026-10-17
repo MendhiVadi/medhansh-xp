@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Medhansh Khattar - Portfolio XP</title>
+  <meta name="description" content="Medhansh Khattar - AI/ML Engineer. Explore projects, experience, skills and a working resume on an interactive Windows XP desktop, complete with games, Paint and more." />
+  <meta name="color-scheme" content="light" />
+  <link rel="preload" as="image" href="photo.jpg" />
+  <link rel="apple-touch-icon" href="photo.jpg" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='3' y='4' width='12' height='11' rx='2' fill='%23f25022'/><rect x='17' y='4' width='12' height='11' rx='2' fill='%237fba00'/><rect x='3' y='17' width='12' height='11' rx='2' fill='%2300a4ef'/><rect x='17' y='17' width='12' height='11' rx='2' fill='%23ffb900'/></svg>" />
+  <meta name="theme-color" content="#245edb" />
+  <meta property="og:title" content="Medhansh Khattar - Portfolio XP" />
+  <meta property="og:description" content="AI/ML Engineer. Projects, experience and resume on an interactive Windows XP desktop." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="photo-full.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Medhansh Khattar - Portfolio XP" />
+  <meta name="twitter:description" content="AI/ML Engineer. Projects, experience and resume on an interactive Windows XP desktop." />
+  <meta name="twitter:image" content="photo-full.jpg" />
+  <link rel="prefetch" href="games.js?v=12" as="script" />
+  <link rel="stylesheet" href="style.css?v=12" />
+  <noscript><style>#boot, #login, #desktop { display: none !important; } body { background: #fff; color: #000; overflow: auto; }</style></noscript>
+</head>
+<body>
+  <noscript>
+    <div style="padding:24px;font:16px/1.5 Tahoma,Arial,sans-serif;background:#fff;color:#000">
+      <h1>Medhansh Khattar</h1>
+      <p>AI/ML Engineer. This portfolio is an interactive Windows XP desktop and needs JavaScript enabled.</p>
+      <p>Email: <a href="mailto:medhanshkhattar.in@gmail.com">medhanshkhattar.in@gmail.com</a><br>
+      LinkedIn: <a href="https://www.linkedin.com/in/medhansh-khattar-635271366">linkedin.com/in/medhansh-khattar-635271366</a></p>
+    </div>
+  </noscript>
+  <!-- Boot screen -->
+  <div id="boot" class="screen boot">
+    <div class="boot-center">
+      <div class="xp-logo big"><span></span><span></span><span></span><span></span></div>
+      <div class="boot-ms">Microsoft<sup>®</sup></div>
+      <div class="boot-title">Windows<span>xp</span></div>
+      <div class="boot-owner">Medhansh Khattar</div>
+      <div class="boot-bar"><div class="boot-blocks"><i></i><i></i><i></i></div></div>
+    </div>
+    <div class="boot-foot"><span>Copyright © Portfolio Corporation</span><b>Portfolio<sup>®</sup></b></div>
+  </div>
+
+  <!-- Welcome / login screen -->
+  <div id="login" class="screen login hidden">
+    <div class="login-top"></div>
+    <div class="login-mid">
+      <div class="login-left">
+        <div class="xp-logo"><span></span><span></span><span></span><span></span></div>
+        <div class="login-brand">Windows<span>xp</span></div>
+        <p>Welcome to <b class="boot-owner">Medhansh Khattar</b>'s portfolio.<br>To begin, click the user name</p>
+      </div>
+      <div class="login-divider"></div>
+      <div class="login-right">
+        <button class="user-tile" id="userTile">
+          <span class="avatar" id="loginAvatar"></span>
+          <span><b id="loginName">Medhansh Khattar</b><small id="loginRole">AI/ML Engineer</small></span>
+        </button>
+      </div>
+    </div>
+    <div class="login-bottom">
+      <button class="turnoff" id="loginOff"><span class="power-ico"></span>Turn off computer</button>
+      <span>After you log on, you can open any app on the desktop.</span>
+    </div>
+  </div>
+
+  <!-- Desktop -->
+  <div id="desktop" class="desktop hidden">
+    <div id="icons" class="icons"></div>
+    <div id="windows"></div>
+
+    <div id="startMenu" class="start-menu hidden" role="menu" aria-label="Start menu">
+      <div class="sm-head"><span class="avatar" id="smAvatar"></span><b id="smName">Medhansh Khattar</b></div>
+      <div class="sm-body">
+        <ul class="sm-left" id="smLeft"></ul>
+        <ul class="sm-right" id="smRight"></ul>
+      </div>
+      <div class="sm-foot">
+        <button id="smLogoff"><span class="ico-key"></span>Log Off</button>
+        <button id="smShutdown"><span class="power-ico"></span>Turn Off Computer</button>
+      </div>
+    </div>
+
+    <div id="ctxMenu" class="ctx hidden"></div>
+    <div id="trayPop" class="tray-pop hidden"></div>
+
+    <div class="taskbar" role="toolbar" aria-label="Taskbar">
+      <button class="start-btn" id="startBtn" aria-label="Start" aria-haspopup="menu"><span class="xp-logo tiny"><span></span><span></span><span></span><span></span></span><i>start</i></button>
+      <div class="quick"><button id="showDesk" title="Show Desktop" aria-label="Show Desktop"><svg viewBox="0 0 32 32"><rect x="3" y="6" width="26" height="18" rx="2" fill="#4f95ea" stroke="#fff"/><path d="M3 18c8-5 18-5 26 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="#4c9b2d"/><rect x="9" y="26" width="14" height="2" fill="#fff"/></svg></button></div>
+      <div class="tasks" id="tasks" aria-label="Open windows"></div>
+      <div class="tray">
+        <button class="tray-ico" id="tNet" title="Wireless Network Connection" aria-label="Wi-Fi"><span class="wifi-ico"><i></i><i></i><i></i></span></button>
+        <button class="tray-ico" id="tBat" title="Battery" aria-label="Battery"></button>
+        <button class="tray-ico" id="tBell" title="Tasks today" aria-label="Tasks today" hidden>🔔<b></b></button>
+        <button class="tray-ico" id="tVol" title="Volume" aria-label="Volume">🔊</button>
+        <button class="tray-clock" id="tClock" aria-label="Date and time"><span id="clock">12:00 PM</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shutdown dialog -->
+  <div id="shutdown" class="modal-bg hidden">
+    <div class="shut-box" role="dialog" aria-modal="true" aria-label="Turn off computer">
+      <div class="shut-head">Turn off computer <div class="xp-logo tiny"><span></span><span></span><span></span><span></span></div></div>
+      <div class="shut-body">
+        <button data-act="standby"><span class="sb sb-yellow">☾</span>Stand By</button>
+        <button data-act="off"><span class="sb sb-red">⏻</span>Turn Off</button>
+        <button data-act="restart"><span class="sb sb-green">⟳</span>Restart</button>
+      </div>
+      <div class="shut-foot"><button data-act="cancel">Cancel</button></div>
+    </div>
+  </div>
+
+  <div id="blackout" class="screen blackout hidden"><p id="blackoutMsg">Windows is shutting down...</p><button id="powerOn" class="hidden">Click to start Windows</button></div>
+
+  <script src="data.js?v=12" defer></script>
+  <script src="app.js?v=12" defer></script>
+</body>
+</html>
