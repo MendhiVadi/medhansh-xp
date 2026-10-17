@@ -194,9 +194,9 @@
     body.classList.add("game-body");
     const cv = body.querySelector("canvas"), g = cv.getContext("2d"), msg = body.querySelector(".game-msg");
     const scEl = body.querySelector(".sc"), hiEl = body.querySelector(".hi");
-    let best = +(ctx.store.lget("xp-snake-best") || 0); hiEl.textContent = best;
+    let best = Number(ctx.store.lget("xp-snake-best")) || 0; hiEl.textContent = best;
     let level = ctx.store.lget("xp-snake-speed"); if (!SPEEDS[level]) level = "Normal";
-    let sn, dir, queue, food, state = "ready", acc = 0, speed;
+    let sn, dir, queue, food, state = "ready", acc = 0, speed, overAt = 0;
     const intro = "<b>SNAKE</b><br><small>Arrow keys / WASD or swipe<br>Space or tap to start</small>";
     const reset = () => { sn = [{ x: 9, y: 10 }, { x: 8, y: 10 }, { x: 7, y: 10 }]; dir = { x: 1, y: 0 }; queue = []; speed = SPEEDS[level]; acc = 0; placeFood(); scEl.textContent = 0; };
     const placeFood = () => { do food = { x: (Math.random() * N) | 0, y: (Math.random() * N) | 0 }; while (sn.some((p) => p.x === food.x && p.y === food.y)); };
@@ -208,14 +208,14 @@
       else if (state === "paused") start();
     };
     function turn(x, y) {
-      if (state === "over") start();
+      if (state === "over") { if (performance.now() - overAt < 600) return; start(); }
       const last = queue[queue.length - 1] || dir;
       if (last.x === -x && last.y === -y) return;
       if ((last.x !== x || last.y !== y) && queue.length < 3) queue.push({ x, y });
       if (state !== "run") start();
     }
     function end(win) {
-      state = "over"; const s = sn.length - 3;
+      state = "over"; overAt = performance.now(); const s = sn.length - 3;
       if (s > best) { best = s; ctx.store.lset("xp-snake-best", best); hiEl.textContent = best; }
       say(`<b>${win ? "YOU WIN!" : "GAME OVER"}</b><br>Score ${s}<br><small>Press Space or tap to play again</small>`);
     }
@@ -242,7 +242,7 @@
       if (!ctx.isActive() || e.ctrlKey || e.metaKey || e.altKey) return;
       const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
       if (keys[k]) { e.preventDefault(); turn(...keys[k]); }
-      else if (k === " ") { e.preventDefault(); if (state === "run" || state === "paused") pause(); else start(); }
+      else if (k === " ") { e.preventDefault(); if (e.repeat || (state === "over" && performance.now() - overAt < 600)) return; if (state === "run" || state === "paused") pause(); else start(); }
       else if (k === "F2") { e.preventDefault(); newGame(); }
     });
     let tx = null, ty = 0;
@@ -358,8 +358,8 @@
       if (!ctx.isActive() || e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === "ArrowLeft") { e.preventDefault(); kl = true; }
       else if (e.key === "ArrowRight") { e.preventDefault(); kr = true; }
-      else if (e.key === " ") { e.preventDefault(); launch(); }
-      else if (e.key === "p" || e.key === "P") pause();
+      else if (e.key === " ") { e.preventDefault(); if (!e.repeat) launch(); }
+      else if ((e.key === "p" || e.key === "P") && !e.repeat) pause();
       else if (e.key === "F2") { e.preventDefault(); newGame(); }
     });
     // key-up and blur always clear, so a key released while unfocused can't stick
@@ -383,7 +383,7 @@
     body.innerHTML = `<div class="ttt"><div class="ttt-bar"><label><input type="checkbox" class="hard" checked> Unbeatable AI</label><span class="ttt-score"></span></div><div class="ttt-msg">Your turn (X)</div><div class="ttt-grid">${Array.from({ length: 9 }, (_, i) => `<button data-i="${i}"></button>`).join("")}</div><div style="display:flex;gap:8px"><button class="xpbtn again">New Game</button><button class="xpbtn zero">Reset score</button></div></div>`;
     const cells = [...body.querySelectorAll(".ttt-grid button")], msgEl = body.querySelector(".ttt-msg"), scoreEl = body.querySelector(".ttt-score");
     let tally = { w: 0, l: 0, d: 0 };
-    try { tally = { ...tally, ...JSON.parse(ctx.store.lget("xp-ttt") || "{}") }; } catch {}
+    try { const t = JSON.parse(ctx.store.lget("xp-ttt") || "{}"); tally = { w: Number(t.w) || 0, l: Number(t.l) || 0, d: Number(t.d) || 0 }; } catch {}
     let b, over;
     const save = () => ctx.store.lset("xp-ttt", JSON.stringify(tally));
     const aiStarts = () => (tally.w + tally.l + tally.d) % 2 === 1; // the computer opens every other finished game

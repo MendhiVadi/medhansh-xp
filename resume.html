@@ -15,7 +15,7 @@
     .role { color: #444; font-size: 11pt; }
     .contact { text-align: right; font-size: 9.5pt; line-height: 1.5; }
     a { color: #1e4fb8; text-decoration: none; }
-    h2 { margin: 10px 0 4px; font-size: 10.5pt; text-transform: uppercase; letter-spacing: 1.2px; color: #1e4fb8; border-bottom: 1px solid #d5dcec; padding-bottom: 2px; }
+    h2 { break-after: avoid; margin: 10px 0 4px; font-size: 10.5pt; text-transform: uppercase; letter-spacing: 1.2px; color: #1e4fb8; border-bottom: 1px solid #d5dcec; padding-bottom: 2px; }
     .item { margin-bottom: 5px; break-inside: avoid; }
     .row { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
     .row b { font-size: 10.5pt; }
@@ -32,10 +32,10 @@
 </head>
 <body>
   <main id="r"></main>
-  <script src="data.js?v=13"></script>
+  <script src="data.js?v=14"></script>
   <script>
     (() => {
-      const P = window.PROFILE, L = P.links;
+      const P = window.PROFILE || {}, L = P.links || {};
       const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
       const link = (u) => u ? `<a href="${esc(u)}">${esc(u.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))}</a>` : "";
       const list = (a) => a?.length ? `<ul>${a.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
@@ -44,11 +44,11 @@
       document.getElementById("r").innerHTML = `
         <header><div><h1>${esc(P.name)}</h1><div class="role">${esc(P.role)}${P.subtitle ? " · " + esc(P.subtitle) : ""}</div><div class="muted">${esc(P.location)}</div></div>
           <div class="contact">${L.email ? `<a href="mailto:${esc(L.email)}">${esc(L.email)}</a><br>` : ""}${[L.linkedin, L.github, L.website, L.yapless].filter(Boolean).map(link).join("<br>")}<br><a href="https://medhansh-xp.vercel.app/">medhansh-xp.vercel.app</a></div></header>
-        ${sec("Summary", `<p>${esc(P.summary || P.bio.join(" "))}</p>`)}
-        ${sec("Experience", P.experience.map((x) => `<div class="item"><div class="row"><b>${esc(x.title)} - ${esc(x.org)}</b><span class="muted">${esc(x.years)}</span></div>${x.location ? `<div class="muted">${esc(x.location)}</div>` : ""}${list(x.points)}</div>`).join(""))}
-        ${sec("Projects", P.projects.filter((p) => p.resume !== false).map((p) => `<div class="item"><div class="row"><b>${esc(p.name)}</b><span class="muted">${esc((p.stack || []).join(" · "))}</span></div><p>${esc(p.desc)}</p>${[p.github, p.url].filter(Boolean).length ? `<div class="muted">${[p.github, p.url].filter(Boolean).map(link).join(" &nbsp;|&nbsp; ")}</div>` : ""}</div>`).join(""))}
-        ${sec("Education", P.education.map((e) => `<div class="item"><div class="row"><b>${esc(e.school)}</b><span class="muted">${esc(e.years)}</span></div><div>${esc(e.degree)}${e.detail ? ` <span class="muted">· ${esc(e.detail)}</span>` : ""}</div>${list(e.points)}</div>`).join(""))}
-        ${sec("Skills", `<div class="skills">${Object.entries(P.skills).map(([k, v]) => `<div><b>${esc(k)}:</b> ${v.map(esc).join(", ")}</div>`).join("")}</div>`)}
+        ${sec("Summary", `<p>${esc(P.summary || (P.bio || []).join(" "))}</p>`)}
+        ${sec("Experience", (P.experience || []).map((x) => `<div class="item"><div class="row"><b>${esc(x.title)} - ${esc(x.org)}</b><span class="muted">${esc(x.years)}</span></div>${x.location ? `<div class="muted">${esc(x.location)}</div>` : ""}${list(x.points)}</div>`).join(""))}
+        ${sec("Projects", (P.projects || []).filter((p) => p.resume !== false).map((p) => `<div class="item"><div class="row"><b>${esc(p.name)}</b><span class="muted">${esc((p.stack || []).join(" · "))}</span></div><p>${esc(p.desc)}</p>${[p.github, p.url].filter(Boolean).length ? `<div class="muted">${[p.github, p.url].filter(Boolean).map(link).join(" &nbsp;|&nbsp; ")}</div>` : ""}</div>`).join(""))}
+        ${sec("Education", (P.education || []).map((e) => `<div class="item"><div class="row"><b>${esc(e.school)}</b><span class="muted">${esc(e.years)}</span></div><div>${esc(e.degree)}${e.detail ? ` <span class="muted">· ${esc(e.detail)}</span>` : ""}</div>${list(e.points)}</div>`).join(""))}
+        ${sec("Skills", Object.keys(P.skills || {}).length ? `<div class="skills">${Object.entries(P.skills).map(([k, v]) => `<div><b>${esc(k)}:</b> ${(v || []).map(esc).join(", ")}</div>`).join("")}</div>` : "")}
         ${sec("Honors & Awards", P.achievements?.length ? `<ul class="two">${P.achievements.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : "")}
         ${sec("Certifications", list(P.certifications))}
         ${sec("Languages", P.languages?.length ? `<p>${P.languages.map(esc).join(" · ")}</p>` : "")}`;

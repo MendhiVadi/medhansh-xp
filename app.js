@@ -76,7 +76,7 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=13"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=14"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyGame(name) {
@@ -244,10 +244,10 @@
       document.body.appendChild(dd); openMenu = dd;
       dd.style.left = Math.max(0, Math.min(r.left, innerWidth - dd.offsetWidth - 2)) + "px";
     };
-    bar.addEventListener("pointerdown", (e) => { const s = e.target.closest("[data-mi]"); if (!s) return; e.stopPropagation(); s.classList.contains("on") ? closeMenus() : show(s); });
+    bar.addEventListener("pointerdown", (e) => { const s = e.target.closest("[data-mi]"); if (!s) return; e.stopPropagation(); const wk = bar.closest(".win")?.dataset.key; if (wk) focus(wk); s.classList.contains("on") ? closeMenus() : show(s); });
     bar.addEventListener("pointerover", (e) => { const s = e.target.closest("[data-mi]"); if (s && openMenu && !s.classList.contains("on")) show(s); });
   }
-  document.addEventListener("pointerdown", (e) => { if (openMenu && !e.target.closest(".dropdown")) closeMenus(); });
+  document.addEventListener("pointerdown", (e) => { if (openMenu && !e.target.closest?.(".dropdown")) closeMenus(); });
   const defaultMenus = (app, ctx) => [
     { label: "File", items: [{ label: "Close", key: "Alt+F4", act: ctx.close }] },
     { label: "View", items: [{ label: "Maximize", act: () => ctx.el.classList.toggle("max") }, { label: "Minimize", act: () => minimize(ctx.key) }] },
@@ -959,7 +959,7 @@
     });
   }
   document.addEventListener("pointerdown", (e) => {
-    const it = e.target.closest(".grid-items .fitem"); if (!it || e.button !== 0 || e.pointerType === "touch") return;
+    const it = e.target.closest?.(".grid-items .fitem"); if (!it || e.button !== 0 || e.pointerType === "touch") return;
     const grid = it.parentElement, winEl = it.closest(".win"), key = winEl?.dataset.key;
     grid.querySelectorAll(".fitem").forEach((x) => x.classList.toggle("sel", x === it));
     const sx = e.clientX, sy = e.clientY; let ghost = null, hover = null;
