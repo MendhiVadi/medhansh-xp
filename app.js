@@ -56,6 +56,25 @@
       const j = await fetch(`${FS}/scores/${encodeURIComponent(game)}:runQuery${FB.apiKey ? `?key=${FB.apiKey}` : ""}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ structuredQuery: { from: [{ collectionId: "entries" }], orderBy: [{ field: { fieldPath: "score" }, direction: asc ? "ASCENDING" : "DESCENDING" }], limit: n } }) }).then((r) => (r.ok ? r.json() : Promise.reject(r)));
       this.set(true); return j.filter((x) => x.document).map((x) => dec(x.document));
     },
+    // visit counters use server-side increments so concurrent visitors never overwrite each other
+    async count(ids, visitor) {
+      const base = `projects/${FB.projectId}/databases/(default)/documents/stats/`;
+      const writes = ids.map((id) => ({ transform: { document: base + id, fieldTransforms: [{ fieldPath: "views", increment: { integerValue: "1" } }, { fieldPath: "visitors", increment: { integerValue: visitor[id] ? "1" : "0" } }] } }));
+      const r = await fetch(`${FS.replace(/\/documents$/, "")}/documents:commit${FB.apiKey ? `?key=${FB.apiKey}` : ""}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ writes }) });
+      if (!r.ok) throw new Error("count failed");
+    },
+    async stats(ids) {
+      const base = `projects/${FB.projectId}/databases/(default)/documents/stats/`;
+      const r = await fetch(`${FS}:batchGet${FB.apiKey ? `?key=${FB.apiKey}` : ""}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ documents: ids.map((i) => base + i) }) });
+      if (!r.ok) throw new Error("stats failed");
+      this.set(true);
+      const out = {}; (await r.json()).forEach((x) => { if (x.found) { const d = dec(x.found); out[d.id] = d; } }); return out;
+    },
+    async board(n = 50) {
+      const j = await fetch(`${FS}:runQuery${FB.apiKey ? `?key=${FB.apiKey}` : ""}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ structuredQuery: { from: [{ collectionId: "board" }], orderBy: [{ field: { fieldPath: "createdAt" }, direction: "DESCENDING" }], limit: n } }) }).then((r) => (r.ok ? r.json() : Promise.reject(r)));
+      this.set(true); return j.filter((x) => x.document).map((x) => dec(x.document));
+    },
+    async post(from, to, text) { return dec(await this.req("board", { method: "POST", body: enc({ from, to, text, createdAt: Date.now() }) })); },
     async submit(game, score, extra = {}) { return dec(await this.req(`scores/${encodeURIComponent(game)}/entries`, { method: "POST", body: enc({ name: playerName() || "Visitor", score: Math.round(score), ...extra, createdAt: Date.now() }) })); },
   };
   const playerName = () => (store.lget("xp-player-name") || "").slice(0, 20);
@@ -107,6 +126,8 @@
     privacy: `<svg viewBox="0 0 32 32"><path d="M16 3l11 4v8c0 7-5 12-11 14C10 27 5 22 5 15V7z" fill="#5aa83a" stroke="#2e6a12"/><path d="M11 16l4 4 7-8" stroke="#fff" stroke-width="2.6" fill="none"/></svg>`,
     pinball: `<svg viewBox="0 0 32 32"><rect x="6" y="2" width="20" height="28" rx="4" fill="#1a1450" stroke="#888"/><circle cx="12" cy="10" r="3" fill="#e5410c"/><circle cx="20" cy="9" r="3" fill="#f2a900"/><circle cx="16" cy="15" r="3" fill="#1e7ae6"/><path d="M9 25l5 2M23 25l-5 2" stroke="#ddd" stroke-width="2" stroke-linecap="round"/><circle cx="17" cy="21" r="1.6" fill="#fff"/></svg>`,
     spider: `<svg viewBox="0 0 32 32"><rect x="4" y="6" width="15" height="21" rx="2" fill="#2f5fd0" stroke="#123" transform="rotate(-12 11 16)"/><rect x="12" y="5" width="15" height="21" rx="2" fill="#fff" stroke="#333"/><circle cx="19.5" cy="15.5" r="3" fill="#111"/><path d="M15 12l2 2M24 12l-2 2M14.5 16h2M24.5 16h-2M15 20l2-2M24 20l-2-2" stroke="#111"/></svg>`,
+    stats: `<svg viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="2" fill="#fff" stroke="#4a6fa0"/><rect x="8" y="17" width="4" height="8" fill="#1e7ae6"/><rect x="14" y="11" width="4" height="14" fill="#5aa83a"/><rect x="20" y="7" width="4" height="18" fill="#f2a900"/></svg>`,
+    board: `<svg viewBox="0 0 32 32"><rect x="3" y="4" width="26" height="22" rx="2" fill="#c9a26b" stroke="#7a5a2e"/><rect x="6" y="7" width="9" height="8" fill="#fff59d" transform="rotate(-4 10 11)"/><rect x="17" y="8" width="9" height="8" fill="#b3e5fc" transform="rotate(5 21 12)"/><rect x="9" y="17" width="10" height="7" fill="#f8bbd0" transform="rotate(2 14 20)"/><circle cx="10" cy="8" r="1.2" fill="#d0362f"/><circle cx="21" cy="9" r="1.2" fill="#1e7ae6"/><circle cx="14" cy="18" r="1.2" fill="#5aa83a"/></svg>`,
     yapless: `<svg viewBox="0 0 32 32"><rect x="3" y="5" width="26" height="19" rx="6" fill="#ff7a32"/><path d="M10 24l-2 5 7-5" fill="#ff7a32"/><path d="M10 12h12M10 17h7" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>`,
   };
 
@@ -136,6 +157,8 @@
     control:  { title: "Control Panel", icon: "control", w: 600, h: 420, render: (b, c) => renderControl(b, c) },
     run:      { title: "Run", icon: "run", w: 360, h: 190, render: (b, c) => renderRun(b, c) },
     search:   { title: "Search Results", icon: "search", w: 560, h: 420, render: (b, c) => renderSearch(b, c) },
+    stats:    { title: "Site Statistics", icon: "stats", w: 520, h: 400, render: (b, c) => renderStats(b, c) },
+    board:    { title: "Message Board", icon: "board", w: 360, h: 480, render: (b, c) => renderBoard(b, c) },
     help:     { title: "Help and Support Center", icon: "help", w: 640, h: 460, render: (b, c) => renderHelp(b, c) },
     privacy:  { title: "Privacy.txt - Notepad", icon: "privacy", w: 560, h: 440, render: (b, c) => renderPrivacy(b, c) },
     display:  { title: "Display Properties", icon: "display", w: 420, h: 470, render: renderDisplay },
@@ -145,18 +168,18 @@
   };
   APPS.reset = { title: "Reset Desktop", icon: "showdesk", action: () => askReset() };
   const GAME_IDS = ["solitaire", "spider", "mine", "pinball", "snake", "breakout"];
-  const DESKTOP = ["about", "projects", "resume", "ie", "contact", "msn", "cmd", "calendar", "games", "pictures", "wmp", "paint", "notepad", "reset", "recycle"];
-  const DESK_LABEL = { reset: "Reset Desktop", pinball: "3D Pinball", spider: "Spider Solitaire", calc: "Calculator", wmp: "Media Player", pictures: "My Pictures", taskmgr: "Task Manager", control: "Control Panel", run: "Run", search: "Search", help: "Help and Support", privacy: "Privacy", about: "About Me", resume: "Resume", projects: "My Projects", contact: "Contact Me", ie: "Internet Explorer", cmd: "Command Prompt", msn: "MSN Messenger", mine: "Minesweeper", paint: "Paint", notepad: "Notepad", recycle: "Recycle Bin", computer: "My Computer", games: "Games", calendar: "Calendar", solitaire: "Solitaire", snake: "Snake", breakout: "Brick Breaker", display: "Display" };
+  const DESKTOP = ["about", "projects", "resume", "ie", "contact", "msn", "cmd", "calendar", "games", "pictures", "wmp", "paint", "notepad", "stats", "board", "reset", "recycle"];
+  const DESK_LABEL = { stats: "Site Stats", board: "Message Board", reset: "Reset Desktop", pinball: "3D Pinball", spider: "Spider Solitaire", calc: "Calculator", wmp: "Media Player", pictures: "My Pictures", taskmgr: "Task Manager", control: "Control Panel", run: "Run", search: "Search", help: "Help and Support", privacy: "Privacy", about: "About Me", resume: "Resume", projects: "My Projects", contact: "Contact Me", ie: "Internet Explorer", cmd: "Command Prompt", msn: "MSN Messenger", mine: "Minesweeper", paint: "Paint", notepad: "Notepad", recycle: "Recycle Bin", computer: "My Computer", games: "Games", calendar: "Calendar", solitaire: "Solitaire", snake: "Snake", breakout: "Brick Breaker", display: "Display" };
 
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=24"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=25"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=24"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=25"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyExtra(name) {
@@ -250,7 +273,7 @@
     close: (k) => close(k),
     open: (id, o) => { const k = Object.keys(APPS).find((a) => a === id || APPS[a].title.toLowerCase() === String(id).toLowerCase() || (DESK_LABEL[a] || "").toLowerCase() === String(id).toLowerCase()); if (!k) return false; openApp(k, o); return true; },
     msg: (t, h) => msgBox(t, h),
-    photos: [{ src: "photo-full.jpg?v=24", title: "Medhansh.jpg" }, { src: "photo.jpg?v=24", title: "Avatar.jpg" }],
+    photos: [{ src: "photo-full.jpg?v=25", title: "Medhansh.jpg" }, { src: "photo.jpg?v=25", title: "Avatar.jpg" }],
     // Shared data everyone sees. Games: sys.scores.submit(game, score, extra) / sys.scores.top(game, n, ascending)
     scores: { top: (g, n, asc) => Cloud.top(g, n, asc), submit: (g, s, x) => { askName(); return Cloud.submit(g, s, x); }, name: () => playerName(), askName },
     pictures: { list: () => Cloud.pictures(), data: (id) => Cloud.pictureData(id), add: (t, d, w, h) => { askName(); return Cloud.pictureAdd(t, d, w, h); }, remove: (id) => Cloud.pictureDelete(id) },
@@ -1238,6 +1261,71 @@ TERMS
     inner.style.overflow = "hidden";
   }
 
+  // ---------------- Site statistics (own counters in Firestore) ----------------
+  const dayId = (d) => "d-" + dkey(d);
+  function countVisit() {
+    // one view per browser session; a "visitor" is a browser we haven't seen before (overall / today)
+    if (store.get("xp-counted")) return; store.set("xp-counted", "1");
+    const today = dayId(new Date()), seen = store.lget("xp-seen"), seenDay = store.lget("xp-seen-day");
+    Cloud.count(["site", today], { site: !seen, [today]: seenDay !== today }).then(() => { store.lset("xp-seen", "1"); store.lset("xp-seen-day", today); }).catch(() => store.set("xp-counted", ""));
+  }
+  function renderStats(body, ctx) {
+    const inner = chrome(body, { addr: "Site Statistics", addrIcon: "stats" });
+    inner.innerHTML = `<div class="statwin"><div class="stat-cards"><div><b class="sv">…</b><span>Total page views</span></div><div><b class="su">…</b><span>Unique visitors</span></div><div><b class="tv">…</b><span>Views today</span></div><div><b class="tu">…</b><span>Visitors today</span></div></div>
+      <h4>Traffic, last 14 days</h4><div class="stat-chart"></div><p class="muted stat-note">Counted on this site: one view per browser session, one visitor per new browser. Refreshes every 30 seconds.</p></div>`;
+    const $s = (q) => inner.querySelector(q);
+    async function load() {
+      const days = Array.from({ length: 14 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - 13 + i); return d; });
+      try {
+        const st = await Cloud.stats(["site", ...days.map(dayId)]);
+        const n = (v) => (v || 0).toLocaleString();
+        $s(".sv").textContent = n(st.site?.views); $s(".su").textContent = n(st.site?.visitors);
+        const t = st[dayId(new Date())]; $s(".tv").textContent = n(t?.views); $s(".tu").textContent = n(t?.visitors);
+        const max = Math.max(1, ...days.map((d) => st[dayId(d)]?.views || 0));
+        $s(".stat-chart").innerHTML = days.map((d) => { const v = st[dayId(d)]?.views || 0, u = st[dayId(d)]?.visitors || 0; return `<div class="bar" title="${d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}: ${v} views, ${u} visitors"><i style="height:${Math.round(v / max * 100)}%"></i><em style="height:${Math.round(u / max * 100)}%"></em><small>${d.getDate()}</small></div>`; }).join("");
+      } catch { $s(".stat-note").textContent = "Statistics are unavailable right now (offline)."; }
+    }
+    load(); const t = setInterval(() => ctx.isVisible() && load(), 30000); ctx.onClose(() => clearInterval(t));
+  }
+
+  // ---------------- Message board (open: no sign-in, anyone can post to anyone) ----------------
+  function renderBoard(body, ctx = null) {
+    const docked = !ctx;
+    body.classList.add("mboard");
+    body.innerHTML = `${docked ? `<div class="mb-head">${I.board}<b>Message Board</b><button class="mb-min" title="Hide" aria-label="Hide message board">–</button></div>` : ""}
+      <form class="mb-form"><div class="mb-row"><input name="from" maxlength="30" placeholder="Your name (optional)" aria-label="Your name"><input name="to" maxlength="30" placeholder="To (optional)" aria-label="To"></div>
+        <textarea name="text" maxlength="280" placeholder="Leave a message for anyone…" aria-label="Message" required></textarea>
+        <div class="mb-row"><small class="mb-count">0 / 280</small><button class="xpbtn">Post</button></div></form>
+      <div class="mb-list" aria-live="polite"><p class="muted">Loading messages…</p></div>`;
+    const form = body.querySelector("form"), list = body.querySelector(".mb-list"), F = form.elements;
+    F.from.value = store.lget("xp-board-name") || playerName() || "";
+    let last = 0, sig = "";
+    const ago = (t) => { const s = (Date.now() - t) / 1000; return s < 60 ? "just now" : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : new Date(t).toLocaleDateString([], { month: "short", day: "numeric" }); };
+    const paint = (rows) => {
+      list.innerHTML = rows.length ? rows.map((m) => `<div class="mb-msg"><div class="mb-meta"><b>${esc(m.from)}</b> → <span>${esc(m.to)}</span><time title="${new Date(m.createdAt).toLocaleString()}">${ago(m.createdAt)}</time></div><p>${esc(m.text)}</p></div>`).join("") : `<p class="muted">No messages yet. Be the first!</p>`;
+    };
+    async function load() {
+      try { const rows = await Cloud.board(50); const n = rows.map((r) => r.id).join(); if (n !== sig) { sig = n; paint(rows); } }
+      catch { if (!sig) list.innerHTML = `<p class="muted">Messages are unavailable right now.</p>`; }
+    }
+    F.text.addEventListener("input", () => (body.querySelector(".mb-count").textContent = `${F.text.value.length} / 280`));
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = F.text.value.trim(); if (!text) return;
+      if (Date.now() - last < 15000) return msgBox("Message Board", "Please wait a few seconds before posting again.", "⚠️");
+      const from = (F.from.value.trim() || "Anonymous").slice(0, 30), to = (F.to.value.trim() || "Everyone").slice(0, 30);
+      const btn = form.querySelector("button"); btn.disabled = true;
+      try { await Cloud.post(from, to, text); last = Date.now(); store.lset("xp-board-name", F.from.value.trim()); F.text.value = ""; F.to.value = ""; body.querySelector(".mb-count").textContent = "0 / 280"; sig = ""; await load(); }
+      catch { msgBox("Message Board", "Couldn't post right now. Please try again.", "⚠️"); }
+      finally { btn.disabled = false; }
+    });
+    F.text.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) form.requestSubmit(); });
+    load();
+    const t = setInterval(() => !document.hidden && (docked ? !boardEl.classList.contains("hidden") : ctx.isVisible()) && load(), 30000);
+    if (ctx) ctx.onClose(() => clearInterval(t));
+    if (docked) body.querySelector(".mb-min").onclick = () => { boardEl.classList.add("hidden"); store.lset("xp-board-hidden", "1"); boardTab.classList.remove("hidden"); layoutIcons(false); };
+  }
+
   // ---------------- Wallpapers / Display Properties ----------------
   const WALLS = { bliss: "Bliss", azul: "Azul", autumn: "Autumn", ripple: "Ripple", sunset: "Sunset", stars: "Starfield", teal: "Classic Teal", black: "Black" };
   const desktopEl = $("#desktop");
@@ -1272,6 +1360,12 @@ TERMS
   // ---------------- Desktop icons (draggable, snap to grid, positions saved) ----------------
   // The desktop holds the default icons plus any shortcuts dragged out of folders; icons dropped on the Recycle Bin move there.
   const iconsEl = $("#icons");
+  // the message board lives on the right side of the desktop; on narrow screens it's a desktop icon instead
+  const boardEl = document.createElement("aside"); boardEl.className = "board-dock"; boardEl.setAttribute("aria-label", "Message board");
+  const boardTab = document.createElement("button"); boardTab.className = "board-tab hidden"; boardTab.innerHTML = `${I.board}<span>Messages</span>`; boardTab.title = "Show the message board";
+  $("#desktop").insertBefore(boardEl, $("#windows")); $("#desktop").appendChild(boardTab);
+  if (store.lget("xp-board-hidden") === "1") { boardEl.classList.add("hidden"); boardTab.classList.remove("hidden"); }
+  boardTab.onclick = () => { boardEl.classList.remove("hidden"); boardTab.classList.add("hidden"); store.lset("xp-board-hidden", "0"); layoutIcons(false); };
   const FIXED = ["computer", "recycle", "reset"];
   const readList = (k) => { try { return JSON.parse(store.lget(k) || "[]").filter((id) => APPS[id]); } catch { return []; } };
   let trash = readList("xp-trash"), extra = readList("xp-desk-extra"), gone = readList("xp-gone");
@@ -1301,7 +1395,8 @@ TERMS
   let iconPos = {};
   try { iconPos = JSON.parse(store.lget("xp-icons") || "{}"); } catch {}
   const rows = () => Math.max(1, Math.floor((innerHeight - 30 - PAD) / CELL_H));
-  const cols = () => Math.max(1, Math.floor((innerWidth - PAD) / CELL_W));
+  const boardWidth = () => (innerWidth > 900 && !boardEl.classList.contains("hidden") ? 300 : 0);
+  const cols = () => Math.max(1, Math.floor((innerWidth - PAD - boardWidth()) / CELL_W));
   const cellKey = (c, r) => c + "," + r;
   const phone = () => innerWidth <= 640;
   function layoutIcons(reset) {
@@ -1481,7 +1576,7 @@ TERMS
   const left = [["ie", "Internet Explorer", "Browse the web"], ["contact", "Contact Me", "Send me a message"], null, ["about", "About Me"], ["resume", "Resume"], ["projects", "My Projects"], ["cmd", "Command Prompt"], ["msn", "MSN Messenger"], ["wmp", "Windows Media Player"], ["paint", "Paint"]];
   $("#smLeft").innerHTML = left.map((x) => x ? `<li data-open="${x[0]}" tabindex="0" role="menuitem">${I[APPS[x[0]].icon]}<span>${x[2] ? `<b>${x[1]}</b><small>${x[2]}</small>` : x[1]}</span></li>` : "<hr>").join("");
   $("#smRight").innerHTML = [
-    `<li data-open="computer" tabindex="0" role="menuitem">${I.computer}<b>My Computer</b></li>`, `<li data-open="pictures" tabindex="0" role="menuitem">${I.pictures}My Pictures</li>`, `<li data-open="games" tabindex="0" role="menuitem">${I.games}Games</li>`, `<li data-open="calendar" tabindex="0" role="menuitem">${I.calendar}Calendar</li>`, "<hr>",
+    `<li data-open="computer" tabindex="0" role="menuitem">${I.computer}<b>My Computer</b></li>`, `<li data-open="pictures" tabindex="0" role="menuitem">${I.pictures}My Pictures</li>`, `<li data-open="games" tabindex="0" role="menuitem">${I.games}Games</li>`, `<li data-open="calendar" tabindex="0" role="menuitem">${I.calendar}Calendar</li>`, `<li data-open="board" tabindex="0" role="menuitem">${I.board}Message Board</li>`, `<li data-open="stats" tabindex="0" role="menuitem">${I.stats}Site Statistics</li>`, "<hr>",
     `<li data-open="control" tabindex="0" role="menuitem">${I.control}Control Panel</li>`, `<li data-open="taskmgr" tabindex="0" role="menuitem">${I.taskmgr}Task Manager</li>`, `<li data-open="calc" tabindex="0" role="menuitem">${I.calc}Calculator</li>`, `<li data-open="notepad" tabindex="0" role="menuitem">${I.notepad}Notepad</li>`, "<hr>",
     `<li data-open="help" tabindex="0" role="menuitem">${I.help}Help and Support</li>`, `<li data-open="search" tabindex="0" role="menuitem">${I.search}Search</li>`, `<li data-open="run" tabindex="0" role="menuitem">${I.run}Run...</li>`,
   ].join("");
@@ -1836,9 +1931,11 @@ TERMS
   }
 
   paintBell();
+  renderBoard(boardEl);
+  countVisit();
   // Vercel Web Analytics (cookie-free): only load it when it's switched on for the project, so there's no 404
   if (/\.vercel\.app$/.test(location.hostname)) fetch("/_vercel/insights/script.js", { method: "HEAD" }).then((r) => { if (r.ok) { const sc = document.createElement("script"); sc.defer = true; sc.src = "/_vercel/insights/script.js"; document.head.appendChild(sc); } }).catch(() => {});
-  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=24"; document.head.appendChild(l); } });
+  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=25"; document.head.appendChild(l); } });
   (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => Tasks.sync().then(() => { checkReminders(true); paintBell(); }));
   setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });

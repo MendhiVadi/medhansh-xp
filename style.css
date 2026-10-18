@@ -678,3 +678,54 @@ button { font: inherit; }
 .mworld li { display: list-item; }
 .mworld li span { float: right; margin-left: 10px; color: #555; }
 .mworld li.me { color: #b8860b; font-weight: bold; }
+
+/* smaller start-up branding (the big logo was overwhelming, especially on phones) */
+.xp-logo.big { width: 60px; height: 52px; gap: 4px; }
+.boot-ms { margin-top: 14px; font-size: 11px; }
+.boot-title { font-size: clamp(24px, 4.5vw, 32px); }
+.boot-title span { font-size: 18px; }
+.boot-owner { margin-top: 10px; font-size: 13px; }
+.boot-owner + .boot-bar, .boot-bar { margin-top: 28px; width: 120px; height: 16px; }
+.boot-blocks i { height: 9px; }
+.login-left .xp-logo { width: 40px; height: 34px; }
+.login-brand { font-size: 26px; }
+.login-brand span { font-size: 15px; }
+@media (max-width: 640px), (max-height: 640px) {
+  .xp-logo.big { width: 48px; height: 41px; }
+  .boot-title { font-size: 24px; }
+  .user-tile .avatar { width: 72px; height: 72px; }
+}
+
+/* ---------- message board dock (right side of the desktop) ---------- */
+.board-dock { position: absolute; top: 8px; right: 8px; bottom: 38px; width: 284px; z-index: 2; display: flex; flex-direction: column; background: rgba(236,233,216,.94); border: 1px solid #0831d9; border-radius: 8px 8px 4px 4px; box-shadow: 2px 2px 10px rgba(0,0,0,.35); overflow: hidden; }
+.board-dock.hidden, .board-tab.hidden { display: none; }
+@media (max-width: 900px) { .board-dock, .board-tab { display: none !important; } }
+.mb-head { display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 4px 0 8px; color: #fff; font: bold 12px Trebuchet MS, Tahoma, sans-serif; background: linear-gradient(#0997ff, #0053ee 8%, #0050ee 40%, #06f 88%, #003dd7); }
+.mb-head svg { width: 16px; height: 16px; } .mb-head b { flex: 1; }
+.mb-head button { width: 21px; height: 21px; border: 1px solid #fff; border-radius: 3px; color: #fff; background: linear-gradient(135deg, #5a9cff, #2463e4); cursor: pointer; padding: 0; }
+.mboard { display: flex; flex-direction: column; min-height: 0; }
+.wbody.mboard { background: #ece9d8; }
+.mb-form { display: flex; flex-direction: column; gap: 4px; padding: 6px; border-bottom: 1px solid #c7c3ae; }
+.mb-row { display: flex; gap: 4px; align-items: center; justify-content: space-between; }
+.mb-form input, .mb-form textarea { min-width: 0; flex: 1; font: 12px Tahoma, sans-serif; padding: 3px 4px; border: 1px solid #7f9db9; }
+.mb-form textarea { height: 52px; resize: none; }
+.mb-list { flex: 1; overflow: auto; padding: 6px; display: flex; flex-direction: column; gap: 6px; }
+.mb-msg { background: #ffffe1; border: 1px solid #e0d68a; border-radius: 3px; padding: 5px 7px; box-shadow: 1px 1px 0 rgba(0,0,0,.08); }
+.mb-msg:nth-child(3n+2) { background: #e8f4ff; border-color: #b9d4f1; } .mb-msg:nth-child(3n) { background: #fde8f0; border-color: #f1c4d6; }
+.mb-meta { display: flex; gap: 4px; align-items: baseline; font-size: 11px; color: #555; }
+.mb-meta b { color: #0a246a; } .mb-meta time { margin-left: auto; color: #888; white-space: nowrap; }
+.mb-msg p { margin: 3px 0 0; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.board-tab { position: absolute; right: 0; top: 40%; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 5px; border: 1px solid #0831d9; border-right: 0; border-radius: 6px 0 0 6px; background: linear-gradient(90deg, #2463e4, #5a9cff); color: #fff; cursor: pointer; font: bold 11px Tahoma, sans-serif; writing-mode: vertical-rl; }
+.board-tab svg { width: 18px; height: 18px; }
+/* ---------- site statistics ---------- */
+.statwin { padding: 12px 14px; background: #fff; height: 100%; overflow: auto; }
+.stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 8px; }
+.stat-cards div { border: 1px solid #c9d8ee; border-radius: 4px; padding: 8px; background: linear-gradient(#f4f7fd, #e5edfa); }
+.stat-cards b { display: block; font: bold 22px Trebuchet MS, Tahoma, sans-serif; color: #0a246a; }
+.stat-cards span { color: #555; font-size: 11px; }
+.statwin h4 { margin: 14px 0 6px; color: #215dc6; }
+.stat-chart { display: flex; align-items: flex-end; gap: 4px; height: 150px; padding: 6px 4px 18px; border: 1px solid #c9d8ee; border-radius: 4px; background: repeating-linear-gradient(#fff 0 29px, #eef3fc 29px 30px); }
+.stat-chart .bar { flex: 1; height: 100%; position: relative; display: flex; align-items: flex-end; justify-content: center; }
+.stat-chart .bar i { position: absolute; bottom: 0; left: 10%; right: 10%; background: linear-gradient(#5a9cff, #1e5fcf); border-radius: 2px 2px 0 0; min-height: 1px; }
+.stat-chart .bar em { position: absolute; bottom: 0; left: 30%; right: 30%; background: #f2a900; border-radius: 2px 2px 0 0; }
+.stat-chart small { position: absolute; bottom: -16px; font-size: 10px; color: #666; }
