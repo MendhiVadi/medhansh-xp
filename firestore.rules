@@ -40,9 +40,9 @@ service cloud.firestore {
       allow delete: if true;
     }
 
-    // Contact messages: anyone can send, nobody can read them from the site (read them in the console)
+    // Contact messages are delivered by email after OTP verification (api/contact); nothing is written here
     match /messages/{id} {
-      allow create: if validMessage(request.resource.data);
+      allow read, write: if false;
     }
   }
 }

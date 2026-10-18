@@ -1,6 +1,6 @@
 // POST { token, code, name, email, phone, via, subject, message, website }
 // Checks the 4-digit code, then emails the message to the site owner. "website" is a hidden honeypot field.
-import { configured, mailer, send, body, str, esc, EMAIL, PHONE, verify, throttled } from "./_mail.js";
+import { configured, mailer, send, body, str, esc, EMAIL, PHONE, verify, digest, throttled } from "./_mail.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") { res.setHeader("Allow", "POST"); return send(res, 405, { error: "Method not allowed" }); }
@@ -16,8 +16,8 @@ export default async function handler(req, res) {
   if (m.message.length < 5) errors.message = "Please write a message.";
   if (Object.keys(errors).length) return send(res, 400, { error: "Please fix the highlighted fields.", errors });
   if (throttled(req, "contact-verify", 8, 15 * 60 * 1000)) return send(res, 429, { error: "Too many attempts. Try again in a few minutes." });
-  const bad = verify(b.token, m.email, str(String(b.code ?? ""), 4));
-  if (bad) return send(res, 400, { error: bad, errors: { code: bad } });
+  const bad = verify(b.token, m.email, str(String(b.code ?? ""), 4), digest(m));
+  if (bad) { await new Promise((r) => setTimeout(r, 600)); return send(res, 400, { error: bad, errors: { code: bad } }); } // slow down guessing
   const reach = m.via === "phone" ? `Phone: ${m.phone} (preferred)\nEmail: ${m.email} (verified)` : `Email: ${m.email} (verified)${m.phone ? `\nPhone: ${m.phone}` : ""}`;
   try {
     await mailer().sendMail({

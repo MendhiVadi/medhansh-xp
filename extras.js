@@ -276,7 +276,7 @@
       if (T.chirp && s === 0 && bar % 4 === 3) { noise(dest, t, 0.6, 0.1, "bandpass", 1200); note(dest, t, 600, 0.5, "square", 0.04, { slide: 2400 }); }
     }
     const sched = () => {
-      const T = tr(), total = T.bars * 16, end = AC.currentTime + 0.15;
+      const T = tr(), total = T.bars * 16, end = AC.currentTime + (document.hidden ? 1.6 : 0.2);
       while (nextI < total && stepTime(nextI) < end) {
         const t = stepTime(nextI); if (t >= AC.currentTime - 0.05) playStep(T, nextI, t, trackGain); nextI++;
       }
@@ -308,6 +308,7 @@
       tmEl.textContent = `${String(Math.floor(e / 60)).padStart(2, "0")}:${String(Math.floor(e % 60)).padStart(2, "0")} / ${mmss(T.total)}`;
       if (!dragging) seek.value = started ? Math.round(e / T.total * 1000) : 0;
       if (ctx.store.lget("xp-mute") === "1" !== muted) { muted = !muted; applyVol(); }
+      const sv = Number(ctx.store.lget("xp-vol")); if (sv >= 0 && sv <= 100 && sv !== vol) { vol = sv; volEl.value = vol; applyVol(); }
       if (started && playing && e >= T.total - 0.02) go(cur + 1, true);
     }
     every(ctx, 200, tick);
@@ -416,7 +417,7 @@
     const back = () => { stopShow(); view = "grid"; sel = clamp(idx, 0, Math.max(0, items.length - 1)); render(); };
     const step = (d) => { if (!items.length) return; idx = (idx + d + items.length) % items.length; rot = 0; renderViewer(); paintStatus(); };
     const toggleShow = () => {
-      if (show) { stopShow(); } else if (items.length > 1) show = setInterval(() => step(1), 3000);
+      if (show) { stopShow(); } else if (items.length > 1) show = setInterval(() => ctx.isVisible() && step(1), 3000);
       renderViewer(); paintStatus();
     };
     const del = () => {
@@ -495,7 +496,7 @@
     const newTask = () => {
       const v = (window.prompt("Type the name of a program, and Windows will open it for you.", "") || "").trim().toLowerCase(); if (!v) return;
       const m = wins.find((w) => w.key.toLowerCase() === v || (w.title || "").toLowerCase() === v);
-      try { ctx.sys.open(m ? m.key.replace(/[#:_-]\d+$/, "") : v); } catch { ctx.sys?.msg?.("Windows cannot find '" + esc(v) + "'", "Make sure you typed the name correctly, and then try again."); }
+      if (!ctx.sys.open(m ? m.key.replace(/[#:_-]\d+$/, "") : v)) ctx.sys.msg("Windows cannot find it", "Windows cannot find '" + esc(v) + "'. Make sure you typed the name correctly, and then try again.");
       setTimeout(renderApps, 150);
     };
     body.querySelector(".acts").addEventListener("click", (e) => {

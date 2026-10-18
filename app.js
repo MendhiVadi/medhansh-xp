@@ -45,7 +45,6 @@
     async taskCreate(t) { const now = Date.now(); const d = await this.req("tasks", { method: "POST", body: enc({ ...t, createdAt: now, updatedAt: now }) }); return dec(d); },
     async taskUpdate(id, patch) { const p = { ...patch, updatedAt: Date.now() }; await this.req("tasks/" + encodeURIComponent(id), { method: "PATCH", body: enc(p), query: Object.keys(p).map((k) => "updateMask.fieldPaths=" + k).join("&") }); },
     async taskDelete(id) { await this.req("tasks/" + encodeURIComponent(id), { method: "DELETE" }); },
-    async contact(m) { await this.req("messages", { method: "POST", body: enc({ ...m, createdAt: Date.now(), read: false }) }); },
   };
   const readLocal = (k, d) => { try { const v = JSON.parse(store.lget(k)); return v ?? d; } catch { return d; } };
 
@@ -133,12 +132,12 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=20"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=21"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=20"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=21"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyExtra(name) {
@@ -231,7 +230,7 @@
     close: (k) => close(k),
     open: (id, o) => { const k = Object.keys(APPS).find((a) => a === id || APPS[a].title.toLowerCase() === String(id).toLowerCase() || (DESK_LABEL[a] || "").toLowerCase() === String(id).toLowerCase()); if (!k) return false; openApp(k, o); return true; },
     msg: (t, h) => msgBox(t, h),
-    photos: [{ src: "photo-full.jpg?v=20", title: "Medhansh.jpg" }, { src: "photo.jpg?v=20", title: "Avatar.jpg" }],
+    photos: [{ src: "photo-full.jpg?v=21", title: "Medhansh.jpg" }, { src: "photo.jpg?v=21", title: "Avatar.jpg" }],
     P,
   };
   function minimize(key) { const w = wins.get(key); if (!w) return; w.el.classList.add("min"); if (activeKey === key) activeKey = null; paintActive(); }
@@ -432,7 +431,7 @@
   function renderContact(body, ctx) {
     const inner = chrome(body, { menus: [
       { label: "File", items: [{ label: "Email instead", act: () => mailto() }, "-", { label: "Close", act: ctx.close }] },
-      { label: "Help", items: [{ label: "About", act: () => msgBox("Contact", `Your email is verified with a one-time code before the message reaches ${esc(P.name)}.<br>Your details are only used to reply to you. See <a href="#" data-open="privacy">Privacy</a>.`) }] },
+      { label: "Help", items: [{ label: "About", act: () => msgBox("Contact", `Your email is verified with a 4-digit code before the message reaches ${esc(P.name)}.<br>Your details are only used to reply to you. See <a href="#" data-open="privacy">Privacy</a>.`) }] },
     ] });
     inner.innerHTML = `<form class="form contact" novalidate>
       <div class="cstep"><b>1</b> Your details <span>›</span> <b>2</b> Verify email <span>›</span> <b>3</b> Sent</div>
@@ -446,7 +445,7 @@
       <textarea name="message" maxlength="4000" placeholder="Write your message..."></textarea>
       <div class="ccode hidden"><span>Enter the 4-digit code sent to <b class="cto"></b>:</span><input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="4" pattern="[0-9]{4}" placeholder="••••"><button type="button" class="xpbtn cresend">Resend</button></div>
       <div class="cerr" role="alert"></div>
-      <div class="cfoot"><span class="muted cnote">Your email is verified with a one-time code.</span><button class="xpbtn csend" type="submit">Send code</button></div></form>`;
+      <div class="cfoot"><span class="muted cnote">Your email is verified with a one-time code (valid 5 minutes).</span><button class="xpbtn csend" type="submit">Send code</button></div></form>`;
     const form = inner.querySelector("form"), err = form.querySelector(".cerr"), btn = form.querySelector(".csend"), F = form.elements;
     const steps = form.querySelectorAll(".cstep b");
     let token = null, sentTo = "", cooldown = 0, cdTimer;
@@ -473,7 +472,7 @@
       if (Object.keys(bad).length) return fail(esc(Object.values(bad).join(" ")), bad);
       btn.disabled = true; btn.textContent = "Sending code…";
       try {
-        token = (await api("otp", { email: d.email })).token; sentTo = d.email.toLowerCase();
+        token = (await api("otp", { email: d.email, via: d.via, phone: d.phone, subject: d.subject, message: d.message })).token; sentTo = d.email.toLowerCase();
         form.querySelector(".cto").textContent = d.email; form.querySelector(".ccode").classList.remove("hidden");
         btn.textContent = "Verify & send"; step(2); F.code.value = ""; F.code.focus();
         clearTimeout(cdTimer); cooldown = 30; tickCooldown();
@@ -482,6 +481,7 @@
         if (!e.status || e.status === 404 || e.status >= 500) unavailable(); else fail(esc(e.message), e.body?.field ? { [e.body.field]: 1 } : {});
       } finally { btn.disabled = false; }
     }
+    ["subject", "message", "phone"].forEach((n) => F[n].addEventListener("input", () => { if (token) { token = null; form.querySelector(".ccode").classList.add("hidden"); btn.textContent = "Send code"; step(1); err.textContent = "You changed the message, so a new code is needed."; } }));
     async function verifyAndSend() {
       const [d, bad] = validate();
       if (Object.keys(bad).length) return fail(esc(Object.values(bad).join(" ")), bad);
@@ -490,7 +490,6 @@
       btn.disabled = true; btn.textContent = "Sending…";
       try {
         await api("contact", { ...d, token, code: F.code.value.trim(), website: F.website.value });
-        Cloud.contact({ name: d.name, email: d.email, subject: d.subject, message: d.message, phone: d.phone, via: d.via }).catch(() => {});
         step(3); clearTimeout(cdTimer);
         inner.innerHTML = `<div class="csent"><b>✅ Message sent!</b><p>Thanks, ${esc(d.name)}. Your email is verified and I'll get back to you ${d.via === "phone" ? `at ${esc(d.phone)}` : `at ${esc(d.email)}`}.</p><button class="xpbtn">Close</button></div>`;
         inner.querySelector("button").onclick = ctx.close;
@@ -500,8 +499,8 @@
       }
     }
     form.addEventListener("submit", (e) => { e.preventDefault(); form.querySelectorAll(".bad").forEach((x) => x.classList.remove("bad")); err.textContent = ""; token ? verifyAndSend() : sendCode(); });
-    form.querySelector(".cresend").addEventListener("click", () => { token = null; sendCode(); });
-    F.code.addEventListener("input", () => { F.code.value = F.code.value.replace(/\D/g, "").slice(0, 4); if (F.code.value.length === 4) form.requestSubmit(); });
+    form.querySelector(".cresend").addEventListener("click", () => { token = null; F.code.disabled = true; sendCode().finally(() => (F.code.disabled = false)); });
+    F.code.addEventListener("input", () => { F.code.value = F.code.value.replace(/\D/g, "").slice(0, 4); if (F.code.value.length === 4 && token) form.requestSubmit(); });
     ctx.onClose(() => clearTimeout(cdTimer));
     setTimeout(() => F.name.focus(), 0);
   }
@@ -1078,7 +1077,7 @@
     f.addEventListener("submit", (e) => {
       e.preventDefault(); const v = inp.value.trim(); if (!v) return;
       const alias = { mspaint: "paint", "notepad.exe": "notepad", "calc.exe": "calc", "cmd.exe": "cmd", taskmgr: "taskmgr", iexplore: "ie", explorer: "computer", winmine: "mine", sol: "solitaire", spider: "spider", pinball: "pinball", wmplayer: "wmp", control: "control" }[v.toLowerCase()];
-      if (/^(https?:\/\/|www\.)/i.test(v) || /\.[a-z]{2,}(\/|$)/i.test(v)) { ctx.close(); const had = wins.has("ie"), w = openApp("ie", { url: v }); if (had) w?.navigate?.(v); return; }
+      if (!alias && (/^(https?:\/\/|www\.)/i.test(v) || /\.(?!exe$)[a-z]{2,}(\/|$)/i.test(v))) { ctx.close(); const had = wins.has("ie"), w = openApp("ie", { url: v }); if (had) w?.navigate?.(v); return; }
       if (sys.open(alias || v.toLowerCase())) return ctx.close();
       xpSound("error"); msgBox(v, `Windows cannot find '${esc(v)}'. Make sure you typed the name correctly, and then try again.`, "⛔");
     });
@@ -1125,8 +1124,8 @@ This is the personal portfolio of ${P.name} (${P.location}).
 
 WHAT IS STORED
 - Contact Me: your name, email, optional phone number and message. Your email
-  is verified with a one-time code first. The message is emailed to me and a
-  copy is kept in a private database (Google Firebase) that only I can read.
+  is verified with a one-time code first; then the message is emailed to me.
+  Nothing from the contact form is stored in a database.
 - Shared Notepad and Calendar: anything you type there is public. Everyone who
   visits can see and change it. Please don't put personal information in them.
 - Your browser keeps small preferences (icon layout, wallpaper, volume, game
@@ -1221,7 +1220,7 @@ TERMS
       const C = 4, cw = Math.floor((innerWidth - 12) / C);
       iconsEl.classList.add("phone");
       iconEls.forEach((el, i) => { el.style.width = cw + "px"; el.style.transform = `translate(${6 + (i % C) * cw}px,${8 + ((i / C) | 0) * 96}px)`; });
-      iconsEl.style.height = (8 + Math.ceil(iconEls.length / C) * 96) + "px";
+      iconsEl.style.setProperty("--rows", Math.ceil(iconEls.length / C));
       return;
     }
     iconsEl.classList.remove("phone"); iconsEl.style.height = ""; iconEls.forEach((el) => (el.style.width = ""));

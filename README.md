@@ -8,9 +8,10 @@ Medhansh Khattar's portfolio as a Windows XP desktop in the browser. Live at htt
 - **Apps:** About Me, Resume (WordPad), My Projects, Contact Me (stores messages), Internet Explorer (a working in-page browser), Command Prompt (`help`), MSN Messenger, Notepad (shared), Paint, Calendar (shared tasks and reminders), Display Properties (wallpapers and a screen saver), My Computer and Recycle Bin.
 - **Games:** Solitaire, Minesweeper (3 levels plus custom), Snake and Brick Breaker. They load only when first opened.
 
-The Notepad, Calendar tasks and contact messages are stored in Firestore (project `resume-41921`), so everyone sees the same notes and tasks. The browser talks to Firestore directly; `firestore.rules` allows only the shared notepad, the shared tasks and write-only contact messages, and validates every field. If Firestore can't be reached, the apps keep working from the visitor's browser and sync later. Icon positions, wallpaper, reminder state and game scores stay per browser.
+The Notepad and Calendar tasks are stored in Firestore (project `resume-41921`), so everyone sees the same notes and tasks. The browser talks to Firestore directly; `firestore.rules` allows only the shared notepad and tasks and validates every field. If Firestore can't be reached, the apps keep working from the visitor's browser and sync later. Icon positions, wallpaper, reminder state and game scores stay per browser.
 
-- Read contact messages in the [Firestore console](https://console.firebase.google.com/project/resume-41921/firestore/databases/-default-/data/~2Fmessages).
+- **Contact Me** emails you the message only after the visitor verifies their email with a 4-digit code (`api/otp.js`, `api/contact.js`). It needs two Vercel environment variables, set once:
+  `GMAIL_USER` (your Gmail address) and `GMAIL_APP_PASSWORD` (an App Password from https://myaccount.google.com/apppasswords; needs 2-Step Verification). Until they're set, the form offers "Email me directly" instead.
 - Change the rules in `firestore.rules`, then run `firebase deploy --only firestore:rules`.
 - The Firebase web config in `data.js` is public by design; no secret keys are used by the site.
 

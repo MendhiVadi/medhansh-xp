@@ -5,7 +5,7 @@
 //   CONTACT_TO          optional: where verified messages are delivered (defaults to GMAIL_USER)
 // One-time codes are stateless: the server returns an HMAC-signed token, so no database is needed.
 import nodemailer from "nodemailer";
-import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomInt, timingSafeEqual } from "node:crypto";
 
 export const configured = () => !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
 const secret = () => createHmac("sha256", "xp-otp").update(process.env.GMAIL_APP_PASSWORD || "").digest();
@@ -21,19 +21,21 @@ export const PHONE = /^\+?[0-9 ()-]{7,20}$/;
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 const sign = (data) => createHmac("sha256", secret()).update(data).digest("base64url");
-export function issue(email) {
+export const digest = (m) => createHash("sha256").update(`${m.via}|${m.phone}|${m.subject}|${m.message}`).digest("base64url").slice(0, 22);
+export function issue(email, h) {
   const code = String(randomInt(0, 10000)).padStart(4, "0");
-  const exp = Date.now() + 10 * 60 * 1000;
-  const payload = Buffer.from(JSON.stringify({ e: email.toLowerCase(), exp })).toString("base64url");
+  const exp = Date.now() + 5 * 60 * 1000;
+  const payload = Buffer.from(JSON.stringify({ e: email.toLowerCase(), h, exp })).toString("base64url");
   return { code, token: `${payload}.${sign(`${payload}.${code}`)}` };
 }
-export function verify(token, email, code) {
+export function verify(token, email, code, h) {
   const [payload, mac] = String(token || "").split(".");
   if (!payload || !mac || !/^\d{4}$/.test(String(code))) return "Enter the 4-digit code from the email.";
   const good = Buffer.from(sign(`${payload}.${code}`)), got = Buffer.from(mac);
   if (good.length !== got.length || !timingSafeEqual(good, got)) return "That code isn't right.";
   let p; try { p = JSON.parse(Buffer.from(payload, "base64url").toString()); } catch { return "That code isn't right."; }
   if (p.e !== email.toLowerCase()) return "That code was sent to a different email.";
+  if (p.h !== h) return "Your message changed after the code was sent. Send a new code.";
   if (Date.now() > p.exp) return "That code has expired. Send a new one.";
   return null;
 }
