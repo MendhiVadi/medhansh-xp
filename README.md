@@ -3,10 +3,10 @@
 Medhansh Khattar's portfolio as a Windows XP desktop in the browser. Live at https://medhansh-xp.vercel.app
 
 ## Features
-- **Desktop:** boot and login screens, draggable windows, Start menu, taskbar and Show Desktop. Icons snap to a grid and remember their spot. Drag folder items to reorder them, onto the desktop to make a shortcut, or onto the Recycle Bin to delete one. Reset Desktop is in the Start menu and the right-click menu.
+- **Desktop:** boot and login screens, draggable windows, Start menu, taskbar and Show Desktop. Icons snap to a grid and remember their spot. Drag folder items to reorder them, onto the desktop to make a shortcut, or onto the Recycle Bin to delete one. Reset Desktop is a desktop icon and is also in the Start menu and the right-click menu.
 - **Tray:** real network status and ping (browsers don't expose the Wi-Fi name), battery, volume and a clock with a mini calendar.
 - **Apps:** About Me, Resume (WordPad), My Projects, Contact Me (stores messages), Internet Explorer (a working in-page browser), Command Prompt (`help`), MSN Messenger, Notepad (shared), Paint, Calendar (shared tasks and reminders), Display Properties (wallpapers and a screen saver), My Computer and Recycle Bin.
-- **Games:** Solitaire, Minesweeper (3 levels), Snake, Brick Breaker and Tic-Tac-Toe. They load only when first opened.
+- **Games:** Solitaire, Minesweeper (3 levels plus custom), Snake and Brick Breaker. They load only when first opened.
 
 The Notepad, Calendar tasks and contact messages are stored in Firestore (project `resume-41921`), so everyone sees the same notes and tasks. The browser talks to Firestore directly; `firestore.rules` allows only the shared notepad, the shared tasks and write-only contact messages, and validates every field. If Firestore can't be reached, the apps keep working from the visitor's browser and sync later. Icon positions, wallpaper, reminder state and game scores stay per browser.
 
