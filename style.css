@@ -667,3 +667,8 @@ button { font: inherit; }
 }
 
 @media (max-width: 640px) { .icons.phone::after { content: ""; display: block; height: calc(var(--rows, 4) * 96px + 16px); } }
+
+.msn { position: relative; }
+.emopick { position: absolute; right: 8px; bottom: 74px; display: grid; grid-template-columns: repeat(5, 30px); gap: 2px; padding: 4px; background: #fff; border: 1px solid #7f9db9; box-shadow: 2px 2px 6px rgba(0,0,0,.3); z-index: 2; }
+.emopick button { width: 30px; height: 28px; border: 1px solid transparent; background: none; font-size: 17px; cursor: pointer; border-radius: 3px; padding: 0; }
+.emopick button:hover, .emopick button:focus-visible { border-color: #316ac5; background: #eef3fc; }
