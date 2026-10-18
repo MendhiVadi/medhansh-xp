@@ -132,12 +132,12 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=21"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=22"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=21"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=22"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyExtra(name) {
@@ -220,6 +220,7 @@
     // any menubar without its own handlers still gets working File / View / Help menus
     el.querySelectorAll(".menubar:not([data-wired])").forEach((mb) => wireMenu(mb, defaultMenus(app, ctx)));
     applyOrder(el, key);
+    setTimeout(() => { if (activeKey === key && !el.contains(document.activeElement)) el.querySelector(".wbody input:not([readonly]):not([type=radio]):not([type=hidden]), .wbody textarea:not([readonly]), .wbody button, .wbody [tabindex='0']")?.focus({ preventScroll: true }); }, 0);
     focusableItems(el);
     focus(key);
     return rec;
@@ -230,7 +231,7 @@
     close: (k) => close(k),
     open: (id, o) => { const k = Object.keys(APPS).find((a) => a === id || APPS[a].title.toLowerCase() === String(id).toLowerCase() || (DESK_LABEL[a] || "").toLowerCase() === String(id).toLowerCase()); if (!k) return false; openApp(k, o); return true; },
     msg: (t, h) => msgBox(t, h),
-    photos: [{ src: "photo-full.jpg?v=21", title: "Medhansh.jpg" }, { src: "photo.jpg?v=21", title: "Avatar.jpg" }],
+    photos: [{ src: "photo-full.jpg?v=22", title: "Medhansh.jpg" }, { src: "photo.jpg?v=22", title: "Avatar.jpg" }],
     P,
   };
   function minimize(key) { const w = wins.get(key); if (!w) return; w.el.classList.add("min"); if (activeKey === key) activeKey = null; paintActive(); }
@@ -418,7 +419,7 @@
   }
 
   // Contact: visitor picks email or phone, verifies their email with a 4-digit code (api/otp), then the
-  // message is emailed to the site owner (api/contact). A copy is also kept in Firestore.
+  // message is emailed to the site owner (api/contact). Nothing is stored in a database.
   const api = async (path, data) => {
     const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 15000);
     try {
@@ -595,7 +596,7 @@
       time: () => "Current time is: " + new Date().toLocaleTimeString(),
       ver: () => "Microsoft Windows XP [Version 5.1.2600] - Portfolio Edition",
       dir: () => ` Volume in drive C has no label.\n\n Directory of C:\\Documents and Settings\\${P.name.split(" ")[0]}\n\n` + ["About Me.txt", "Resume.doc", "My Projects"].map((f, i) => `${new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })}  09:${String(10 + i).padStart(2, "0")} AM    ${f.includes(".") ? "         4,096" : "<DIR>         "} ${f}`).join("\n"),
-      tree: () => `Folder PATH listing for Volume C\nC:.\n├── My Documents\n│   ├── About Me.txt\n│   ├── Resume.doc\n│   └── My Projects\n${P.projects.map((p, i) => `│       ${i === P.projects.length - 1 ? "└" : "├"}── ${p.name}`).join("\n")}\n└── Program Files\n    ├── Calendar\n    ├── Games\n    │   ├── Solitaire\n    │   ├── Minesweeper\n    │   ├── Snake\n    │   └── Brick Breaker\n    ├── MSN Messenger\n    ├── Notepad\n    └── Paint`,
+      tree: () => `Folder PATH listing for Volume C\nC:.\n├── My Documents\n│   ├── About Me.txt\n│   ├── Resume.doc\n│   └── My Projects\n${P.projects.map((p, i) => `│       ${i === P.projects.length - 1 ? "└" : "├"}── ${p.name}`).join("\n")}\n└── Program Files\n    ├── Calendar\n    ├── Games\n    │   ├── Solitaire\n    │   ├── Minesweeper\n    │   ├── Snake\n    │   ├── Brick Breaker\n    │   ├── 3D Pinball\n    │   └── Spider Solitaire\n    ├── Calculator\n    ├── MSN Messenger\n    ├── Notepad\n    ├── Paint\n    ├── Task Manager\n    └── Windows Media Player`,
       ping: (arg) => {
         const host = (arg || location.host).replace(/^https?:\/\//, "").split(/[/?#\s]/)[0];
         if (!/^[\w.-]+(:\d+)?$/.test(host)) return "Ping request could not find host. Please check the name and try again.";
@@ -625,7 +626,7 @@ Approximate round trip times in milli-seconds:
     };
     CMDS.games = () => "Games:\n" + GAME_IDS.map((id) => `  ${id.padEnd(10)} ${APPS[id].title}`).join("\n") + "\n\nType START <name> to play, e.g. start snake";
     CMDS.ls = CMDS.dir;
-    const ALIAS = { minesweeper: "mine", brick: "breakout", bricks: "breakout", brickbreaker: "breakout", wordpad: "resume", explorer: "computer", mycomputer: "computer", settings: "display", properties: "display", terminal: "cmd" };
+    const ALIAS = { calculator: "calc", taskmanager: "taskmgr", mediaplayer: "wmp", wmplayer: "wmp", "3dpinball": "pinball", spidersolitaire: "spider", controlpanel: "control", mypictures: "pictures", pictures: "pictures", minesweeper: "mine", brick: "breakout", bricks: "breakout", brickbreaker: "breakout", wordpad: "resume", explorer: "computer", mycomputer: "computer", settings: "display", properties: "display", terminal: "cmd" };
     let mx;
     ctx.onClose(() => clearInterval(mx));
     input.addEventListener("keydown", (e) => {
@@ -640,6 +641,7 @@ Approximate round trip times in milli-seconds:
       if (cmd === "exit") { ctx.close(); return; }
       if (cmd === "echo") { print(arg); return; }
       if (cmd === "color") { const m = { "0a": "#0f0", "0b": "#0ff", "0c": "#f55", "0e": "#ff0", "0f": "#fff", "07": "#c0c0c0" }; if (m[arg]) root.style.color = m[arg]; else print("Usage: color 0a"); return; }
+      if (cmd === "calc" && !arg) { openApp("calc"); print("Starting Calculator..."); return; }
       if (cmd === "calc") { try { if (!/^[\d+\-*/().%\s^]+$/.test(arg)) throw 0; print(String(Function(`"use strict";return (${arg.replace(/\^/g, "**").replace(/(^|[^\w).])-\s*(\d+(?:\.\d+)?)\s*\*\*\s*(\d+(?:\.\d+)?)/g, "$1-($2**$3)")})`)())); } catch { print("Invalid expression."); } return; }
       if (cmd === "start") { const a = ALIAS[arg.toLowerCase().replace(/\s+/g, "")] || arg.toLowerCase(); if (!arg) print("Usage: start <app>  (" + Object.keys(APPS).join(", ") + ")"); else if (Object.hasOwn(APPS, a)) { openApp(a); print(`Starting ${APPS[a].title}...`); } else print(`The system cannot find the program '${arg}'.`); return; }
       if (Object.hasOwn(CMDS, cmd)) { const r = CMDS[cmd](arg); if (r) print(r); return; }
@@ -1043,13 +1045,13 @@ Approximate round trip times in milli-seconds:
     inner.querySelector(".restore")?.addEventListener("click", () => [...trash].forEach((id) => addToDesktop(id)));
   }
   function emptyBin() {
-    if (trash.length) { gone = [...new Set([...gone, ...trash])]; extra = extra.filter((id) => !trash.includes(id)); trash = []; saveDesk(); buildIcons(); refreshRecycle(); msgBox("Recycle Bin", "Deleted shortcuts are gone (the apps are still in the Start menu and My Computer).<br>The joke files stay — they're part of my character development.", "🗑️"); }
+    if (trash.length) { gone = [...new Set([...gone, ...trash])]; extra = extra.filter((id) => !trash.includes(id)); trash = []; saveDesk(); buildIcons(); refreshRecycle(); msgBox("Recycle Bin", "Deleted shortcuts are gone (drag any app back from My Computer, or use Reset Desktop).<br>The joke files stay — they're part of my character development.", "🗑️"); }
     else msgBox("Recycle Bin", "Nice try. These files are part of my character development.", "⚠️");
   }
 
   function renderComputer(body) {
     const inner = chrome(body, { addr: "My Computer", addrIcon: "computer" });
-    const items = ["about", "resume", "projects", "contact", "ie", "cmd", "msn", "games", "paint", "notepad", "display", "recycle"];
+    const items = ["about", "resume", "projects", "contact", "ie", "cmd", "msn", "calendar", "games", "pictures", "wmp", "paint", "notepad", "calc", "taskmgr", "control", "display", "recycle"];
     inner.innerHTML = `<div class="explorer">${taskPane([["System Tasks", `<span>Owner: <b>${esc(P.name)}</b><br>Host: ${esc(P.hostname)}</span>` + appLink("display", "Change wallpaper")], ["Other Places", appLink("about", "About Me") + appLink("projects", "My Projects")]])}
       <div class="ex-main"><div class="grid-items">${items.map((id) => `<div class="fitem" data-open="${id}">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id])}</span></div>`).join("")}</div></div></div>`;
   }
@@ -1418,13 +1420,18 @@ TERMS
   // ---------------- Start menu ----------------
   const sm = $("#startMenu"), startBtn = $("#startBtn");
   const left = [["ie", "Internet Explorer", "Browse the web"], ["contact", "Contact Me", "Send me a message"], null, ["about", "About Me"], ["resume", "Resume"], ["projects", "My Projects"], ["cmd", "Command Prompt"], ["msn", "MSN Messenger"], ["wmp", "Windows Media Player"], ["paint", "Paint"]];
-  $("#smLeft").innerHTML = left.map((x) => x ? `<li data-open="${x[0]}">${I[APPS[x[0]].icon]}<span>${x[2] ? `<b>${x[1]}</b><small>${x[2]}</small>` : x[1]}</span></li>` : "<hr>").join("");
+  $("#smLeft").innerHTML = left.map((x) => x ? `<li data-open="${x[0]}" tabindex="0" role="menuitem">${I[APPS[x[0]].icon]}<span>${x[2] ? `<b>${x[1]}</b><small>${x[2]}</small>` : x[1]}</span></li>` : "<hr>").join("");
   $("#smRight").innerHTML = [
-    `<li data-open="computer">${I.computer}<b>My Computer</b></li>`, `<li data-open="pictures">${I.pictures}My Pictures</li>`, `<li data-open="games">${I.games}Games</li>`, `<li data-open="calendar">${I.calendar}Calendar</li>`, "<hr>",
-    `<li data-open="control">${I.control}Control Panel</li>`, `<li data-open="taskmgr">${I.taskmgr}Task Manager</li>`, `<li data-open="calc">${I.calc}Calculator</li>`, `<li data-open="notepad">${I.notepad}Notepad</li>`, "<hr>",
-    `<li data-open="help">${I.help}Help and Support</li>`, `<li data-open="search">${I.search}Search</li>`, `<li data-open="run">${I.run}Run...</li>`,
+    `<li data-open="computer" tabindex="0" role="menuitem">${I.computer}<b>My Computer</b></li>`, `<li data-open="pictures" tabindex="0" role="menuitem">${I.pictures}My Pictures</li>`, `<li data-open="games" tabindex="0" role="menuitem">${I.games}Games</li>`, `<li data-open="calendar" tabindex="0" role="menuitem">${I.calendar}Calendar</li>`, "<hr>",
+    `<li data-open="control" tabindex="0" role="menuitem">${I.control}Control Panel</li>`, `<li data-open="taskmgr" tabindex="0" role="menuitem">${I.taskmgr}Task Manager</li>`, `<li data-open="calc" tabindex="0" role="menuitem">${I.calc}Calculator</li>`, `<li data-open="notepad" tabindex="0" role="menuitem">${I.notepad}Notepad</li>`, "<hr>",
+    `<li data-open="help" tabindex="0" role="menuitem">${I.help}Help and Support</li>`, `<li data-open="search" tabindex="0" role="menuitem">${I.search}Search</li>`, `<li data-open="run" tabindex="0" role="menuitem">${I.run}Run...</li>`,
   ].join("");
-  const toggleStart = (on) => { sm.classList.toggle("hidden", !on); startBtn.classList.toggle("on", on); if (on) closeTray(); };
+  sm.addEventListener("keydown", (e) => {
+    const items = [...sm.querySelectorAll("li[tabindex]")], i = items.indexOf(document.activeElement);
+    if (e.key === "Enter" && i >= 0) { e.preventDefault(); items[i].click(); }
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); items[(i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus(); }
+  });
+  const toggleStart = (on) => { sm.classList.toggle("hidden", !on); startBtn.classList.toggle("on", on); if (on) { closeTray(); setTimeout(() => sm.querySelector("li[tabindex]")?.focus({ preventScroll: true }), 0); } };
   startBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleStart(sm.classList.contains("hidden")); });
   sm.addEventListener("click", (e) => {
     const li = e.target.closest("li"); if (!li) return;
@@ -1435,15 +1442,15 @@ TERMS
   });
   document.addEventListener("click", (e) => { if (!sm.contains(e.target) && !startBtn.contains(e.target)) toggleStart(false); hideCtx(); });
   addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { toggleStart(false); closeTray(); closeMenus(); hideCtx(); shut.classList.add("hidden"); }
+    if (e.key === "Escape" && e.ctrlKey && !e.shiftKey) { toggleStart(sm.classList.contains("hidden")); return; }
+    if (e.key === "Escape" && !e.ctrlKey) { toggleStart(false); closeTray(); closeMenus(); hideCtx(); shut.classList.add("hidden"); }
     if (activeKey && ((e.altKey && e.key === "F4") || ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "w"))) { e.preventDefault(); close(activeKey); }
-    if (e.ctrlKey && e.key === "Escape") toggleStart(sm.classList.contains("hidden"));
     metaAlone = e.key === "Meta" && !e.repeat;
   });
 
   addEventListener("keydown", (e) => {
     if (e.ctrlKey && e.shiftKey && e.key === "Escape") { e.preventDefault(); openApp("taskmgr"); }
-    if ((e.metaKey || e.key === "OS") && e.key.toLowerCase() === "r") { e.preventDefault(); metaAlone = false; openApp("run"); }
+    if (e.metaKey && !/Mac|iP(hone|ad)/.test(navigator.platform) && e.key.toLowerCase() === "r") { e.preventDefault(); metaAlone = false; openApp("run"); }
   });
   let metaAlone = false;
   addEventListener("keyup", (e) => { if (e.key === "Meta" && metaAlone) toggleStart(sm.classList.contains("hidden")); metaAlone = false; });
@@ -1755,7 +1762,7 @@ TERMS
       const when = due; t.notified = true; t.snooze = null; changed = true;
       if (first && now - due > 7 * 864e5) return; // ignore anything older than a week
       balloon(t, missed, when); if (!missed) chime();
-      if (document.hidden && "Notification" in window && Notification.permission === "granted") { try { new Notification("Reminder", { body: t.text, icon: "photo.jpg", tag: t.id }); } catch {} }
+      if (document.hidden && "Notification" in window && Notification.permission === "granted") { try { new Notification("Reminder", { body: t.text, icon: P.photo, tag: t.id }); } catch {} }
     });
     if (changed) Tasks.save();
   }
