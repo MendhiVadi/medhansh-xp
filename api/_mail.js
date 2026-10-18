@@ -48,3 +48,32 @@ export function throttled(req, key, max, windowMs) {
   h.push(now); hits.set(k, h);
   return h.length > max;
 }
+
+// Attempt counter per code, stored in Firestore (rules only allow +1 steps and false -> true for "used").
+const FS = "https://firestore.googleapis.com/v1/projects/resume-41921/databases/(default)/documents/otp/";
+const KEY = "AIzaSyAHb5rOYR0knifNMFUfh6RQZpvj4kkJu5M";
+const MAX_TRIES = 5;
+const fsfetch = (id, opt = {}, q = "") => fetch(`${FS}${id}?key=${KEY}${q}`, { ...opt, headers: { "Content-Type": "application/json" } });
+const doc = (n, used, exp) => JSON.stringify({ fields: { n: { integerValue: String(n) }, used: { booleanValue: used }, exp: { integerValue: String(exp) } } });
+// Claims one attempt for this token (max 5). Returns { id } when allowed, or { error }.
+// The updateTime precondition makes parallel guesses fail instead of sharing one attempt.
+export async function claimAttempt(token) {
+  const id = createHash("sha256").update(String(token)).digest("hex").slice(0, 40);
+  const cur = await fsfetch(id);
+  if (cur.status === 404) {
+    const r = await fsfetch(id, { method: "PATCH", body: doc(1, false, Date.now() + 10 * 60 * 1000) }, "&currentDocument.exists=false");
+    return r.ok ? { id } : { error: "Please try again." };
+  }
+  if (!cur.ok) return { error: "Verification is busy. Please try again." };
+  const j = await cur.json(), d = j.fields, n = Number(d.n.integerValue);
+  if (d.used.booleanValue) return { error: "This code was already used. Send a new code." };
+  if (n >= MAX_TRIES) return { error: "Too many wrong codes. Send a new code." };
+  const upd = await fsfetch(id, { method: "PATCH", body: doc(n + 1, false, Number(d.exp.integerValue)) }, `&currentDocument.updateTime=${encodeURIComponent(j.updateTime)}`);
+  return upd.ok ? { id } : { error: "Please try again." };
+}
+export async function markUsed(claim) {
+  const cur = await fsfetch(claim.id); if (!cur.ok) return false;
+  const d = (await cur.json()).fields;
+  const r = await fsfetch(claim.id, { method: "PATCH", body: doc(Number(d.n.integerValue), true, Number(d.exp.integerValue)) });
+  return r.ok;
+}

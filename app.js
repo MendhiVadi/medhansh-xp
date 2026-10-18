@@ -45,7 +45,26 @@
     async taskCreate(t) { const now = Date.now(); const d = await this.req("tasks", { method: "POST", body: enc({ ...t, createdAt: now, updatedAt: now }) }); return dec(d); },
     async taskUpdate(id, patch) { const p = { ...patch, updatedAt: Date.now() }; await this.req("tasks/" + encodeURIComponent(id), { method: "PATCH", body: enc(p), query: Object.keys(p).map((k) => "updateMask.fieldPaths=" + k).join("&") }); },
     async taskDelete(id) { await this.req("tasks/" + encodeURIComponent(id), { method: "DELETE" }); },
+    // shared pictures: compressed images stored as data URLs (one document each, < 1 MB)
+    async pictures() { const j = await this.req("pictures", { query: "pageSize=100&" + ["title", "w", "h", "by", "createdAt"].map((f) => "mask.fieldPaths=" + f).join("&") }); return (j?.documents || []).map(dec).sort((a, b) => b.createdAt - a.createdAt); },
+    _pic: new Map(),
+    pictureData(id) { if (!this._pic.has(id)) this._pic.set(id, this.req("pictures/" + encodeURIComponent(id), { query: "mask.fieldPaths=data" }).then((d) => dec(d).data).catch((e) => { this._pic.delete(id); throw e; })); return this._pic.get(id); },
+    async pictureAdd(title, data, w, h) { return dec(await this.req("pictures", { method: "POST", body: enc({ title, data, w, h, by: playerName() || "Visitor", createdAt: Date.now() }) })); },
+    async pictureDelete(id) { await this.req("pictures/" + encodeURIComponent(id), { method: "DELETE" }); },
+    // shared leaderboards: scores/{game}/entries, ordered by score (single-field index, no setup needed)
+    async top(game, n = 10, asc = false) {
+      const j = await fetch(`${FS}/scores/${encodeURIComponent(game)}:runQuery${FB.apiKey ? `?key=${FB.apiKey}` : ""}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ structuredQuery: { from: [{ collectionId: "entries" }], orderBy: [{ field: { fieldPath: "score" }, direction: asc ? "ASCENDING" : "DESCENDING" }], limit: n } }) }).then((r) => (r.ok ? r.json() : Promise.reject(r)));
+      this.set(true); return j.filter((x) => x.document).map((x) => dec(x.document));
+    },
+    async submit(game, score, extra = {}) { return dec(await this.req(`scores/${encodeURIComponent(game)}/entries`, { method: "POST", body: enc({ name: playerName() || "Visitor", score: Math.round(score), ...extra, createdAt: Date.now() }) })); },
   };
+  const playerName = () => (store.lget("xp-player-name") || "").slice(0, 20);
+  // Ask once for a display name for leaderboards and shared pictures
+  function askName() {
+    let n = playerName();
+    if (!n) { n = (prompt("Your name for the world leaderboard and shared pictures (shown to everyone):", "") || "").trim().replace(/[<>]/g, "").slice(0, 20); if (n) store.lset("xp-player-name", n); }
+    return n || "Visitor";
+  }
   const readLocal = (k, d) => { try { const v = JSON.parse(store.lget(k)); return v ?? d; } catch { return d; } };
 
   // ---------------- Icons (inline SVG) ----------------
@@ -132,12 +151,12 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=23"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=24"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=23"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=24"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyExtra(name) {
@@ -231,7 +250,11 @@
     close: (k) => close(k),
     open: (id, o) => { const k = Object.keys(APPS).find((a) => a === id || APPS[a].title.toLowerCase() === String(id).toLowerCase() || (DESK_LABEL[a] || "").toLowerCase() === String(id).toLowerCase()); if (!k) return false; openApp(k, o); return true; },
     msg: (t, h) => msgBox(t, h),
-    photos: [{ src: "photo-full.jpg?v=23", title: "Medhansh.jpg" }, { src: "photo.jpg?v=23", title: "Avatar.jpg" }],
+    photos: [{ src: "photo-full.jpg?v=24", title: "Medhansh.jpg" }, { src: "photo.jpg?v=24", title: "Avatar.jpg" }],
+    // Shared data everyone sees. Games: sys.scores.submit(game, score, extra) / sys.scores.top(game, n, ascending)
+    scores: { top: (g, n, asc) => Cloud.top(g, n, asc), submit: (g, s, x) => { askName(); return Cloud.submit(g, s, x); }, name: () => playerName(), askName },
+    pictures: { list: () => Cloud.pictures(), data: (id) => Cloud.pictureData(id), add: (t, d, w, h) => { askName(); return Cloud.pictureAdd(t, d, w, h); }, remove: (id) => Cloud.pictureDelete(id) },
+    esc,
     P,
   };
   function minimize(key) { const w = wins.get(key); if (!w) return; w.el.classList.add("min"); if (activeKey === key) activeKey = null; paintActive(); }
@@ -525,17 +548,36 @@
       q = q.trim(); if (!q || q === HOME) return HOME;
       if (/^https?:\/\//i.test(q)) return q;
       if (/^[\w-]+(\.[\w-]+)+(:\d+)?(\/\S*)?$/.test(q)) return "https://" + q;
-      return "https://en.wikipedia.org/w/index.php?search=" + encodeURIComponent(q);
+      return "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q);
     };
     function show(url) {
-      urlIn.value = url === HOME ? "" : url; urlIn.placeholder = "Search Wikipedia or type a web address";
+      urlIn.value = url === HOME ? "" : url; urlIn.placeholder = "Type a web address or search the web";
       $b(".ieback").disabled = pos <= 0; $b(".iefwd").disabled = pos >= hist.length - 1; $b(".ienew").disabled = url === HOME;
       ctx.setTitle(url === HOME ? "Favorites - Internet Explorer" : url.replace(/^https?:\/\/(www\.)?/, "").split(/[/?#]/)[0] + " - Internet Explorer");
       if (url === HOME) { frame.classList.add("hidden"); frame.removeAttribute("src"); home.classList.remove("hidden"); bar.classList.add("hidden"); stat.textContent = "Done"; return; }
       home.classList.add("hidden"); frame.classList.remove("hidden"); stat.textContent = "Opening page " + url + "…";
-      bar.classList.add("hidden"); clearTimeout(show.t); show.t = setTimeout(() => bar.classList.remove("hidden"), 2500);
-      frame.src = url;
+      bar.classList.add("hidden"); clearTimeout(show.t);
+      const n = show.n = (show.n || 0) + 1;
+      // ask the server whether the site allows framing; if not, show it through the sandboxed proxy
+      fetch(`/api/proxy?check=1&url=${encodeURIComponent(url)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((j) => {
+        if (n !== show.n) return;
+        const proxied = j && j.frameable === false && !j.blocked;
+        frame.setAttribute("sandbox", proxied ? "allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox" : SANDBOX);
+        bar.firstChild.textContent = proxied ? "Shown through the portfolio's proxy, so logins and some interactive sites may not work. You can also " : "Some sites refuse to be shown inside other pages. If this stays blank, use ";
+        if (proxied || !j) show.t = setTimeout(() => bar.classList.remove("hidden"), proxied ? 600 : 2500);
+        if (j?.blocked) { frame.srcdoc = `<p style="font:13px Tahoma,sans-serif;padding:16px">Internet Explorer cannot display this address.</p>`; return; }
+        frame.removeAttribute("srcdoc");
+        frame.src = proxied ? `/api/proxy?url=${encodeURIComponent(url)}` : url;
+      });
     }
+    const SANDBOX = frame.getAttribute("sandbox");
+    // pages shown through the proxy report link clicks and their title back here
+    const onMsg = (e) => {
+      if (e.source !== frame.contentWindow || !e.data || typeof e.data !== "object") return;
+      if (typeof e.data.xpNav === "string" && /^https?:/i.test(e.data.xpNav)) go(e.data.xpNav);
+      if (typeof e.data.xpTitle === "string" && e.data.xpTitle) { ctx.setTitle(e.data.xpTitle.slice(0, 80) + " - Internet Explorer"); stat.textContent = "Done"; }
+    };
+    addEventListener("message", onMsg); ctx.onClose(() => removeEventListener("message", onMsg));
     frame.addEventListener("load", () => { stat.textContent = "Done"; });
     const go = (q) => { const url = normalize(q); hist.splice(pos + 1); hist.push(url); pos = hist.length - 1; show(url); };
     ctx.navigate = go; wins.get(ctx.key).navigate = go;
@@ -551,7 +593,7 @@
       { label: "File", items: [{ label: "Open in new tab", act: openTab }, "-", { label: "Close", act: ctx.close }] },
       { label: "View", items: [{ label: "Refresh", key: "F5", act: () => $b(".iereload").click() }, { label: "Home", act: () => go(HOME) }] },
       { label: "Favorites", items: () => [...demos.map((p) => ({ label: p.name, act: () => go(p.url) })), "-", { label: "Wikipedia", act: () => go("https://en.wikipedia.org") }] },
-      { label: "Help", items: [{ label: "About Internet Explorer", act: () => msgBox("Internet Explorer", "A real browser inside the portfolio. Many big sites (Google, GitHub, LinkedIn) block being shown inside other pages; use New tab for those.") }] },
+      { label: "Help", items: [{ label: "About Internet Explorer", act: () => msgBox("Internet Explorer", "A real browser inside the portfolio. Sites that block being shown inside other pages are loaded through a sandboxed proxy, so most pages open here; logins and very interactive apps work best in a New tab.") }] },
     ]);
     go(ctx.url || HOME);
   }
@@ -803,11 +845,19 @@ Approximate round trip times in milli-seconds:
       wave(last, "glow"); confetti(); paintLevel();
       setTimeout(() => over && g.classList.contains("won") && showEnd(true, time, record), 450);
     }
+    function worldTimes(el, time) {
+      if (!LEVELS[level] || level === "Custom") return;
+      const game = "mine-" + level, box = el.querySelector(".mworld"); if (!box) return;
+      box.innerHTML = "<small>Loading world best times…</small>";
+      const draw = (rows, mine) => (box.innerHTML = rows.length ? `<b>World best · ${esc(level)}</b><ol>${rows.slice(0, 5).map((r) => `<li class="${r.id === mine ? "me" : ""}">${esc(r.name)} <span>${r.score}s</span></li>`).join("")}</ol>` : "<small>No world times yet.</small>");
+      (time ? sys.scores.submit(game, time) : Promise.resolve(null)).then((m) => sys.scores.top(game, 5, true).then((rows) => draw(rows, m?.id))).catch(() => (box.innerHTML = "<small>Offline – world times unavailable.</small>"));
+    }
     function showEnd(won, time, record) {
       endEl.innerHTML = won
-        ? `<b>🎉 You win!</b><span>${level} cleared in <b>${time}s</b></span>${record ? `<span class="rec">🏆 New best time!</span>` : `<span>Best: ${best[level]}s</span>`}<div><button class="xpbtn again">Play again</button>${level !== "Expert" ? `<button class="xpbtn harder">Try ${level === "Beginner" ? "Intermediate" : "Expert"}</button>` : ""}</div>`
+        ? `<b>🎉 You win!</b><span>${level} cleared in <b>${time}s</b></span><div class="mworld"></div>${record ? `<span class="rec">🏆 New best time!</span>` : `<span>Best: ${best[level]}s</span>`}<div><button class="xpbtn again">Play again</button>${level !== "Expert" ? `<button class="xpbtn harder">Try ${level === "Beginner" ? "Intermediate" : "Expert"}</button>` : ""}</div>`
         : `<b>💥 Boom!</b><span>You hit a mine.</span><div><button class="xpbtn again">Try again</button></div>`;
       endEl.classList.remove("hidden");
+      if (won) worldTimes(endEl, time);
       endEl.querySelector(".again").onclick = () => reset();
       endEl.querySelector(".harder")?.addEventListener("click", () => setLevel(level === "Beginner" ? "Intermediate" : "Expert"));
       endEl.querySelector(".again").focus();
@@ -921,7 +971,7 @@ Approximate round trip times in milli-seconds:
                     "#ffffff", "#c0c0c0", "#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff", "#ffff80", "#00ff80", "#80ffff", "#8080ff", "#ff0080", "#ff8040"];
     const TOOLS = [["pencil", "✏️", "Pencil"], ["brush", "🖌️", "Brush"], ["spray", "💨", "Airbrush"], ["eraser", "🧽", "Eraser"], ["fill", "🪣", "Fill"], ["picker", "💧", "Pick color"], ["line", "╱", "Line"], ["rect", "▭", "Rectangle"], ["ellipse", "◯", "Ellipse"], ["text", "A", "Text"]];
     const inner = chrome(body, { menus: [
-      { label: "File", items: [{ label: "New", act: () => { snap(); clear(); } }, { label: "Open...", act: () => fileIn.click() }, { label: "Save As PNG...", key: "Ctrl+S", act: () => save() }, "-", { label: "Exit", act: ctx.close }] },
+      { label: "File", items: [{ label: "New", act: () => { snap(); clear(); } }, { label: "Open...", act: () => fileIn.click() }, { label: "Save As PNG...", key: "Ctrl+S", act: () => save() }, { label: "Share to My Pictures...", act: () => share() }, "-", { label: "Exit", act: ctx.close }] },
       { label: "Edit", items: () => [{ label: "Undo", key: "Ctrl+Z", disabled: !undo.length, act: () => doUndo() }, { label: "Redo", key: "Ctrl+Y", disabled: !redo.length, act: () => doRedo() }, "-", { label: "Clear Image", act: () => { snap(); clear(); } }] },
       { label: "View", items: () => [{ label: "Tool Box", check: !toolsEl.hidden, act: () => (toolsEl.hidden = !toolsEl.hidden) }, { label: "Color Box", check: !paletteEl.hidden, act: () => (paletteEl.hidden = !paletteEl.hidden) }] },
       { label: "Image", items: [{ label: "Flip Horizontal", act: () => transform(-1, 1) }, { label: "Flip Vertical", act: () => transform(1, -1) }, { label: "Invert Colors", key: "Ctrl+I", act: () => invert() }, "-", { label: "Clear Image", act: () => { snap(); clear(); } }] },
@@ -943,10 +993,19 @@ Approximate round trip times in milli-seconds:
     const posEl = body.querySelector(".ppos"), fillBox = inner.querySelector(".fillshape input");
     let tool = "pencil", size = 3, fg = "#000000", bg = "#ffffff", undo = [], redo = [], drawing = null, editingFg = true;
     const clear = () => { g.save(); g.globalCompositeOperation = "source-over"; g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.restore(); };
-    const snap = () => { undo.push(g.getImageData(0, 0, cv.width, cv.height)); if (undo.length > 30) undo.shift(); redo = []; };
+    const snap = () => { undo.push(g.getImageData(0, 0, cv.width, cv.height)); if (undo.length > 15) undo.shift(); redo = []; };
     const doUndo = () => { if (!undo.length) return; redo.push(g.getImageData(0, 0, cv.width, cv.height)); g.putImageData(undo.pop(), 0, 0); };
     const doRedo = () => { if (!redo.length) return; undo.push(g.getImageData(0, 0, cv.width, cv.height)); g.putImageData(redo.pop(), 0, 0); };
     const save = () => cv.toBlob((b) => b && download(b, "untitled.png"));
+    async function share() {
+      const title = (prompt("Name your drawing (everyone will see it in My Pictures):", "My drawing") || "").trim().slice(0, 80); if (!title) return;
+      try {
+        await loadExtras(); const { data, w, h } = await window.EXTRAS.compressImage(cv);
+        await sys.pictures.add(title, data, w, h);
+        msgBox("Paint", `"${esc(title)}" was added to My Pictures for everyone to see.`);
+        wins.get("pictures") && sys.focus("pictures");
+      } catch (e) { msgBox("Paint", `Couldn't share the drawing: ${esc(e.message || "offline")}`, "⚠️"); }
+    }
     function transform(sx, sy) { snap(); const img = document.createElement("canvas"); img.width = cv.width; img.height = cv.height; img.getContext("2d").drawImage(cv, 0, 0); g.save(); g.setTransform(sx, 0, 0, sy, sx < 0 ? cv.width : 0, sy < 0 ? cv.height : 0); g.drawImage(img, 0, 0); g.restore(); }
     function invert() { snap(); const d = g.getImageData(0, 0, cv.width, cv.height), a = d.data; for (let i = 0; i < a.length; i += 4) { a[i] = 255 - a[i]; a[i + 1] = 255 - a[i + 1]; a[i + 2] = 255 - a[i + 2]; } g.putImageData(d, 0, 0); }
     const paintSwatch = () => { body.querySelector(".fgc").style.background = fg; body.querySelector(".bgc").style.background = bg; };
@@ -989,7 +1048,7 @@ Approximate round trip times in milli-seconds:
       g.putImageData(d, 0, 0); return true;
     }
     function shape(d, x, y, shift) {
-      g.putImageData(d.base, 0, 0);
+      g.clearRect(0, 0, cv.width, cv.height); g.drawImage(d.base, 0, 0);
       g.strokeStyle = d.color; g.fillStyle = d.alt; g.lineWidth = size; g.lineCap = "round";
       let w = x - d.x, h = y - d.y;
       if (shift && d.tool !== "line") { const m = Math.max(Math.abs(w), Math.abs(h)); w = Math.sign(w) * m; h = Math.sign(h) * m; }
@@ -1008,7 +1067,7 @@ Approximate round trip times in milli-seconds:
       if (tool === "fill") { const prev = g.getImageData(0, 0, cv.width, cv.height); if (flood(x, y, color)) { undo.push(prev); if (undo.length > 30) undo.shift(); redo = []; } return; }
       if (!["line", "rect", "ellipse"].includes(tool)) snap();
       cv.setPointerCapture(e.pointerId);
-      drawing = { tool, x, y, lx: x, ly: y, color, alt, base: ["line", "rect", "ellipse"].includes(tool) ? g.getImageData(0, 0, cv.width, cv.height) : null };
+      drawing = { tool, x, y, lx: x, ly: y, color, alt, base: ["line", "rect", "ellipse"].includes(tool) ? (() => { const b = document.createElement("canvas"); b.width = cv.width; b.height = cv.height; b.getContext("2d").drawImage(cv, 0, 0); return b; })() : null };
       if (tool === "pencil" || tool === "brush" || tool === "eraser") { g.fillStyle = tool === "eraser" ? bg : color; const s = tool === "pencil" ? Math.max(1, size / 2) : tool === "brush" ? size * 1.5 : size * 3; g.fillRect(x - s / 2, y - s / 2, s, s); }
     });
     cv.addEventListener("pointermove", (e) => {
@@ -1406,12 +1465,12 @@ TERMS
     if (e.button !== 0 || e.target !== desktopEl && e.target !== iconsEl && e.target !== winLayer) return;
     selectIcons([]);
     if (e.pointerType !== "mouse") return;
-    const sx = e.clientX, sy = e.clientY;
+    const sx = e.clientX, sy = e.clientY, rects = iconEls.map((el) => [el, el.getBoundingClientRect()]);
     const move = (ev) => {
       const x = Math.min(sx, ev.clientX), y = Math.min(sy, ev.clientY), w = Math.abs(ev.clientX - sx), h = Math.abs(ev.clientY - sy);
       if (w + h < 4) return;
       marquee.classList.remove("hidden"); Object.assign(marquee.style, { left: x + "px", top: y + "px", width: w + "px", height: h + "px" });
-      selectIcons(iconEls.filter((el) => { const r = el.getBoundingClientRect(); return r.right > x && r.left < x + w && r.bottom > y && r.top < y + h; }));
+      selectIcons(rects.filter(([, r]) => r.right > x && r.left < x + w && r.bottom > y && r.top < y + h).map(([el]) => el));
     };
     const up = () => { marquee.classList.add("hidden"); removeEventListener("pointermove", move); removeEventListener("pointerup", up); removeEventListener("pointercancel", up); };
     addEventListener("pointermove", move); addEventListener("pointerup", up); addEventListener("pointercancel", up);
@@ -1620,6 +1679,9 @@ TERMS
         }
         const tasks = (await Cloud.tasks()).sort((a, b) => a.date.localeCompare(b.date));
         const mine = new Map(this.list.map((t) => [t.id, t]));
+        const sig = JSON.stringify(tasks.map((t) => [t.id, t.updatedAt]));
+        if (sig === this._sig && !this.list.some((t) => t.pending)) return;
+        this._sig = sig;
         this.list = tasks.map((t) => ({ ...t, notified: mine.get(t.id)?.notified ?? (Tasks.due(t) != null && Tasks.due(t) < Date.now()), snooze: mine.get(t.id)?.snooze || null }));
         this.save();
       } catch {}
@@ -1774,6 +1836,9 @@ TERMS
   }
 
   paintBell();
+  // Vercel Web Analytics (cookie-free): only load it when it's switched on for the project, so there's no 404
+  if (/\.vercel\.app$/.test(location.hostname)) fetch("/_vercel/insights/script.js", { method: "HEAD" }).then((r) => { if (r.ok) { const sc = document.createElement("script"); sc.defer = true; sc.src = "/_vercel/insights/script.js"; document.head.appendChild(sc); } }).catch(() => {});
+  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=24"; document.head.appendChild(l); } });
   (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => Tasks.sync().then(() => { checkReminders(true); paintBell(); }));
   setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });

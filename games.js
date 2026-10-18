@@ -15,6 +15,47 @@
     raf = requestAnimationFrame(frame);
     ctx.onClose(() => { dead = true; cancelAnimationFrame(raf); });
   };
+  // rAF that only runs while started (e.g. the win cascade); sleeps while hidden like loop()
+  const burst = (ctx, step) => {
+    let raf = 0, last = 0, on = false, dead = false;
+    const frame = (t) => {
+      raf = 0; if (!on || dead) return;
+      if (ctx.isVisible()) { const dt = last ? Math.min(50, t - last) : 16; last = t; step(dt); } else last = 0;
+      if (on && !dead) raf = requestAnimationFrame(frame);
+    };
+    ctx.onClose(() => { dead = true; on = false; if (raf) cancelAnimationFrame(raf); raf = 0; });
+    return {
+      start() { if (on || dead) return; on = true; last = 0; raf = requestAnimationFrame(frame); },
+      stop() { on = false; if (raf) cancelAnimationFrame(raf); raf = 0; },
+    };
+  };
+  // debounced (one rAF) resize handler that ignores callbacks where the element size is unchanged
+  const observeSize = (ctx, el, fn) => {
+    let q = 0, lw = -1, lh = -1;
+    observe(ctx, el, () => {
+      if (q) return;
+      q = requestAnimationFrame(() => {
+        q = 0; const w = el.clientWidth, h = el.clientHeight;
+        if (w === lw && h === lh) return;
+        if (fn(w, h) !== false) { lw = w; lh = h; }
+      });
+    });
+    ctx.onClose(() => { if (q) cancelAnimationFrame(q); q = 0; });
+  };
+  // pre-rendered card faces (13 ranks x nSuits) on one offscreen sheet for the win cascade
+  const cardSheet = (cw, ch, SUITS, RANKS, nSuits) => {
+    const cellW = Math.ceil(cw) + 1, cellH = Math.ceil(ch) + 1, sheet = document.createElement("canvas");
+    sheet.width = cellW * 13; sheet.height = cellH * nSuits;
+    const g = sheet.getContext("2d");
+    for (let s = 0; s < nSuits; s++) for (let r = 1; r <= 13; r++) {
+      const x = (r - 1) * cellW, y = s * cellH;
+      g.fillStyle = "#fff"; g.fillRect(x, y, cw, ch); g.strokeStyle = "#333"; g.strokeRect(x + 0.5, y + 0.5, cw - 1, ch - 1);
+      g.fillStyle = s === 1 || s === 2 ? "#d00" : "#000"; g.textBaseline = "top"; g.textAlign = "left"; g.font = `bold ${cw * 0.2}px Arial`;
+      g.fillText(RANKS[r], x + 3, y + 3); g.fillText(SUITS[s], x + 3, y + 3 + cw * 0.2);
+      g.font = `${cw * 0.5}px Arial`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(SUITS[s], x + cw / 2, y + ch / 2);
+    }
+    return { sheet, cellW, cellH };
+  };
   const fitCanvas = (cv, W, H) => {
     // keep the logical size, scale with CSS to fit the window body
     const box = cv.parentElement;
@@ -23,6 +64,46 @@
   };
   const observe = (ctx, el, fn) => { const ro = new ResizeObserver(fn); ro.observe(el); ctx.onClose(() => ro.disconnect()); };
   const listen = (ctx, type, fn) => { addEventListener(type, fn); ctx.onClose(() => removeEventListener(type, fn)); };
+
+  // ---- shared world leaderboard helper (ctx.sys.scores; every call may fail offline) ----
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const worldBoard = (ctx, game, local) => {
+    const api = () => (ctx.sys && ctx.sys.scores) || null;
+    const table = (rows, id) => {
+      if (!rows.length) return `<small>No world scores yet</small>`;
+      const td = "padding:0 6px;text-align:left";
+      const body = rows.map((r, i) => {
+        const info = [r.level != null ? "L" + esc(r.level) : "", r.time != null ? esc(r.time) + "s" : "", r.mode ? esc(r.mode) : ""].filter(Boolean).join(" ");
+        const hl = id && r.id === id ? ";background:#ffd700;color:#000;font-weight:bold" : "";
+        return `<tr style="${hl.slice(1)}"><td style="${td}">${i + 1}</td><td style="${td};max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name || "Anonymous")}</td><td style="${td};text-align:right">${esc(r.score)}</td><td style="${td}">${info}</td></tr>`;
+      }).join("");
+      return `<table style="margin:4px auto;border-collapse:collapse;font-size:11px;line-height:1.25;color:inherit"><tbody>${body}</tbody></table>`;
+    };
+    const fail = (el) => { if (el.isConnected) el.innerHTML = `<small>Offline &ndash; showing your best</small><br><small>${local()}</small>`; };
+    const load = (el, id) => {
+      const s = api(); if (!s) return fail(el);
+      Promise.resolve().then(() => s.top(game, 10)).then((rows) => {
+        if (!Array.isArray(rows)) throw new Error("bad");
+        if (el.isConnected) el.innerHTML = table(rows, id);
+      }).catch(() => fail(el));
+    };
+    return {
+      view(el) { if (!el) return; el.innerHTML = "<small>Loading&hellip;</small>"; load(el, null); },
+      post(el, score, extra) {
+        if (!el) return;
+        const s = api(); score = Math.round(Number(score));
+        if (!s || !(score > 0) || score > 1e8) return fail(el);
+        const x = {};
+        if (extra && Number.isInteger(extra.level)) x.level = extra.level;
+        if (extra && Number.isInteger(extra.time)) x.time = extra.time;
+        if (extra && extra.mode) x.mode = String(extra.mode).slice(0, 20);
+        el.innerHTML = "<small>Loading&hellip;</small>";
+        Promise.resolve().then(() => s.submit(game, score, x)).then((r) => {
+          load(el, typeof r === "string" ? r : r && r.id ? r.id : null);
+        }).catch(() => fail(el));
+      },
+    };
+  };
 
   // ---- tiny WebAudio blips (no audio files). One shared AudioContext, created on the first user gesture ----
   let AC = null;
@@ -67,6 +148,8 @@
     let S, history = [], score, secs, timer, won = false, drag = null, draw3 = ctx.store.lget("xp-sol-draw") === "3", layout = { cw: 71, ch: 96, gap: 10, H: 400 };
     let vegas = ctx.store.lget("xp-sol-vegas") === "1", pendingOff = null, autoRun = false, autoT = 0, hintT = 0, toastT = 0, casc = null;
 
+    const wb = worldBoard(ctx, "solitaire", () => "No local best saved");
+    const modeStr = () => (vegas ? "vegas" : "standard") + "-d" + (draw3 ? 3 : 1);
     const overlay = (html, style = "") => { sol.querySelector(".sol-win")?.remove(); sol.insertAdjacentHTML("beforeend", `<div class="sol-win" style="${style}">${html}</div>`); return sol.querySelector(".sol-win"); };
     function toast(text) {
       sol.querySelector(".sol-toast")?.remove(); clearTimeout(toastT);
@@ -82,7 +165,7 @@
       for (let c = 0; c < 7; c++) for (let k = 0; k <= c; k++) { const card = deck.pop(); card.up = k === c; S.t[c].push(card); }
       S.s = deck; history = []; score = vegas ? -52 : 0; secs = 0; won = false; drag = null; pendingOff = null;
       sol.querySelector(".sol-win")?.remove(); timeEl.textContent = "Time: 0";
-      clearInterval(timer); timer = setInterval(() => { if (!won && ctx.isVisible()) timeEl.textContent = "Time: " + ++secs; }, 1000);
+      clearInterval(timer); timer = setInterval(() => { if (!won && ctx.isVisible() && !sol.querySelector(".sol-lb")) timeEl.textContent = "Time: " + ++secs; }, 1000);
       snd.seq([392, 523], 0.05, 0.05);
       render();
     }
@@ -139,8 +222,15 @@
       won = true; clearInterval(timer); clearInterval(autoT); autoRun = false; updateAuto();
       startCascade();
     }
-    function showWin() {
-      overlay(`<b>You won!</b><br>Score ${score} in ${secs}s<br><button class="xpbtn">Deal again</button>`).querySelector("button").onclick = deal;
+    function showWin(first = true) {
+      const o = overlay(`<b>You won!</b><br>Score ${score} in ${secs}s<div class="wl" style="min-width:230px"></div><button class="xpbtn">Deal again</button>`);
+      o.querySelector("button").onclick = deal;
+      if (first) wb.post(o.querySelector(".wl"), score, { time: secs, mode: modeStr() }); else wb.view(o.querySelector(".wl"));
+    }
+    function showWorld() {
+      const o = overlay(`<b>World top 10</b><div class="wl sol-lb" style="min-width:230px"></div><button class="xpbtn">Close</button>`);
+      o.querySelector("button").onclick = () => { if (won && !casc) showWin(false); else o.remove(); };
+      wb.view(o.querySelector(".wl"));
     }
 
     // ---- hint: highlight one legal move ----
@@ -203,8 +293,9 @@
       cv.width = w; cv.height = h; cv.style.cssText = "position:absolute;left:0;top:0;width:100%;height:100%;z-index:150;cursor:pointer";
       sol.appendChild(cv);
       cv.addEventListener("pointerdown", endCascade);
-      casc = { cv, g: cv.getContext("2d"), w, h, n: 0, t: 0, fs: `bold ${layout.cw * 0.2}px Arial`, fl: `${layout.cw * 0.5}px Arial`, pool: Array.from({ length: 52 }, () => ({ on: false, x: 0, y: 0, vx: 0, vy: 0, s: 0, r: 0 })) };
+      casc = { cv, g: cv.getContext("2d"), w, h, n: 0, t: 0, sp: cardSheet(layout.cw, layout.ch, SUITS, RANKS, 4), pool: Array.from({ length: 52 }, () => ({ on: false, x: 0, y: 0, vx: 0, vy: 0, s: 0, r: 0 })) };
       snd.seq([523, 659, 784, 1047], 0.12, 0.16, "triangle");
+      cascLoop.start();
     }
     function cascStep(dt) {
       const c = casc; if (!c) return;
@@ -221,16 +312,13 @@
         if (p.y > c.h - ch) { p.y = c.h - ch; p.vy = -p.vy * 0.8; }
         if (p.x < -cw || p.x > c.w) { p.on = false; continue; }
         live++;
-        g.fillStyle = "#fff"; g.fillRect(p.x, p.y, cw, ch); g.strokeStyle = "#333"; g.strokeRect(p.x + 0.5, p.y + 0.5, cw - 1, ch - 1);
-        g.fillStyle = p.s === 1 || p.s === 2 ? "#d00" : "#000"; g.textBaseline = "top"; g.textAlign = "left"; g.font = c.fs;
-        g.fillText(RANKS[p.r], p.x + 3, p.y + 3); g.fillText(SUITS[p.s], p.x + 3, p.y + 3 + cw * 0.2);
-        g.font = c.fl; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(SUITS[p.s], p.x + cw / 2, p.y + ch / 2);
+        g.drawImage(c.sp.sheet, (p.r - 1) * c.sp.cellW, p.s * c.sp.cellH, c.sp.cellW, c.sp.cellH, p.x, p.y, c.sp.cellW, c.sp.cellH);
       }
       if (c.n >= 52 && !live) endCascade();
     }
-    function stopCascade() { if (casc) { casc.cv.remove(); casc = null; } }
+    function stopCascade() { cascLoop.stop(); if (casc) { casc.cv.remove(); casc = null; } }
     function endCascade() { if (!casc) return; stopCascade(); showWin(); }
-    loop(ctx, (dt) => { if (casc) cascStep(dt); });
+    const cascLoop = burst(ctx, cascStep);
 
     function computeLayout() {
       const W = table.clientWidth || 560, H = table.clientHeight || 400;
@@ -336,6 +424,7 @@
         { label: "Draw Three", check: draw3, act: () => setDraw(true) },
         { label: "Vegas Scoring", check: vegas, act: () => setVegas(!vegas) },
         snd.item(),
+        { label: "World Leaderboard…", act: showWorld },
         "-",
         { label: "Exit", act: ctx.close },
       ] },
@@ -349,7 +438,7 @@
       else if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.repeat && e.key.toLowerCase() === "h") { e.preventDefault(); hint(); }
     });
     // a re-render mid-drag would detach the dragged cards; the drop re-renders anyway
-    observe(ctx, table, () => S && !drag && render());
+    observeSize(ctx, table, () => { if (!S || drag) return false; render(); });
     ctx.onClose(() => { clearInterval(timer); clearInterval(autoT); clearTimeout(hintT); clearTimeout(toastT); });
     deal();
   }
@@ -370,6 +459,7 @@
     let sn, dir, queue, food, bonus, obs, grow, score, state = "ready", acc = 0, speed, overAt = 0;
     const px = [], py = []; let pl = 0; // segment positions before the latest tick, for interpolation
     const savePrev = () => { pl = sn.length; for (let i = 0; i < pl; i++) { px[i] = sn[i].x; py[i] = sn[i].y; } };
+    const wb = worldBoard(ctx, "snake", () => { const l = loadScores(); return l.length ? "Your top 5: " + l.join(", ") : "No local scores yet"; });
     const intro = "<b>SNAKE</b><br><small>Arrow keys / WASD or swipe<br>Space or tap to start</small>";
     const rnd = (n) => (Math.random() * n) | 0;
     const reset = () => {
@@ -416,9 +506,15 @@
       const list = loadScores(); if (s > 0) list.push(s);
       list.sort((a, b) => b - a); list.length = Math.min(5, list.length); ctx.store.lset("xp-snake-scores", JSON.stringify(list));
       const rank = s > 0 ? list.indexOf(s) : -1;
-      const rows = list.map((v, i) => i === rank ? `<b style="font-size:13px;color:#ffd700">${i + 1}. ${v} &larr;</b>` : `${i + 1}. ${v}`).join("<br>");
+      const rows = list.map((v, i) => i === rank ? `<b style="font-size:13px;color:#ffd700">${i + 1}. ${v} &larr;</b>` : `${i + 1}. ${v}`).join(" &nbsp; ");
       if (win) snd.seq([523, 659, 784, 1047], 0.1, 0.12, "triangle"); else snd.blip(260, 0.45, "sawtooth", 1, 50);
-      say(`<div><b>${win ? "YOU WIN!" : "GAME OVER"}</b><br>Score ${s}<br><small>${rows ? "<u>Top 5</u><br>" + rows + "<br>" : ""}Press Space or tap to play again</small></div>`);
+      say(`<div><b>${win ? "YOU WIN!" : "GAME OVER"}</b><br>Score ${s}<br><small>${rows ? "<u>Your top 5</u><br>" + rows + "<br>" : ""}</small><b style="font-size:12px;color:#fff"><u>World top 10</u></b><div class="wl"></div><small>Press Space or tap to play again</small></div>`);
+      if (s > 0) wb.post(msg.querySelector(".wl"), s); else msg.querySelector(".wl")?.remove();
+    }
+    function showWorld() {
+      if (state === "run") pause();
+      say(`<div><b>World top 10</b><div class="wl"></div><small>Press Space or tap to continue</small></div>`);
+      wb.view(msg.querySelector(".wl"));
     }
     function tick() {
       if (queue.length) dir = queue.shift();
@@ -493,6 +589,8 @@
       { label: state === "paused" ? "Resume" : "Pause", key: "Space", disabled: state !== "run" && state !== "paused", act: pause },
       "-",
       { label: "Speed:", disabled: true },
+      { label: "World Leaderboard…", act: showWorld },
+      "-",
       ...Object.keys(SPEEDS).map((n) => ({ label: n, check: n === level, act: () => { level = n; speed = SPEEDS[n]; ctx.store.lset("xp-snake-speed", n); } })),
       "-",
       { label: "Wrap-around (no walls)", check: wrap, act: () => { wrap = !wrap; ctx.store.lset("xp-snake-wrap", wrap ? "1" : "0"); } },
@@ -526,6 +624,7 @@
     const $ = (s) => body.querySelector(s);
     const snd = sound(ctx);
     let best = Number(ctx.store.lget("xp-breakout-best")) || 0, bestLvl = Number(ctx.store.lget("xp-breakout-level")) || 0;
+    const wb = worldBoard(ctx, "breakout", () => best ? "Best: " + best + " (level " + (bestLvl || 1) + ")" : "No local best yet");
     const intro = () => `<b>BRICK BREAKER</b><br><small>Move the mouse or use ← →<br>Click or Space to launch${best ? "<br>Best: " + best + " (level " + (bestLvl || 1) + ")" : ""}</small>`;
     const rnd = (n) => (Math.random() * n) | 0;
     const parts = Array.from({ length: MAXP }, () => ({ l: 0, x: 0, y: 0, vx: 0, vy: 0, c: "" }));
@@ -585,7 +684,13 @@
       const nb = score > best; if (nb) { best = score; ctx.store.lset("xp-breakout-best", best); }
       if (level > bestLvl) { bestLvl = level; ctx.store.lset("xp-breakout-level", bestLvl); }
       snd.seq([392, 330, 262, 196], 0.14, 0.18, "sawtooth");
-      say(`<b>GAME OVER</b><br>Score ${score} &middot; Level ${level}<br><small>${nb ? "New best score!" : "Best: " + best}<br>Best level: ${bestLvl}<br>Click or Space to play again</small>`);
+      say(`<b>GAME OVER</b><br>Score ${score} &middot; Level ${level}<br><small>${nb ? "New best score!" : "Best: " + best}<br>Best level: ${bestLvl}</small><div class="wl"></div><small>Click or Space to play again</small>`);
+      if (score > 0) wb.post(msg.querySelector(".wl"), score, { level }); else msg.querySelector(".wl")?.remove();
+    }
+    function showWorld() {
+      if (state === "run") pause();
+      say(`<div><b>World top 10</b><div class="wl"></div><small>Click or Space to continue</small></div>`);
+      wb.view(msg.querySelector(".wl"));
     }
     function loseLife() {
       lives--; hud(); pups.length = 0; widenT = slowT = stickyT = 0; resetBall(); snd.blip(300, 0.4, "sawtooth", 1, 60);
@@ -749,6 +854,7 @@
       { label: state === "paused" ? "Resume" : "Pause", key: "P", disabled: state !== "run" && state !== "paused", act: pause },
       "-",
       snd.item(),
+      { label: "World Leaderboard…", act: showWorld },
       "-",
       { label: "Exit", act: ctx.close },
     ] }]);
@@ -778,6 +884,7 @@
     const elSc = $(".sc"), elBl = $(".bl"), elMu = $(".mu"), elBs = $(".bs");
     const snd = sound(ctx);
     let best = Number(ctx.store.lget("xp-pinball-best")) || 0;
+    const wb = worldBoard(ctx, "pinball", () => best ? "Best: " + best : "No local best yet");
     const intro = () => `<b>SPACE CADET</b><br><small>Hold Space / ↓ to pull the plunger, release to launch<br>Flippers: Z / ← and / / M / →${best ? "<br>Best: " + best : ""}</small>`;
     const say = (t) => { msg.innerHTML = t; msg.style.display = t ? "" : "none"; };
 
@@ -863,7 +970,8 @@
       state = "over"; overAt = performance.now();
       const nb = score > best; if (nb) { best = score; ctx.store.lset("xp-pinball-best", best); }
       dirty = true;
-      say(`<b>GAME OVER</b><br>Score ${score}<br><small>${nb ? "New best score!" : "Best: " + best}<br>Click or F2 for a new game</small>`);
+      say(`<b>GAME OVER</b><br>Score ${score}<br><small>${nb ? "New best score!" : "Best: " + best}</small><div class="wl"></div><small>Click or F2 for a new game</small>`);
+      if (score > 0) wb.post(msg.querySelector(".wl"), score); else msg.querySelector(".wl")?.remove();
     }
     function drain() {
       if (saverT > 0) { saverT = 0; flash("BALL SAVED"); snd.seq([440, 660, 880], 0.07, 0.09, "triangle"); serve(false); return; }
@@ -876,6 +984,11 @@
     function pause() {
       if (state === "play" || state === "ready") { prev = state; state = "paused"; releaseAll(); held = false; pull = 0; say("<b>Paused</b><br><small>Click or P to resume</small>"); }
       else if (state === "paused") { state = prev; say(state === "ready" && ball === 1 && !score ? intro() : ""); }
+    }
+    function showWorld() {
+      if (state === "play" || state === "ready") pause();
+      say(`<div><b>World top 10</b><div class="wl"></div><small>Click or P to continue</small></div>`);
+      wb.view(msg.querySelector(".wl"));
     }
     function help() {
       if (state === "play" || state === "ready") pause();
@@ -1076,6 +1189,7 @@
         { label: state === "paused" ? "Resume" : "Pause", key: "P", disabled: state !== "play" && state !== "ready" && state !== "paused", act: pause },
         "-",
         snd.item(),
+        { label: "World Leaderboard…", act: showWorld },
         "-",
         { label: "Exit", act: ctx.close },
       ] },
@@ -1100,6 +1214,8 @@
     let nS = sv === 2 || sv === 4 ? sv : 1;
     let S, history = [], score = 500, secs = 0, timer, won = false, drag = null, layout = { cw: 50, ch: 68, gap: 8, H: 400 }, pendingOff = null, hintT = 0, toastT = 0, casc = null;
 
+    const wb = worldBoard(ctx, "spider", () => "No local best saved");
+    const modeStr = () => nS + "suit";
     const overlay = (html, style = "") => { sol.querySelector(".sol-win")?.remove(); sol.insertAdjacentHTML("beforeend", `<div class="sol-win" style="${style}">${html}</div>`); return sol.querySelector(".sol-win"); };
     function toast(text) {
       sol.querySelector(".sol-toast")?.remove(); clearTimeout(toastT);
@@ -1117,7 +1233,7 @@
       for (let c = 0; c < 10; c++) { const col = []; for (let n = c < 4 ? 6 : 5; n--;) col.push(deck.pop()); top(col).up = true; S.t.push(col); }
       S.k = deck; history = []; score = 500; secs = 0; won = false; drag = null; pendingOff = null;
       sol.querySelector(".sol-win")?.remove(); timeEl.textContent = "Time: 0"; suitsEl.textContent = nS + (nS === 1 ? " suit" : " suits");
-      clearInterval(timer); timer = setInterval(() => { if (!won && ctx.isVisible() && ctx.isActive()) timeEl.textContent = "Time: " + ++secs; }, 1000);
+      clearInterval(timer); timer = setInterval(() => { if (!won && ctx.isVisible() && ctx.isActive() && !sol.querySelector(".sol-lb")) timeEl.textContent = "Time: " + ++secs; }, 1000);
       snd.seq([392, 523], 0.05, 0.05);
       render();
     }
@@ -1190,8 +1306,15 @@
       if (S.d.length < 8) return;
       won = true; clearInterval(timer); startCascade();
     }
-    function showWin() {
-      overlay(`<b>You won!</b><br>Score ${score} in ${secs}s<br><button class="xpbtn">Deal again</button>`).querySelector("button").onclick = deal;
+    function showWin(first = true) {
+      const o = overlay(`<b>You won!</b><br>Score ${score} in ${secs}s<div class="wl" style="min-width:230px"></div><button class="xpbtn">Deal again</button>`);
+      o.querySelector("button").onclick = deal;
+      if (first) wb.post(o.querySelector(".wl"), score, { time: secs, mode: modeStr() }); else wb.view(o.querySelector(".wl"));
+    }
+    function showWorld() {
+      const o = overlay(`<b>World top 10</b><div class="wl sol-lb" style="min-width:230px"></div><button class="xpbtn">Close</button>`);
+      o.querySelector("button").onclick = () => { if (won && !casc) showWin(false); else o.remove(); };
+      wb.view(o.querySelector(".wl"));
     }
 
     // ---- hint ----
@@ -1240,8 +1363,9 @@
       cv.width = w; cv.height = h; cv.style.cssText = "position:absolute;left:0;top:0;width:100%;height:100%;z-index:150;cursor:pointer";
       sol.appendChild(cv);
       cv.addEventListener("pointerdown", endCascade);
-      casc = { cv, g: cv.getContext("2d"), w, h, n: 0, t: 0, fs: `bold ${layout.cw * 0.2}px Arial`, fl: `${layout.cw * 0.5}px Arial`, pool: Array.from({ length: 52 }, () => ({ on: false, x: 0, y: 0, vx: 0, vy: 0, s: 0, r: 0 })) };
+      casc = { cv, g: cv.getContext("2d"), w, h, n: 0, t: 0, sp: cardSheet(layout.cw, layout.ch, SUITS, RANKS, nS), pool: Array.from({ length: 52 }, () => ({ on: false, x: 0, y: 0, vx: 0, vy: 0, s: 0, r: 0 })) };
       snd.seq([523, 659, 784, 1047], 0.12, 0.16, "triangle");
+      cascLoop.start();
     }
     function cascStep(dt) {
       const c = casc; if (!c) return;
@@ -1258,16 +1382,13 @@
         if (p.y > c.h - ch) { p.y = c.h - ch; p.vy = -p.vy * 0.8; }
         if (p.x < -cw || p.x > c.w) { p.on = false; continue; }
         live++;
-        g.fillStyle = "#fff"; g.fillRect(p.x, p.y, cw, ch); g.strokeStyle = "#333"; g.strokeRect(p.x + 0.5, p.y + 0.5, cw - 1, ch - 1);
-        g.fillStyle = p.s === 1 || p.s === 2 ? "#d00" : "#000"; g.textBaseline = "top"; g.textAlign = "left"; g.font = c.fs;
-        g.fillText(RANKS[p.r], p.x + 3, p.y + 3); g.fillText(SUITS[p.s], p.x + 3, p.y + 3 + cw * 0.2);
-        g.font = c.fl; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(SUITS[p.s], p.x + cw / 2, p.y + ch / 2);
+        g.drawImage(c.sp.sheet, (p.r - 1) * c.sp.cellW, p.s * c.sp.cellH, c.sp.cellW, c.sp.cellH, p.x, p.y, c.sp.cellW, c.sp.cellH);
       }
       if (c.n >= 52 && !live) endCascade();
     }
-    function stopCascade() { if (casc) { casc.cv.remove(); casc = null; } }
+    function stopCascade() { cascLoop.stop(); if (casc) { casc.cv.remove(); casc = null; } }
     function endCascade() { if (!casc) return; stopCascade(); showWin(); }
-    loop(ctx, (dt) => { if (casc) cascStep(dt); });
+    const cascLoop = burst(ctx, cascStep);
 
     function computeLayout() {
       const W = table.clientWidth || 560, H = table.clientHeight || 400;
@@ -1373,6 +1494,7 @@
         { label: "Undo", key: "Ctrl+Z", disabled: !history.length || won || !!casc, act: undo },
         { label: "Hint", key: "H", disabled: won || !!casc, act: hint },
         snd.item(),
+        { label: "World Leaderboard…", act: showWorld },
         "-",
         { label: "Exit", act: ctx.close },
       ] },
@@ -1385,7 +1507,7 @@
       else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); }
       else if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.repeat && e.key.toLowerCase() === "h") { e.preventDefault(); hint(); }
     });
-    observe(ctx, table, () => S && !drag && render());
+    observeSize(ctx, table, () => { if (!S || drag) return false; render(); });
     ctx.onClose(() => { clearInterval(timer); clearTimeout(hintT); clearTimeout(toastT); });
     deal();
   }

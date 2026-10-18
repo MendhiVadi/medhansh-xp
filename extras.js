@@ -36,24 +36,36 @@
 .x-calc button{font:bold 11px Tahoma,sans-serif;padding:0;min-width:0;border:1px solid #003c74;border-radius:3px;background:linear-gradient(#fff,#ecebe6 86%,#d6d0c5);cursor:pointer}
 .x-calc button:hover{box-shadow:inset 0 0 0 2px #f8b330}.x-calc button:active{background:#e3e3db}
 .x-calc .r{color:#c00}.x-calc .b{color:#0000c8}
-.x-wmp{flex:1;min-height:0;display:flex;flex-direction:column;background:#0a1f44;color:#cfe3ff}
-.x-wmp .main{flex:1;min-height:0;display:flex}
-.x-wmp .vis{flex:1;min-width:0;position:relative;background:#000}
-.x-wmp canvas{display:block;width:100%;height:100%;cursor:pointer}
-.x-wmp .np{position:absolute;left:8px;bottom:6px;right:8px;color:#8fd0ff;font:bold 12px Tahoma;text-shadow:0 0 4px #000;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.x-wmp .pl{width:150px;flex-shrink:0;background:linear-gradient(#17356b,#0a1f44);border-left:1px solid #3a63a8;overflow:auto}
-.x-wmp .pl div{padding:4px 6px;display:flex;gap:6px;cursor:default;border-bottom:1px solid #1d3f7a;white-space:nowrap}
-.x-wmp .pl div span:nth-child(2){flex:1;overflow:hidden;text-overflow:ellipsis}
+.x-wmp{flex:1;height:auto;min-height:0;min-width:0;display:flex;flex-direction:column;background:#0a1f44;color:#cfe3ff;overflow:hidden;position:relative}
+.x-wmp .main{flex:1 1 0;min-height:0;display:flex;overflow:hidden}
+.x-wmp .vis{flex:1 1 0;min-width:0;min-height:0;position:relative;background:#000;overflow:hidden}
+.x-wmp canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block;cursor:pointer}
+.x-wmp .pl{flex:0 0 38%;min-width:0;background:linear-gradient(#17356b,#0a1f44);border-left:1px solid #3a63a8;overflow-x:hidden;overflow-y:auto}
+.x-wmp .pl div{padding:4px 6px;display:flex;gap:6px;cursor:default;border-bottom:1px solid #1d3f7a;white-space:nowrap;min-width:0}
+.x-wmp .pl div span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .x-wmp .pl div:hover{background:#244a8f}.x-wmp .pl div.on{background:#3b78d8;color:#fff;font-weight:bold}
-.x-wmp .ctl{flex-shrink:0;padding:5px 8px 7px;background:linear-gradient(#5d8fd8,#2b5aa8 45%,#1a3f86);border-top:1px solid #9dc1f5}
-.x-wmp .seek{width:100%;margin:0 0 4px}
-.x-wmp .btns{display:flex;align-items:center;gap:4px}
-.x-wmp .btns button{width:28px;height:28px;border-radius:50%;border:1px solid #0a2a66;background:radial-gradient(circle at 50% 30%,#e9f3ff,#8fb8ee 60%,#4d82cf);color:#06285a;font-size:12px;cursor:pointer;padding:0}
+.x-wmp .np{flex:0 0 auto;padding:3px 8px;background:linear-gradient(#0f2b5c,#0a1f44);border-top:1px solid #1d3f7a;color:#8fd0ff;font:bold 12px Tahoma,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.x-wmp .ctl{flex:0 0 auto;min-width:0;padding:4px 8px 6px;background:linear-gradient(#5d8fd8,#2b5aa8 45%,#1a3f86);border-top:1px solid #9dc1f5}
+.x-wmp .srow{display:flex;align-items:center;gap:8px;margin:0 0 4px;min-width:0}
+.x-wmp .seek{flex:1;min-width:0;margin:0}
+.x-wmp .tm{flex:0 0 auto;font:bold 11px Tahoma,sans-serif;color:#fff;white-space:nowrap}
+.x-wmp .btns{display:flex;flex-wrap:wrap;align-items:center;gap:4px 4px;min-width:0}
+.x-wmp .btns button{flex:0 0 auto;width:26px;height:26px;border-radius:50%;border:1px solid #0a2a66;background:radial-gradient(circle at 50% 30%,#e9f3ff,#8fb8ee 60%,#4d82cf);color:#06285a;font-size:12px;cursor:pointer;padding:0;line-height:1}
 .x-wmp .btns button.big{width:36px;height:36px;font-size:15px}
 .x-wmp .btns button.on{background:radial-gradient(circle at 50% 30%,#fff7c8,#ffd35a 60%,#e8a010)}
 .x-wmp .btns button:active{filter:brightness(.85)}
-.x-wmp .tm{font:bold 12px Tahoma;margin-left:6px;color:#fff;min-width:80px}
-.x-wmp .vol{width:70px;margin-left:auto}
+.x-wmp .btns button.plt{display:none;width:auto;height:24px;border-radius:12px;padding:0 10px;font:bold 11px Tahoma,sans-serif}
+.x-wmp .sp{flex:1 1 0;min-width:0}
+.x-wmp .vg{flex:0 1 auto;display:flex;align-items:center;gap:4px;margin-left:auto}
+.x-wmp .vol{width:70px;min-width:40px;flex:0 1 70px;margin:0}
+.x-wmp.narrow .pl{display:none}
+.x-wmp.narrow .btns button.plt{display:inline-block}
+.x-wmp.narrow.showpl .pl{display:block;flex:1 1 0;border-left:0}
+.x-wmp.narrow.showpl .vis{display:none}
+.x-wmp.short .vis{display:none}
+.x-wmp.short .pl{flex:1 1 0;border-left:0}
+.x-wmp.short.narrow:not(.showpl) .main{display:none}
+.x-wmp.short .btns button{width:24px;height:24px}.x-wmp.short .btns button.big{width:30px;height:30px}
 .x-pics{flex:1;min-height:0;display:flex;flex-direction:column;background:#fff;position:relative}
 .x-pics .grid{flex:1;overflow:auto;padding:8px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start}
 .x-pics .th{width:96px;padding:4px;border:1px solid transparent;text-align:center;cursor:default}
@@ -208,14 +220,26 @@
 
   function mediaplayer(body, ctx) {
     css();
-    body.innerHTML = BAR + `<div class="x-root"><div class="x-wmp"><div class="main"><div class="vis"><canvas></canvas><div class="np"></div></div><div class="pl"></div></div>
-      <div class="ctl"><input class="seek" type="range" min="0" max="1000" value="0"><div class="btns">
-      <button class="shuf" title="Shuffle" aria-label="Shuffle">&#8644;</button><button class="rep" title="Repeat" aria-label="Repeat">&#8635;</button><button class="stop" title="Stop" aria-label="Stop">&#9632;</button>
-      <button class="prev" title="Previous" aria-label="Previous">&#9198;</button><button class="play big" title="Play" aria-label="Play">&#9654;</button><button class="next" title="Next" aria-label="Next">&#9197;</button>
-      <button class="mute" title="Mute" aria-label="Mute">&#128266;</button><span class="tm">00:00 / 0:00</span><input class="vol" aria-label="Volume" type="range" min="0" max="100"></div></div></div></div>`;
+    body.style.display = "flex"; body.style.flexDirection = "column"; body.style.overflow = "hidden";
+    body.innerHTML = BAR + `<div class="x-root" style="flex:1;height:auto;min-height:0;min-width:0"><div class="x-wmp"><div class="main"><div class="vis"><canvas aria-label="Visualization"></canvas></div><div class="pl" role="list" aria-label="Playlist"></div></div>
+      <div class="np" aria-live="polite"></div>
+      <div class="ctl"><div class="srow"><input class="seek" type="range" min="0" max="1000" value="0" aria-label="Seek"><span class="tm">00:00 / 0:00</span></div><div class="btns">
+      <button class="prev" title="Previous" aria-label="Previous">&#9198;</button><button class="stop" title="Stop" aria-label="Stop">&#9632;</button><button class="play big" title="Play" aria-label="Play">&#9654;</button><button class="next" title="Next" aria-label="Next">&#9197;</button>
+      <button class="shuf" title="Shuffle" aria-label="Shuffle" aria-pressed="false">&#8644;</button><button class="rep" title="Repeat" aria-label="Repeat" aria-pressed="false">&#8635;</button>
+      <button class="plt" title="Playlist" aria-label="Toggle playlist" aria-pressed="false">Playlist</button>
+      <span class="vg"><button class="mute" title="Mute" aria-label="Mute" aria-pressed="false">&#128266;</button><input class="vol" aria-label="Volume" type="range" min="0" max="100"></span></div></div></div></div>`;
     const $ = (s) => body.querySelector(s);
     const cv = $("canvas"), g2 = cv.getContext("2d"), npEl = $(".np"), plEl = $(".pl"), seek = $(".seek"), tmEl = $(".tm"), volEl = $(".vol");
-    const playBtn = $(".play"), muteBtn = $(".mute");
+    const playBtn = $(".play"), muteBtn = $(".mute"), wmp = $(".x-wmp"), visEl = $(".vis");
+    let dpr = 1;
+    const fitLayout = () => {
+      const w = wmp.clientWidth, h = wmp.clientHeight; if (!w || !h) return;
+      wmp.classList.toggle("narrow", w < 420); wmp.classList.toggle("short", h < 260);
+      dpr = Math.max(1, window.devicePixelRatio || 1);
+      const cw = visEl.clientWidth, ch = visEl.clientHeight;
+      if (cw && ch) { const bw = Math.round(cw * dpr), bh = Math.round(ch * dpr); if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; } }
+    };
+    observe(ctx, wmp, fitLayout); observe(ctx, visEl, fitLayout); listen(ctx, window, "resize", fitLayout); fitLayout();
     let AC = null, master = null, analyser = null, trackGain = null, noiseBuf = null, timer = 0;
     let cur = 0, playing = false, started = false, t0 = 0, nextI = 0, shuffle = false, repeat = false, mode = "bars", dragging = false;
     let vol = parseInt(ctx.store.lget("xp-vol"), 10); if (!(vol >= 0 && vol <= 100)) vol = 70;
@@ -231,7 +255,7 @@
       ctx.setTitle?.(`${tr().name} - Windows Media Player`);
     };
     const gainVal = () => (muted ? 0 : vol / 100) * 0.9;
-    const applyVol = () => { if (master) master.gain.setTargetAtTime(gainVal(), AC.currentTime, 0.02); muteBtn.classList.toggle("on", muted); muteBtn.innerHTML = muted ? "&#128263;" : "&#128266;"; };
+    const applyVol = () => { if (master) master.gain.setTargetAtTime(gainVal(), AC.currentTime, 0.02); muteBtn.classList.toggle("on", muted); muteBtn.setAttribute("aria-pressed", String(muted)); muteBtn.innerHTML = muted ? "&#128263;" : "&#128266;"; };
     const ensureAC = () => {
       if (!AC) {
         const C = window.AudioContext || window.webkitAudioContext; if (!C) return false;
@@ -300,7 +324,8 @@
     };
     const prev = () => { if (elapsed() > 3 && started) startTrack(cur); else go(cur - 1); };
     function paintBtns() {
-      playBtn.innerHTML = playing ? "&#10074;&#10074;" : "&#9654;"; playBtn.title = playing ? "Pause" : "Play";
+      playBtn.innerHTML = playing ? "&#10074;&#10074;" : "&#9654;"; playBtn.title = playing ? "Pause" : "Play"; playBtn.setAttribute("aria-label", playBtn.title);
+      $(".shuf").setAttribute("aria-pressed", String(shuffle)); $(".rep").setAttribute("aria-pressed", String(repeat));
       $(".shuf").classList.toggle("on", shuffle); $(".rep").classList.toggle("on", repeat);
     }
     function tick() {
@@ -318,6 +343,7 @@
       if (b === playBtn) play(); else if (b.classList.contains("stop")) stop(); else if (b.classList.contains("next")) go(cur + 1);
       else if (b.classList.contains("prev")) prev();
       else if (b.classList.contains("shuf")) { shuffle = !shuffle; paintBtns(); } else if (b.classList.contains("rep")) { repeat = !repeat; paintBtns(); }
+      else if (b.classList.contains("plt")) { wmp.classList.toggle("showpl"); b.classList.toggle("on", wmp.classList.contains("showpl")); b.setAttribute("aria-pressed", String(wmp.classList.contains("showpl"))); }
       else if (b === muteBtn) { muted = !muted; ctx.store.lset("xp-mute", muted ? "1" : "0"); applyVol(); }
     });
     plEl.addEventListener("click", (e) => { const d = e.target.closest("[data-i]"); if (d && +d.dataset.i !== cur) { if (started) startTrack(+d.dataset.i); else { cur = +d.dataset.i; paintList(); tick(); } } });
@@ -330,8 +356,9 @@
     // ---- visualizer ----
     const fb = new Uint8Array(128), tb = new Uint8Array(256);
     loop(ctx, () => {
-      const W = cv.clientWidth, H = cv.clientHeight; if (!W || !H) return;
-      if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+      const W = visEl.clientWidth, H = visEl.clientHeight; if (!W || !H) return;
+      if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) fitLayout();
+      g2.setTransform(dpr, 0, 0, dpr, 0, 0);
       const gr = g2.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, "#02061a"); gr.addColorStop(1, "#0b2a5e");
       g2.fillStyle = gr; g2.fillRect(0, 0, W, H);
       const live = analyser && started && playing;
@@ -339,7 +366,7 @@
         if (live) analyser.getByteFrequencyData(fb); else fb.fill(0);
         const n = 32, bw = W / n;
         for (let i = 0; i < n; i++) {
-          const v = fb[Math.floor(i * 0.9 + 1)] / 255, h = v * (H - 30);
+          const v = fb[Math.floor(i * 0.9 + 1)] / 255, h = v * (H - 8);
           const c = g2.createLinearGradient(0, H, 0, H - h - 1); c.addColorStop(0, "#1aff6a"); c.addColorStop(0.7, "#d8ff3a"); c.addColorStop(1, "#ff7a1a");
           g2.fillStyle = c; g2.fillRect(i * bw + 1, H - h - 2, bw - 2, h + 2);
         }
@@ -362,40 +389,153 @@
     paintList(); paintBtns(); applyVol(); tick();
   }
 
+  // ---- Shared image compression (also exposed as EXTRAS.compressImage for Paint etc.) ----
+  const MAX_DATA = 900000;
+  const blobToImage = async (blob) => {
+    if (window.createImageBitmap) { try { const bm = await createImageBitmap(blob); return { src: bm, w: bm.width, h: bm.height, done: () => bm.close?.() }; } catch {} }
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("Could not decode image")); i.src = url; });
+      return { src: img, w: img.naturalWidth, h: img.naturalHeight, done: () => {} };
+    } finally { URL.revokeObjectURL(url); }
+  };
+  // Accepts a Blob/File or a canvas; returns { data (JPEG data URL <= 900k chars), w, h }.
+  const compressImage = async (input) => {
+    let src, sw, sh, done = () => {};
+    if (input && input.getContext && input.width) { src = input; sw = input.width; sh = input.height; }
+    else if (input instanceof Blob) { const r = await blobToImage(input); src = r.src; sw = r.w; sh = r.h; done = r.done; }
+    else throw new Error("Unsupported image source");
+    try {
+      if (!sw || !sh) throw new Error("Image has no size");
+      let longest = Math.min(1280, 2048), q = 0.82;
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const sc = Math.min(1, longest / Math.max(sw, sh));
+        const w = Math.max(1, Math.round(sw * sc)), h = Math.max(1, Math.round(sh * sc));
+        const c = document.createElement("canvas"); c.width = w; c.height = h;
+        const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); g.drawImage(src, 0, 0, w, h);
+        const data = c.toDataURL("image/jpeg", q);
+        if (/^data:image\/jpeg;base64,/.test(data) && data.length <= MAX_DATA) return { data, w, h };
+        if (q > 0.5) q = Math.max(0.45, q - 0.12); else { longest = Math.floor(longest * 0.8); q = 0.7; }
+      }
+      throw new Error("Picture is too large to share");
+    } finally { done(); }
+  };
+
   // =====================================================================
-  //  My Pictures + Picture and Fax Viewer
+  //  My Pictures + Picture and Fax Viewer (shared with everyone)
   // =====================================================================
   function pictures(body, ctx) {
     css();
     body.innerHTML = BAR + `<div class="x-root"><div class="x-pics"><div class="toolbar"></div><div class="main" style="flex:1;min-height:0;display:flex;flex-direction:column"></div><div class="statusbar"></div><div class="drop"></div></div></div>
       <input type="file" accept="image/*" multiple style="display:none">`;
     const root = body.querySelector(".x-pics"), tb = root.querySelector(".toolbar"), main = root.querySelector(".main"), sb = root.querySelector(".statusbar"), fileIn = body.querySelector("input[type=file]");
-    const items = (ctx.sys?.photos || []).map((p) => ({ src: p.src, title: p.title || "Picture", user: false }));
+    const API = ctx.sys?.pictures;
+    const builtin = (ctx.sys?.photos || []).map((p, i) => ({ key: "b:" + i, src: p.src, title: p.title || "Picture", shared: false, local: false }));
+    let remote = [], locals = [], items = builtin.slice(), objUrls = [];
     let view = "grid", sel = 0, idx = 0, rot = 0, fit = true, show = 0;
+    let online = null, busy = "", note = "", noteTimer = 0, closed = false, fetching = false, sig = "", menu = null;
 
+    const fmtDate = (t) => { const d = new Date(t); return isNaN(d) ? "" : d.toLocaleString(); };
+    const tip = (it) => it.shared ? `${it.title}\nAdded by ${it.by || "Anonymous"} · ${fmtDate(it.createdAt)}` : it.local ? `${it.title} (not shared)` : it.title;
+    const rebuild = () => { items = builtin.concat(remote, locals); };
+    const keyAt = (i) => items[i]?.key;
+    const setNote = (t, ms = 6000) => { note = t; clearTimeout(noteTimer); if (t) noteTimer = setTimeout(() => { note = ""; paintStatus(); }, ms); paintStatus(); };
     const stopShow = () => { clearInterval(show); show = 0; };
-    const openIn = () => fileIn.click();
-    const addFiles = (files) => {
-      let n = 0;
-      for (const f of files || []) if (f.type && f.type.startsWith("image/")) { items.push({ src: URL.createObjectURL(f), title: f.name, user: true }); n++; }
-      if (n) { if (view === "grid") { sel = items.length - 1; render(); } else paintStatus(); }
+    ctx.onClose(() => { closed = true; io?.disconnect(); stopShow(); clearTimeout(noteTimer); objUrls.forEach((u) => URL.revokeObjectURL(u)); objUrls = []; menu?.remove(); });
+
+    const paintStatus = () => {
+      const it = view === "viewer" ? items[idx] : items[sel];
+      const extra = busy || note || (online === false ? "Offline – showing built-in pictures" : online ? `Shared with everyone · ${remote.length} picture${remote.length === 1 ? "" : "s"}` : "Loading shared pictures...");
+      const who = it?.shared ? `Added by ${esc(it.by || "Anonymous")} · ${esc(fmtDate(it.createdAt))}` : it?.local ? "(not shared)" : "";
+      sb.innerHTML = view === "grid"
+        ? `<span>${items.length} object(s)</span><span>${it ? esc(it.title) : ""}</span><span>${esc(extra)}</span>`
+        : `<span>${idx + 1} of ${items.length}</span><span>${esc(it?.title)}</span>${who ? `<span>${who}</span>` : ""}<span>${show ? "Slide show: press Esc to stop" : esc(extra)}</span>`;
     };
+
+    // ---- fetch + merge ----
+    async function refresh() {
+      if (closed || fetching) return;
+      if (!API?.list) { if (online !== false) { online = false; paintStatus(); } return; }
+      fetching = true;
+      try {
+        const list = await API.list();
+        if (closed) return;
+        const arr = (Array.isArray(list) ? list : []).filter((p) => p && p.id).map((p) => ({ key: "s:" + p.id, id: p.id, src: p.data || remote.find((r) => r.id === p.id)?.src || "", title: String(p.title || "Picture"), shared: true, by: p.by, createdAt: p.createdAt, w: p.w, h: p.h }));
+        const nsig = arr.map((p) => p.id).join(",");
+        online = true;
+        if (nsig !== sig) {
+          sig = nsig;
+          const kSel = keyAt(sel), kIdx = keyAt(idx);
+          remote = arr; rebuild();
+          const ns = items.findIndex((x) => x.key === kSel), ni = items.findIndex((x) => x.key === kIdx);
+          sel = ns >= 0 ? ns : clamp(sel, 0, Math.max(0, items.length - 1));
+          if (view === "viewer") {
+            if (ni >= 0) { idx = ni; paintStatus(); }
+            else if (!items.length) back();
+            else { idx = clamp(idx, 0, items.length - 1); rot = 0; renderViewer(); paintStatus(); setNote("The picture you were viewing was removed."); }
+          } else render();
+        } else paintStatus();
+      } catch { if (!closed) { online = false; paintStatus(); } }
+      finally { fetching = false; }
+    }
+
+    // ---- upload ----
+    const baseName = (n) => (String(n || "Picture").replace(/\.[^.\\/]+$/, "").trim() || "Picture").slice(0, 80);
+    async function addFiles(files) {
+      const list = [...(files || [])].filter((f) => f.type && f.type.startsWith("image/"));
+      if (!list.length) return;
+      if (busy) return setNote("Please wait for the current upload to finish.");
+      let lastKey = null;
+      for (let i = 0; i < list.length && !closed; i++) {
+        const f = list[i], title = baseName(f.name);
+        busy = `Uploading ${i + 1} of ${list.length}...`; paintStatus();
+        let packed = null;
+        try {
+          packed = await compressImage(f);
+          if (!API?.add) throw new Error("Sharing is unavailable");
+          const made = await API.add(title, packed.data, packed.w, packed.h);
+          if (closed) return;
+          if (!made || !made.id) throw new Error("Upload was cancelled");
+          remote = [{ key: "s:" + made.id, id: made.id, src: made.data || packed.data, title: made.title || title, shared: true, by: made.by, createdAt: made.createdAt || Date.now(), w: made.w || packed.w, h: made.h || packed.h }].concat(remote.filter((r) => r.id !== made.id));
+          sig = remote.map((p) => p.id).join(","); lastKey = "s:" + made.id;
+        } catch (err) {
+          if (closed) return;
+          let src = packed?.data;
+          if (!src) { src = URL.createObjectURL(f); objUrls.push(src); }
+          const it = { key: "l:" + Date.now() + ":" + i, src, title: title.slice(0, 60) + " (not shared)", shared: false, local: true };
+          locals.push(it); lastKey = it.key;
+          note = `Upload failed: ${err?.message || err}`; clearTimeout(noteTimer); noteTimer = setTimeout(() => { note = ""; paintStatus(); }, 10000);
+        }
+        rebuild();
+      }
+      busy = ""; if (closed) return;
+      const ni = items.findIndex((x) => x.key === lastKey);
+      if (ni >= 0 && view === "grid") sel = ni;
+      if (view === "grid") render(); else paintStatus();
+    }
+    const openIn = () => fileIn.click();
     fileIn.addEventListener("change", () => { addFiles(fileIn.files); fileIn.value = ""; });
     root.addEventListener("dragover", (e) => { e.preventDefault(); root.classList.add("dragging"); });
     root.addEventListener("dragleave", (e) => { if (e.target === root || !root.contains(e.relatedTarget)) root.classList.remove("dragging"); });
     root.addEventListener("drop", (e) => { e.preventDefault(); root.classList.remove("dragging"); addFiles(e.dataTransfer?.files); });
-    ctx.onClose(() => { stopShow(); items.forEach((it) => it.user && URL.revokeObjectURL(it.src)); });
 
-    const paintStatus = () => {
-      sb.innerHTML = view === "grid" ? `<span>${items.length} object(s)</span><span>${items[sel] ? esc(items[sel].title) : ""}</span>`
-        : `<span>${idx + 1} of ${items.length}</span><span>${esc(items[idx]?.title)}</span>${show ? "<span>Slide show: press Esc to stop</span>" : ""}`;
-    };
+    // ---- rendering ----
+    const canDelete = (it) => !!it && (it.shared || it.local);
     function renderGrid() {
       stopShow(); ctx.setTitle?.("My Pictures");
-      tb.innerHTML = `<button class="o">Open picture from your computer...</button><span class="muted" style="margin-left:6px">or drag pictures here</span>`;
-      main.innerHTML = items.length ? `<div class="grid">${items.map((it, i) => `<div class="th${i === sel ? " sel" : ""}" data-i="${i}" title="${esc(it.title)}"><div class="im"><img src="${esc(it.src)}" alt="" draggable="false"></div><span>${esc(it.title)}</span></div>`).join("")}</div>`
+      tb.innerHTML = `<button class="o">Open picture from your computer...</button><button class="gdel"${canDelete(items[sel]) ? "" : " disabled"}>Delete</button><span class="muted" style="margin-left:6px">or drag pictures here</span>`;
+      main.innerHTML = items.length ? `<div class="grid">${items.map((it, i) => `<div class="th${i === sel ? " sel" : ""}" data-i="${i}" title="${esc(tip(it))}"><div class="im"><img ${it.src ? `src="${esc(it.src)}"` : `data-lazy="${i}"`} alt="" draggable="false" loading="lazy"></div><span>${esc(it.title)}</span></div>`).join("")}</div>`
         : `<div class="empty">This folder is empty.<br>Open or drop pictures to view them.</div>`;
+      // load shared thumbnails only when they scroll into view
+      io?.disconnect();
+      io = new IntersectionObserver((ents) => ents.forEach((e) => { if (!e.isIntersecting) return; io.unobserve(e.target); const it = items[+e.target.dataset.lazy]; if (it) load(it).then((src) => { if (src && e.target.isConnected) e.target.src = src; }); }), { root: main, rootMargin: "120px" });
+      main.querySelectorAll("img[data-lazy]").forEach((im, n) => {
+        if (n < 12) { const it = items[+im.dataset.lazy]; if (it) load(it).then((src) => { if (src && im.isConnected) im.src = src; }); } // first screenful right away
+        else io.observe(im);
+      });
     }
+    let io = null;
+    const load = (it) => it.src ? Promise.resolve(it.src) : API?.data ? API.data(it.id).then((d) => (it.src = d)).catch(() => "") : Promise.resolve("");
     function applyImg() {
       const area = main.querySelector(".vw"), img = main.querySelector(".vw img"), wrap = main.querySelector(".wrap"); if (!area || !img || !img.naturalWidth) return;
       const nw = img.naturalWidth, nh = img.naturalHeight, odd = rot % 2 !== 0, aw = area.clientWidth - 16, ah = area.clientHeight - 16;
@@ -407,34 +547,64 @@
       const fb = tb.querySelector(".fit"); if (fb) fb.textContent = fit ? "Actual Size" : "Best Fit";
     }
     function renderViewer() {
-      const it = items[idx]; ctx.setTitle?.(`Picture and Fax Viewer - ${it.title}`);
-      tb.innerHTML = `<button class="pv">&#9664; Previous</button><button class="nx">Next &#9654;</button><button class="fit">${fit ? "Actual Size" : "Best Fit"}</button><button class="rl">&#8634; Rotate Left</button><button class="rr">&#8635; Rotate Right</button><button class="ss">${show ? "Stop Slide Show" : "Slide Show"}</button><button class="del"${it.user ? "" : " disabled"}>Delete</button><button class="bk">Back to folder</button>`;
-      main.innerHTML = `<div class="vw"><div class="wrap"><img alt="${esc(it.title)}" src="${esc(it.src)}"></div></div>`;
-      const img = main.querySelector("img"); img.addEventListener("load", applyImg); if (img.complete) applyImg();
+      const it = items[idx]; if (!it) return back(); ctx.setTitle?.(`Picture and Fax Viewer - ${it.title}`);
+      tb.innerHTML = `<button class="pv">&#9664; Previous</button><button class="nx">Next &#9654;</button><button class="fit">${fit ? "Actual Size" : "Best Fit"}</button><button class="rl">&#8634; Rotate Left</button><button class="rr">&#8635; Rotate Right</button><button class="ss">${show ? "Stop Slide Show" : "Slide Show"}</button><button class="del"${canDelete(it) ? "" : " disabled"}>Delete</button><button class="bk">Back to folder</button>`;
+      main.innerHTML = `<div class="vw"><div class="wrap" title="${esc(tip(it))}"><img alt="${esc(it.title)}"${it.src ? ` src="${esc(it.src)}"` : ""}></div></div>`;
+      const img = main.querySelector("img"); img.addEventListener("load", applyImg); if (img.complete && it.src) applyImg();
+      if (!it.src) load(it).then((src) => { if (src && items[idx] === it && img.isConnected) img.src = src; });
+      [items[idx + 1], items[idx - 1]].forEach((n) => n && !n.src && load(n)); // prefetch neighbours
     }
     function render() { if (view === "grid") renderGrid(); else renderViewer(); paintStatus(); }
     const open = (i) => { if (!items[i]) return; idx = i; rot = 0; view = "viewer"; render(); };
-    const back = () => { stopShow(); view = "grid"; sel = clamp(idx, 0, Math.max(0, items.length - 1)); render(); };
+    function back() { stopShow(); view = "grid"; sel = clamp(idx, 0, Math.max(0, items.length - 1)); render(); }
     const step = (d) => { if (!items.length) return; idx = (idx + d + items.length) % items.length; rot = 0; renderViewer(); paintStatus(); };
     const toggleShow = () => {
       if (show) { stopShow(); } else if (items.length > 1) show = setInterval(() => ctx.isVisible() && step(1), 3000);
       renderViewer(); paintStatus();
     };
-    const del = () => {
-      const it = items[idx]; if (!it) return;
-      if (!it.user) return ctx.sys?.msg?.("Picture and Fax Viewer", "Only pictures you added can be deleted.");
-      URL.revokeObjectURL(it.src); items.splice(idx, 1);
-      if (!items.length) return back();
-      idx = Math.min(idx, items.length - 1); renderViewer(); paintStatus();
-    };
+    async function del(i = view === "viewer" ? idx : sel) {
+      const it = items[i]; if (!it) return;
+      if (!canDelete(it)) return ctx.sys?.msg?.("Picture and Fax Viewer", "Built-in pictures can't be deleted.");
+      if (it.shared) {
+        if (!window.confirm("Delete this picture for everyone?")) return;
+        try { await API.remove(it.id); } catch (err) { setNote(`Delete failed: ${err?.message || err}`, 10000); return; }
+        if (closed) return;
+        remote = remote.filter((r) => r.id !== it.id); sig = remote.map((p) => p.id).join(",");
+      } else {
+        locals = locals.filter((l) => l !== it);
+        if (it.src?.startsWith("blob:")) { URL.revokeObjectURL(it.src); objUrls = objUrls.filter((u) => u !== it.src); }
+      }
+      const cur = view === "viewer" ? idx : sel, curKey = keyAt(cur);
+      rebuild();
+      if (!items.length) { sel = 0; idx = 0; return view === "viewer" ? back() : render(); }
+      const ni = items.findIndex((x) => x.key === curKey);
+      const pos = ni >= 0 ? ni : Math.min(i, items.length - 1);
+      if (view === "viewer") { idx = pos; rot = 0; renderViewer(); } else { sel = pos; renderGrid(); }
+      paintStatus();
+    }
+
+    // ---- grid context menu ----
+    const closeMenu = () => { menu?.remove(); menu = null; };
+    main.addEventListener("contextmenu", (e) => {
+      const t = e.target.closest(".th"); if (!t) return; e.preventDefault(); closeMenu();
+      const i = +t.dataset.i; sel = i; main.querySelectorAll(".th").forEach((x) => x.classList.toggle("sel", x === t)); paintStatus();
+      const it = items[i], r = root.getBoundingClientRect(), can = canDelete(it);
+      menu = document.createElement("div");
+      menu.style.cssText = `position:absolute;z-index:9;left:${Math.max(0, e.clientX - r.left)}px;top:${Math.max(0, e.clientY - r.top)}px;background:#fff;border:1px solid #888;box-shadow:2px 2px 3px rgba(0,0,0,.35);padding:2px;font:11px Tahoma,sans-serif;color:#000`;
+      menu.innerHTML = `<div data-a="open" style="padding:3px 18px;cursor:default">Open</div><div data-a="del" style="padding:3px 18px;cursor:default;${can ? "" : "color:#999"}">Delete</div>`;
+      menu.addEventListener("click", (ev) => { const a = ev.target.dataset.a; closeMenu(); if (a === "open") open(i); else if (a === "del" && can) del(i); });
+      menu.addEventListener("mouseover", (ev) => { [...menu.children].forEach((c) => { c.style.background = c === ev.target && (c.dataset.a !== "del" || can) ? "#316ac5" : ""; c.style.color = c.style.background ? "#fff" : (c.dataset.a === "del" && !can ? "#999" : "#000"); }); });
+      root.appendChild(menu);
+    });
+    listen(ctx, document, "mousedown", (e) => { if (menu && !menu.contains(e.target)) closeMenu(); });
 
     tb.addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b || b.disabled) return; const c = b.className;
-      if (c === "o") openIn(); else if (c === "pv") step(-1); else if (c === "nx") step(1);
+      if (c === "o") openIn(); else if (c === "gdel") del(); else if (c === "pv") step(-1); else if (c === "nx") step(1);
       else if (c === "fit") { fit = !fit; applyImg(); } else if (c === "rl") { rot = (rot + 3) % 4; applyImg(); } else if (c === "rr") { rot = (rot + 1) % 4; applyImg(); }
       else if (c === "ss") toggleShow(); else if (c === "del") del(); else if (c === "bk") back();
     });
-    main.addEventListener("click", (e) => { const t = e.target.closest(".th"); if (t) { sel = +t.dataset.i; main.querySelectorAll(".th").forEach((x) => x.classList.toggle("sel", x === t)); paintStatus(); } });
+    main.addEventListener("click", (e) => { const t = e.target.closest(".th"); if (t) { sel = +t.dataset.i; main.querySelectorAll(".th").forEach((x) => x.classList.toggle("sel", x === t)); const g = tb.querySelector(".gdel"); if (g) g.disabled = !canDelete(items[sel]); paintStatus(); } });
     main.addEventListener("dblclick", (e) => { const t = e.target.closest(".th"); if (t) open(+t.dataset.i); });
     observe(ctx, main, () => { if (view === "viewer") applyImg(); });
     listen(ctx, window, "keydown", (e) => {
@@ -450,19 +620,22 @@
         const d = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols }[k];
         if (d) { sel = clamp(sel + d, 0, items.length - 1); renderGrid(); paintStatus(); main.querySelector(".th.sel")?.scrollIntoView({ block: "nearest" }); e.preventDefault(); }
         else if (k === "Enter") open(sel);
+        else if (k === "Delete") del();
       }
     });
+    listen(ctx, window, "focus", () => { if (ctx.isVisible()) refresh(); });
+    every(ctx, 60000, () => { if (ctx.isVisible() && !document.hidden) refresh(); });
     mkBar(ctx, body, [
       { label: "File", items: [{ label: "Open picture from your computer...", act: openIn }, "-", { label: "Close", act: () => ctx.close() }] },
       { label: "View", items: () => [{ label: "Thumbnails", check: view === "grid", act: () => view === "viewer" && back() },
-        { label: "Slide Show", disabled: items.length < 2, act: () => { if (view !== "viewer") open(sel); if (!show) toggleShow(); } }] },
-      { label: "Help", items: [{ label: "About Picture and Fax Viewer", act: () => ctx.sys?.msg?.("Picture and Fax Viewer", "Pictures you open stay in your browser and are never uploaded.") }] },
+        { label: "Slide Show", disabled: items.length < 2, act: () => { if (view !== "viewer") open(sel); if (!show) toggleShow(); } },
+        { label: "Refresh", act: () => refresh() }] },
+      { label: "Help", items: [{ label: "About Picture and Fax Viewer", act: () => ctx.sys?.msg?.("Picture and Fax Viewer", "Pictures you open are resized and shared with everyone who visits this desktop.") }] },
     ]);
     render();
+    refresh();
   }
 
-  // =====================================================================
-  //  Task Manager
   // =====================================================================
   function taskmgr(body, ctx) {
     css();
@@ -572,5 +745,5 @@
     renderApps(); sample();
   }
 
-  window.EXTRAS = { calculator, mediaplayer, pictures, taskmgr };
+  window.EXTRAS = { calculator, mediaplayer, pictures, taskmgr, compressImage };
 })();
