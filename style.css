@@ -398,14 +398,6 @@ button { font: inherit; }
 .card.back { background: repeating-linear-gradient(45deg, #2f5fd0 0 4px, #1d47a8 4px 8px); border: 3px solid #fff; outline: 1px solid #333; }
 .card.dragging { z-index: 100; box-shadow: 3px 5px 8px rgba(0,0,0,.45); pointer-events: none; }
 .sol-win { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); padding: 16px 24px; background: #ece9d8; border: 2px solid #0831d9; text-align: center; font-size: 13px; line-height: 1.8; z-index: 200; }
-.ttt { height: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px; background: #fff; }
-.ttt-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; }
-.ttt-msg { font: bold 14px Trebuchet MS, Tahoma, sans-serif; color: #0a246a; }
-.ttt-grid { display: grid; grid-template-columns: repeat(3, 70px); grid-template-rows: repeat(3, 70px); gap: 4px; background: #7f9db9; padding: 4px; border-radius: 4px; }
-.ttt-grid button { border: 0; background: #f4f7fd; font: bold 38px Trebuchet MS, Arial, sans-serif; cursor: pointer; border-radius: 3px; }
-.ttt-grid button:hover:empty { background: #e2ebfa; }
-.ttt-grid .pX { color: #d00; } .ttt-grid .pO { color: #1e7ae6; }
-.ttt-grid .hl { background: #fff3b0; }
 
 /* ---------- Display properties ---------- */
 .disp { display: flex; flex-direction: column; height: 100%; padding: 8px; gap: 8px; overflow: auto; }
@@ -589,8 +581,7 @@ button { font: inherit; }
 .mon-screen.saver-mini { background: #000; display: flex; align-items: center; justify-content: center; }
 .tabs span[data-tab] { cursor: pointer; }
 
-.sol-table, .sol-table *, .game-stage, .ttt-grid, .mine-grid { user-select: none; -webkit-user-select: none; }
-@media (max-height: 640px) { .user-tile b { font-size: 18px; } .user-tile small { font-size: 12px; } }
+.sol-table, .sol-table *, .game-stage, @media (max-height: 640px) { .user-tile b { font-size: 18px; } .user-tile small { font-size: 12px; } }
 
 /* network popup */
 .nstats { display: flex; flex-direction: column; border: 1px solid #c9d8ee; border-radius: 3px; padding: 4px 6px; }
@@ -634,3 +625,5 @@ button { font: inherit; }
 .about-more .link { display: inline-flex; vertical-align: middle; }
 .about-more .link { border: 0; background: none; padding: 0; color: #0645ad; cursor: pointer; text-decoration: underline; font: inherit; align-items: center; gap: 3px; }
 .about-more .link svg { width: 16px; height: 16px; }
+
+.cell.mark { color: #000080; font-weight: bold; }

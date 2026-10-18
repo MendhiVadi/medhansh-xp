@@ -5,7 +5,7 @@
 window.PROFILE = {
   name: "Medhansh Khattar",
   initials: "MK",
-  photo: "photo.jpg?v=18",          // square avatar; photo-full.jpg is the full portrait
+  photo: "photo.jpg?v=19",          // square avatar; photo-full.jpg is the full portrait
   role: "AI/ML Engineer",
   subtitle: "Founder & CEO, Yap-less · CS @ VIT Bhopal",
   location: "Navi Mumbai, Maharashtra, India",
@@ -63,7 +63,7 @@ window.PROFILE = {
   },
   projects: [
     { name: "Portfolio XP", year: "2026", stack: ["HTML", "CSS", "JavaScript", "Canvas", "Vercel"],
-      desc: "This site: a Windows XP desktop in the browser with draggable windows and icons, Paint, a Command Prompt, a calendar with reminders, and five games (Solitaire, Minesweeper, Snake, Brick Breaker, Tic-Tac-Toe). No framework, no build step.",
+      desc: "This site: a Windows XP desktop in the browser with draggable windows and icons, Paint, a Command Prompt, a calendar with reminders, and four games (Solitaire, Minesweeper, Snake, Brick Breaker). No framework, no build step.",
       github: "https://github.com/MendhiVadi/medhansh-xp", url: "https://medhansh-xp.vercel.app" },
     { name: "Autonomous Driving Agent", year: "2026", stack: ["Python", "CARLA 0.9.16", "Imitation Learning", "RL (in progress)"],
       desc: "CARLA self-driving agent with a manual driving host, a map-and-controls cockpit, an imitation-learning policy that drives from road and vehicle state, and an authenticated two-computer control link for a reinforcement-learning trainer.",

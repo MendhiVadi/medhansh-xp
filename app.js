@@ -75,7 +75,6 @@
     solitaire: `<svg viewBox="0 0 32 32"><rect x="4" y="6" width="15" height="21" rx="2" fill="#2f5fd0" stroke="#123" transform="rotate(-12 11 16)"/><rect x="12" y="5" width="15" height="21" rx="2" fill="#fff" stroke="#333"/><text x="19.5" y="20" font-size="11" font-family="Arial" fill="#d00" text-anchor="middle">♥</text><text x="14.5" y="11" font-size="6" font-family="Arial" font-weight="bold" fill="#d00">A</text></svg>`,
     snake: `<svg viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" rx="3" fill="#0b3d0b"/><path d="M8 24V14h8v-6h8" stroke="#7fdb3b" stroke-width="4" fill="none" stroke-linejoin="round"/><circle cx="24" cy="8" r="2.5" fill="#c8ff6a"/><circle cx="12" cy="8" r="2" fill="#ff4136"/></svg>`,
     breakout: `<svg viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" rx="2" fill="#0a1f5c"/><rect x="5" y="6" width="6" height="3" fill="#e5410c"/><rect x="13" y="6" width="6" height="3" fill="#f2a900"/><rect x="21" y="6" width="6" height="3" fill="#5ca50a"/><rect x="5" y="11" width="6" height="3" fill="#1e7ae6"/><rect x="21" y="11" width="6" height="3" fill="#8a4fd8"/><circle cx="17" cy="19" r="2" fill="#fff"/><rect x="11" y="24" width="10" height="2.5" fill="#c0c0c0"/></svg>`,
-    ttt: `<svg viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" rx="3" fill="#fff" stroke="#7f9db9"/><path d="M12 6v20M20 6v20M6 12h20M6 20h20" stroke="#333" stroke-width="1.5"/><path d="M7 7l3 3M10 7l-3 3M22 22l3 3M25 22l-3 3" stroke="#d00" stroke-width="1.6"/><circle cx="16" cy="16" r="2.2" fill="none" stroke="#1e7ae6" stroke-width="1.6"/></svg>`,
     games: `<svg viewBox="0 0 32 32"><path d="M3 8h10l2 3h14v16H3z" fill="#f2c94c" stroke="#b8860b"/><path d="M3 13h26l-2 14H3z" fill="#ffe08a" stroke="#b8860b"/><rect x="11" y="16" width="14" height="8" rx="4" fill="#555"/><path d="M14 18v4M12 20h4" stroke="#fff" stroke-width="1.4"/><circle cx="21" cy="19" r="1" fill="#f55"/><circle cx="23" cy="21" r="1" fill="#5f5"/></svg>`,
     display: `<svg viewBox="0 0 32 32"><rect x="3" y="5" width="26" height="18" rx="2" fill="#d8d8d0" stroke="#666"/><rect x="5" y="7" width="22" height="14" fill="url(#gsky2)"/><path d="M12 23h8l1 4H11z" fill="#bbb" stroke="#666"/><defs><linearGradient id="gsky2" x2="0" y2="1"><stop offset="0" stop-color="#2a6ee7"/><stop offset=".65" stop-color="#8fc3f5"/><stop offset=".66" stop-color="#5aa83a"/></linearGradient></defs></svg>`,
     showdesk: `<svg viewBox="0 0 32 32"><rect x="3" y="6" width="26" height="18" rx="2" fill="#4f95ea" stroke="#fff"/><path d="M3 18c8-5 18-5 26 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="#4c9b2d"/><rect x="9" y="26" width="14" height="2" fill="#fff"/></svg>`,
@@ -104,16 +103,16 @@
     solitaire:{ title: "Solitaire", icon: "solitaire", w: 640, h: 520, render: lazyGame("solitaire") },
     snake:    { title: "Snake", icon: "snake", w: 420, h: 480, render: lazyGame("snake") },
     breakout: { title: "Brick Breaker", icon: "breakout", w: 520, h: 460, render: lazyGame("breakout") },
-    ttt:      { title: "Tic-Tac-Toe", icon: "ttt", w: 320, h: 400, render: lazyGame("tictactoe") },
   };
-  const GAME_IDS = ["solitaire", "mine", "snake", "breakout", "ttt"];
-  const DESKTOP = ["about", "projects", "resume", "ie", "contact", "msn", "cmd", "calendar", "games", "paint", "notepad", "recycle"];
-  const DESK_LABEL = { about: "About Me", resume: "Resume", projects: "My Projects", contact: "Contact Me", ie: "Internet Explorer", cmd: "Command Prompt", msn: "MSN Messenger", mine: "Minesweeper", paint: "Paint", notepad: "Notepad", recycle: "Recycle Bin", computer: "My Computer", games: "Games", calendar: "Calendar", solitaire: "Solitaire", snake: "Snake", breakout: "Brick Breaker", ttt: "Tic-Tac-Toe", display: "Display" };
+  APPS.reset = { title: "Reset Desktop", icon: "showdesk", action: () => askReset() };
+  const GAME_IDS = ["solitaire", "mine", "snake", "breakout"];
+  const DESKTOP = ["about", "projects", "resume", "ie", "contact", "msn", "cmd", "calendar", "games", "paint", "notepad", "reset", "recycle"];
+  const DESK_LABEL = { reset: "Reset Desktop", about: "About Me", resume: "Resume", projects: "My Projects", contact: "Contact Me", ie: "Internet Explorer", cmd: "Command Prompt", msn: "MSN Messenger", mine: "Minesweeper", paint: "Paint", notepad: "Notepad", recycle: "Recycle Bin", computer: "My Computer", games: "Games", calendar: "Calendar", solitaire: "Solitaire", snake: "Snake", breakout: "Brick Breaker", display: "Display" };
 
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=18"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=19"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyGame(name) {
@@ -134,6 +133,7 @@
     if (wins.has(key)) { const w = wins.get(key); w.el.classList.remove("min"); focus(key); if (opts.date) w.goto?.(opts.date); return w; }
     const app = opts.app || APPS[id];
     if (!app) return;
+    if (app.action) return app.action();
     closeMenus();
     const el = document.createElement("div");
     el.className = "win";
@@ -505,13 +505,13 @@
       time: () => "Current time is: " + new Date().toLocaleTimeString(),
       ver: () => "Microsoft Windows XP [Version 5.1.2600] - Portfolio Edition",
       dir: () => ` Volume in drive C has no label.\n\n Directory of C:\\Documents and Settings\\${P.name.split(" ")[0]}\n\n` + ["About Me.txt", "Resume.doc", "My Projects"].map((f, i) => `${new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })}  09:${String(10 + i).padStart(2, "0")} AM    ${f.includes(".") ? "         4,096" : "<DIR>         "} ${f}`).join("\n"),
-      tree: () => `Folder PATH listing for Volume C\nC:.\n├── My Documents\n│   ├── About Me.txt\n│   ├── Resume.doc\n│   └── My Projects\n${P.projects.map((p, i) => `│       ${i === P.projects.length - 1 ? "└" : "├"}── ${p.name}`).join("\n")}\n└── Program Files\n    ├── Calendar\n    ├── Games\n    │   ├── Solitaire\n    │   ├── Minesweeper\n    │   ├── Snake\n    │   ├── Brick Breaker\n    │   └── Tic-Tac-Toe\n    ├── MSN Messenger\n    ├── Notepad\n    └── Paint`,
+      tree: () => `Folder PATH listing for Volume C\nC:.\n├── My Documents\n│   ├── About Me.txt\n│   ├── Resume.doc\n│   └── My Projects\n${P.projects.map((p, i) => `│       ${i === P.projects.length - 1 ? "└" : "├"}── ${p.name}`).join("\n")}\n└── Program Files\n    ├── Calendar\n    ├── Games\n    │   ├── Solitaire\n    │   ├── Minesweeper\n    │   ├── Snake\n    │   └── Brick Breaker\n    ├── MSN Messenger\n    ├── Notepad\n    └── Paint`,
       systeminfo: () => `Host Name:                 ${P.hostname}\nOS Name:                   Microsoft Windows XP Professional\nOS Version:                5.1.2600 Service Pack 3\nRegistered Owner:          ${P.name}\nSystem Type:               X86-based PC\nTotal Physical Memory:     65,536 MB\nCoffee Level:              Critically Low`,
       matrix: () => { matrix(); return ""; },
     };
     CMDS.games = () => "Games:\n" + GAME_IDS.map((id) => `  ${id.padEnd(10)} ${APPS[id].title}`).join("\n") + "\n\nType START <name> to play, e.g. start snake";
     CMDS.ls = CMDS.dir;
-    const ALIAS = { minesweeper: "mine", tictactoe: "ttt", "tic-tac-toe": "ttt", brick: "breakout", bricks: "breakout", brickbreaker: "breakout", wordpad: "resume", explorer: "computer", mycomputer: "computer", settings: "display", properties: "display", terminal: "cmd" };
+    const ALIAS = { minesweeper: "mine", brick: "breakout", bricks: "breakout", brickbreaker: "breakout", wordpad: "resume", explorer: "computer", mycomputer: "computer", settings: "display", properties: "display", terminal: "cmd" };
     let mx;
     ctx.onClose(() => clearInterval(mx));
     input.addEventListener("keydown", (e) => {
@@ -582,7 +582,10 @@
 
   function renderMine(body, ctx) {
     const LEVELS = { Beginner: [9, 9, 10], Intermediate: [16, 16, 40], Expert: [30, 16, 99] };
+    const custom = (ctx.store.lget("xp-mine-custom") || "").split("x").map(Number);
+    if (custom.length === 3 && custom.every((n) => n > 0)) LEVELS.Custom = custom;
     let level = ctx.store.lget("xp-mine-level") || "Beginner"; if (!LEVELS[level]) level = "Beginner";
+    let markMode = ctx.store.lget("xp-mine-marks") !== "0", marks = new Set(), hover = null;
     let best = {}; try { best = JSON.parse(ctx.store.lget("xp-mine-best") || "{}"); } catch {}
     let W, H, M, grid, opened, flags, over, started, timer, secs, t0, fx = 0;
     body.classList.add("mine-body");
@@ -591,13 +594,23 @@
       <div class="mine-area"><div class="mine-wrap"><div class="mine-top"><span class="lcd left">010</span><button class="smiley" aria-label="New game">🙂</button><span class="lcd time">000</span></div>
         <div class="mine-board"><div class="mine-grid"></div><div class="mine-end hidden"></div><canvas class="mine-fx"></canvas></div></div></div>`;
     const g = body.querySelector(".mine-grid"), smile = body.querySelector(".smiley"), lLeft = body.querySelector(".left"), lTime = body.querySelector(".time");
-    const endEl = body.querySelector(".mine-end"), fxCv = body.querySelector(".mine-fx"), bestEl = body.querySelector(".mine-best");
+    const endEl = body.querySelector(".mine-end"), fxCv = body.querySelector(".mine-fx"); let bestEl = body.querySelector(".mine-best");
     const setLevel = (l) => { level = l; ctx.store.lset("xp-mine-level", l); reset(true); };
     ctx.menu(body.querySelector(".menubar"), [
-      { label: "Game", items: () => [{ label: "New", key: "F2", act: () => reset() }, "-", ...Object.keys(LEVELS).map((l) => ({ label: l, check: l === level, act: () => setLevel(l) })), "-", { label: "Best Times...", act: showBest }, "-", { label: "Exit", act: ctx.close }] },
-      { label: "Help", items: [{ label: "How to play", act: () => msgBox("Minesweeper", "Left-click to reveal a square, right-click (or long-press) to flag a mine.<br>Click a revealed number to chord when its flags are placed.<br>Pick a difficulty with the buttons above the board.") }] },
+      { label: "Game", items: () => [{ label: "New", key: "F2", act: () => reset() }, "-", ...Object.keys(LEVELS).map((l) => ({ label: l === "Custom" ? `Custom (${LEVELS.Custom.join("×")})` : l, check: l === level, act: () => setLevel(l) })), { label: "Custom...", act: askCustom }, "-", { label: "Marks (?)", check: markMode, act: () => { markMode = !markMode; ctx.store.lset("xp-mine-marks", markMode ? "1" : "0"); } }, { label: "Best Times...", act: showBest }, "-", { label: "Exit", act: ctx.close }] },
+      { label: "Help", items: [{ label: "How to play", act: () => msgBox("Minesweeper", "Left-click to reveal a square. Right-click (or long-press, or hover + Space) to flag it; with Marks on, a second right-click adds a ?.<br>Click or middle-click a revealed number to open its neighbours once its flags are placed.<br>Pick a difficulty above the board, or set your own with Game > Custom.") }] },
     ]);
     body.querySelector(".mine-levels").addEventListener("click", (e) => { const b = e.target.closest("[data-l]"); if (b && b.dataset.l !== level) setLevel(b.dataset.l); });
+    function askCustom() {
+      const [w, h, m] = LEVELS.Custom || [20, 12, 40];
+      const v = prompt("Custom field: width x height x mines (e.g. 20x12x40)", `${w}x${h}x${m}`); if (!v) return;
+      let [cw, ch, cm] = v.toLowerCase().split(/[x×,\s]+/).map((n) => parseInt(n, 10));
+      if (!(cw > 0 && ch > 0 && cm > 0)) return msgBox("Minesweeper", "Use the form width x height x mines, for example 20x12x40.", "⚠️");
+      cw = Math.max(5, Math.min(40, cw)); ch = Math.max(5, Math.min(24, ch)); cm = Math.max(1, Math.min(cw * ch - 10, cm));
+      LEVELS.Custom = [cw, ch, cm]; ctx.store.lset("xp-mine-custom", `${cw}x${ch}x${cm}`); setLevel("Custom");
+      paintLevelButtons();
+    }
+    const paintLevelButtons = () => { body.querySelector(".mine-levels").innerHTML = Object.keys(LEVELS).map((l) => `<button data-l="${l}" role="radio">${l}</button>`).join("") + `<span class="mine-best"></span>`; bestEl = body.querySelector(".mine-best"); paintLevel(); };
     function showBest() { msgBox("Fastest Mine Sweepers", Object.keys(LEVELS).map((l) => `<b>${l}:</b> ${best[l] != null ? best[l] + " seconds" : "—"}`).join("<br>"), "🏆"); }
     const paintLevel = () => {
       body.querySelectorAll("[data-l]").forEach((b) => { const on = b.dataset.l === level; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
@@ -614,7 +627,7 @@
     });
     function reset(resized) {
       [W, H, M] = LEVELS[level];
-      clearInterval(timer); cancelAnimationFrame(fx); grid = Array(W * H).fill(0); opened = new Set(); flags = new Set(); over = false; started = false; secs = 0;
+      clearInterval(timer); cancelAnimationFrame(fx); grid = Array(W * H).fill(0); opened = new Set(); flags = new Set(); marks = new Set(); over = false; started = false; secs = 0;
       smile.textContent = "🙂"; lLeft.textContent = pad(M); lTime.textContent = "000";
       endEl.classList.add("hidden"); g.classList.remove("won", "lost");
       fxCv.getContext("2d").clearRect(0, 0, fxCv.width, fxCv.height);
@@ -635,7 +648,7 @@
       while (stack.length) {
         const k = stack.pop();
         if (opened.has(k) || flags.has(k)) continue;
-        opened.add(k); const c = g.children[k]; c.classList.add("open");
+        opened.add(k); marks.delete(k); const c = g.children[k]; c.classList.add("open"); c.textContent = "";
         if (grid[k] === -1) { c.classList.add("boom"); lose(k); return; }
         if (grid[k]) { c.textContent = grid[k]; c.classList.add("n" + grid[k]); } else stack.push(...nb(k));
       }
@@ -695,9 +708,21 @@
     }
     function flag(c) {
       const i = +c.dataset.i; if (opened.has(i) || over) return;
-      if (flags.has(i)) { flags.delete(i); c.textContent = ""; } else { flags.add(i); c.textContent = "🚩"; }
+      if (flags.has(i)) { flags.delete(i); if (markMode) { marks.add(i); c.textContent = "?"; c.classList.add("mark"); } else c.textContent = ""; }
+      else if (marks.has(i)) { marks.delete(i); c.textContent = ""; c.classList.remove("mark"); }
+      else { flags.add(i); c.textContent = "🚩"; }
       lLeft.textContent = pad(M - flags.size);
     }
+    // middle-click chords; hovering a square and pressing Space flags it (or chords a number)
+    g.addEventListener("pointerdown", (e) => { if (e.button !== 1) return; e.preventDefault(); const c = e.target.closest(".cell"); if (c && !over && opened.has(+c.dataset.i)) { chord(+c.dataset.i); check(+c.dataset.i); } });
+    g.addEventListener("pointerover", (e) => (hover = e.target.closest(".cell")));
+    g.addEventListener("pointerleave", () => (hover = null));
+    const space = (e) => {
+      if (e.key !== " " || !hover || !ctx.isActive() || e.target.closest?.("input, textarea")) return;
+      e.preventDefault(); const i = +hover.dataset.i;
+      if (opened.has(i)) { chord(i); check(i); } else flag(hover);
+    };
+    addEventListener("keydown", space); ctx.onClose(() => removeEventListener("keydown", space));
     g.addEventListener("click", (e) => {
       const c = e.target.closest(".cell"); if (!c || over || lpFired) return;
       const i = +c.dataset.i; if (flags.has(i)) return; if (!started) plant(i);
@@ -721,7 +746,7 @@
     reset(true);
   }
 
-  const NOTE_DEFAULT = () => `Hi! Thanks for visiting my portfolio.\n\nThis notepad is shared: everyone who visits sees the same text.\n\nThings to try:\n - Open "Command Prompt" and type help\n - Play Solitaire, Minesweeper, Snake, Brick Breaker or Tic-Tac-Toe\n - Add tasks and reminders in the Calendar\n - Browse the web in Internet Explorer\n - Draw something in Paint\n - Right-click the desktop > Properties to change the wallpaper\n\n- ${P.name}`;
+  const NOTE_DEFAULT = () => `Hi! Thanks for visiting my portfolio.\n\nThis notepad is shared: everyone who visits sees the same text.\n\nThings to try:\n - Open "Command Prompt" and type help\n - Play Solitaire, Minesweeper, Snake or Brick Breaker\n - Add tasks and reminders in the Calendar\n - Browse the web in Internet Explorer\n - Draw something in Paint\n - Right-click the desktop > Properties to change the wallpaper\n\n- ${P.name}`;
   function renderNotepad(body, ctx) {
     const inner = chrome(body, { menus: [
       { label: "File", items: [{ label: "New", act: () => { if (!ta.value.trim() || confirm("Clear the shared note for everyone?")) { ta.value = ""; queue(); } } }, { label: "Save As...", key: "Ctrl+S", act: () => download(new Blob([ta.value], { type: "text/plain" }), "note.txt") }, { label: "Reload from server", act: () => pull(true) }, "-", { label: "Exit", act: ctx.close }] },
@@ -913,7 +938,7 @@
 
   function renderGames(body) {
     const inner = chrome(body, { addr: "C:\\Program Files\\Games", addrIcon: "games" });
-    const blurb = { solitaire: "Classic Klondike", mine: "3 difficulty levels", snake: "Eat, grow, repeat", breakout: "Smash every brick", ttt: "Beat the AI (you can't)" };
+    const blurb = { solitaire: "Classic Klondike", mine: "3 difficulty levels", snake: "Eat, grow, repeat", breakout: "Smash every brick" };
     inner.innerHTML = `<div class="explorer">${taskPane([["Games", `<span>Double-click a game to play. High scores are saved in this browser.</span>`]])}
       <div class="ex-main"><div class="grid-items">${GAME_IDS.map((id) => `<div class="fitem" data-open="${id}" title="${esc(blurb[id])}">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id])}</span><small>${esc(blurb[id])}</small></div>`).join("")}</div></div></div>`;
   }
@@ -952,7 +977,7 @@
   // ---------------- Desktop icons (draggable, snap to grid, positions saved) ----------------
   // The desktop holds the default icons plus any shortcuts dragged out of folders; icons dropped on the Recycle Bin move there.
   const iconsEl = $("#icons");
-  const FIXED = ["computer", "recycle"];
+  const FIXED = ["computer", "recycle", "reset"];
   const readList = (k) => { try { return JSON.parse(store.lget(k) || "[]").filter((id) => APPS[id]); } catch { return []; } };
   let trash = readList("xp-trash"), extra = readList("xp-desk-extra"), gone = readList("xp-gone");
   let ICONS = [], iconEls = [];
@@ -1001,6 +1026,13 @@
     });
     iconEls.forEach((el) => { const p = iconPos[el.dataset.id]; el.style.transform = `translate(${PAD + p.c * CELL_W}px,${PAD + p.r * CELL_H}px)`; });
     if (reset) store.lset("xp-icons", JSON.stringify(iconPos));
+  }
+  function askReset() {
+    openApp(null, { key: "askreset", app: { title: "Reset Desktop", icon: "showdesk", w: 380, h: 190, render: (b, c) => {
+      b.innerHTML = `<div class="msgbox"><span class="msgbox-ico">↺</span><div><b>Reset the desktop to normal?</b><br>This closes all windows and restores the icon layout, wallpaper and any deleted shortcuts. Your notes and calendar are kept.</div></div><div class="msgbox-actions"><button class="xpbtn yes">Reset</button><button class="xpbtn no">Cancel</button></div>`;
+      b.querySelector(".yes").onclick = () => { c.close(); resetDesktop(); };
+      b.querySelector(".no").onclick = c.close; setTimeout(() => b.querySelector(".no").focus(), 0);
+    } } });
   }
   function resetDesktop() {
     [...wins.keys()].forEach(close);
@@ -1151,7 +1183,7 @@
   sm.addEventListener("click", (e) => {
     const li = e.target.closest("li"); if (!li) return;
     if (li.dataset.href) window.open(li.dataset.href, "_blank", "noopener");
-    if ("reset" in li.dataset && confirm("Reset the desktop? This closes all windows and restores icons, wallpaper and deleted shortcuts.")) resetDesktop();
+    if ("reset" in li.dataset) askReset();
     if ("help" in li.dataset) msgBox("Help and Support", "Double-click desktop icons to open apps, or drag them to rearrange. Drag windows by their title bar. Try the Command Prompt and type <b>help</b>.");
     toggleStart(false);
   });
@@ -1184,7 +1216,7 @@
     const t = e.target.closest("[data-c]"); if (!t) return; const c = t.dataset.c; hideCtx();
     if (c === "refresh") { iconsEl.style.opacity = 0; setTimeout(() => (iconsEl.style.opacity = 1), 120); }
     if (c === "arrange") layoutIcons(true);
-    if (c === "reset" && confirm("Reset the desktop? This closes all windows and restores icons, wallpaper and deleted shortcuts.")) resetDesktop();
+    if (c === "reset") askReset();
     if (c === "open") openApp(t.dataset.id);
     if (["notepad", "cmd", "games", "display"].includes(c)) openApp(c);
   });
@@ -1484,7 +1516,8 @@
     if (!el) return; el.hidden = !n; el.querySelector("b").textContent = n; el.title = `${n} task${n === 1 ? "" : "s"} today`;
   }
 
-  Tasks.sync().then(() => { checkReminders(true); paintBell(); });
+  paintBell();
+  (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => Tasks.sync().then(() => { checkReminders(true); paintBell(); }));
   setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });
 
@@ -1506,7 +1539,7 @@
   $("#userTile").addEventListener("click", logon);
   const shut = $("#shutdown");
   $("#smShutdown").onclick = $("#loginOff").onclick = () => { toggleStart(false); shut.classList.remove("hidden"); };
-  $("#smReset").onclick = () => { toggleStart(false); if (confirm("Reset the desktop? This closes all windows and restores icons, wallpaper and deleted shortcuts.")) resetDesktop(); };
+  $("#smReset").onclick = () => { toggleStart(false); askReset(); };
   $("#smLogoff").onclick = () => { toggleStart(false); closeTray(); [...wins.keys()].forEach((k) => close(k)); store.set("xp-logged", ""); show("#login"); };
   shut.addEventListener("click", (e) => {
     const a = e.target.closest("[data-act]")?.dataset.act; if (!a) return;
