@@ -5,7 +5,7 @@
 window.PROFILE = {
   name: "Medhansh Khattar",
   initials: "MK",
-  photo: "photo.jpg?v=20",          // square avatar; photo-full.jpg is the full portrait
+  photo: "photo.jpg?v=21",          // square avatar; photo-full.jpg is the full portrait
   role: "AI/ML Engineer",
   subtitle: "Founder & CEO, Yap-less · CS @ VIT Bhopal",
   location: "Navi Mumbai, Maharashtra, India",
