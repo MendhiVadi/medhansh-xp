@@ -575,6 +575,7 @@
   DIR / LS    - Lists files in current folder
   TREE        - Displays folder hierarchy
   CALC [expr] - Evaluates maths (e.g. calc 24*7)
+  PING [host] - Measures real round-trip time to a website (e.g. ping github.com)
   ECHO [text] - Prints text
   COLOR [code]- 0a=green 0b=cyan 0c=red 0e=yellow 0f=white 07=default
   GAMES       - Lists the games you can play
@@ -595,6 +596,30 @@
       ver: () => "Microsoft Windows XP [Version 5.1.2600] - Portfolio Edition",
       dir: () => ` Volume in drive C has no label.\n\n Directory of C:\\Documents and Settings\\${P.name.split(" ")[0]}\n\n` + ["About Me.txt", "Resume.doc", "My Projects"].map((f, i) => `${new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })}  09:${String(10 + i).padStart(2, "0")} AM    ${f.includes(".") ? "         4,096" : "<DIR>         "} ${f}`).join("\n"),
       tree: () => `Folder PATH listing for Volume C\nC:.\n├── My Documents\n│   ├── About Me.txt\n│   ├── Resume.doc\n│   └── My Projects\n${P.projects.map((p, i) => `│       ${i === P.projects.length - 1 ? "└" : "├"}── ${p.name}`).join("\n")}\n└── Program Files\n    ├── Calendar\n    ├── Games\n    │   ├── Solitaire\n    │   ├── Minesweeper\n    │   ├── Snake\n    │   └── Brick Breaker\n    ├── MSN Messenger\n    ├── Notepad\n    └── Paint`,
+      ping: (arg) => {
+        const host = (arg || location.host).replace(/^https?:\/\//, "").split(/[/?#\s]/)[0];
+        if (!/^[\w.-]+(:\d+)?$/.test(host)) return "Ping request could not find host. Please check the name and try again.";
+        print(`
+Pinging ${host} over HTTPS:
+`);
+        (async () => {
+          const times = [];
+          for (let i = 0; i < 4; i++) {
+            const t0 = performance.now();
+            try { await fetch(`https://${host}/favicon.ico?ping=${Date.now()}`, { mode: "no-cors", cache: "no-store" }); const ms = Math.round(performance.now() - t0); times.push(ms); print(`Reply from ${host}: time=${ms}ms`); }
+            catch { print("Request timed out."); }
+            await new Promise((r) => setTimeout(r, 400));
+          }
+          const n = times.length;
+          print(`
+Ping statistics for ${host}:
+    Packets: Sent = 4, Received = ${n}, Lost = ${4 - n} (${(4 - n) * 25}% loss)${n ? `
+Approximate round trip times in milli-seconds:
+    Minimum = ${Math.min(...times)}ms, Maximum = ${Math.max(...times)}ms, Average = ${Math.round(times.reduce((a, b) => a + b, 0) / n)}ms` : ""}
+`);
+        })();
+        return "";
+      },
       systeminfo: () => `Host Name:                 ${P.hostname}\nOS Name:                   Microsoft Windows XP Professional\nOS Version:                5.1.2600 Service Pack 3\nRegistered Owner:          ${P.name}\nSystem Type:               X86-based PC\nTotal Physical Memory:     65,536 MB\nCoffee Level:              Critically Low`,
       matrix: () => { matrix(); return ""; },
     };
@@ -617,7 +642,7 @@
       if (cmd === "color") { const m = { "0a": "#0f0", "0b": "#0ff", "0c": "#f55", "0e": "#ff0", "0f": "#fff", "07": "#c0c0c0" }; if (m[arg]) root.style.color = m[arg]; else print("Usage: color 0a"); return; }
       if (cmd === "calc") { try { if (!/^[\d+\-*/().%\s^]+$/.test(arg)) throw 0; print(String(Function(`"use strict";return (${arg.replace(/\^/g, "**").replace(/(^|[^\w).])-\s*(\d+(?:\.\d+)?)\s*\*\*\s*(\d+(?:\.\d+)?)/g, "$1-($2**$3)")})`)())); } catch { print("Invalid expression."); } return; }
       if (cmd === "start") { const a = ALIAS[arg.toLowerCase().replace(/\s+/g, "")] || arg.toLowerCase(); if (!arg) print("Usage: start <app>  (" + Object.keys(APPS).join(", ") + ")"); else if (Object.hasOwn(APPS, a)) { openApp(a); print(`Starting ${APPS[a].title}...`); } else print(`The system cannot find the program '${arg}'.`); return; }
-      if (Object.hasOwn(CMDS, cmd)) { const r = CMDS[cmd](); if (r) print(r); return; }
+      if (Object.hasOwn(CMDS, cmd)) { const r = CMDS[cmd](arg); if (r) print(r); return; }
       print(`'${c}' is not recognized as an internal or external command,\noperable program or batch file. Type "help" for a list of commands.`);
     });
     let mxCanvas;
@@ -639,7 +664,7 @@
 
   function renderMSN(body, ctx) {
     body.innerHTML = `<div class="msn"><div class="msn-to">To: <b>${esc(P.name)}</b> &lt;${esc(links.email)}&gt;</div><div class="msn-log"></div>
-      <div class="msn-bar"><textarea placeholder="Ask about my skills, projects, education, contact..."></textarea><div style="display:flex;flex-direction:column;gap:4px"><button class="xpbtn send">Send</button><button class="xpbtn nudge">Nudge</button></div></div></div>`;
+      <div class="msn-bar"><textarea placeholder="Ask about my skills, projects, education, contact..."></textarea><div style="display:flex;flex-direction:column;gap:4px"><button class="xpbtn send">Send</button><button class="xpbtn nudge">Nudge</button><button class="xpbtn emo" title="Choose an emoticon" aria-label="Choose an emoticon">🙂</button></div></div><div class="emopick hidden" role="listbox" aria-label="Emoticons">${"🙂 😄 😉 😎 😂 😍 🤔 😮 😢 😡 👍 👎 👋 🙏 🎉 ❤️ 🔥 💻 🤖 ☕".split(" ").map((e) => `<button type="button" role="option">${e}</button>`).join("")}</div></div>`;
     const log = body.querySelector(".msn-log"), ta = body.querySelector("textarea");
     const say = (who, text) => { const p = document.createElement("p"); p.innerHTML = `<b>${esc(who)} says:</b><br><span class="${who === "You" ? "" : "them"}">${esc(text).replace(/\(Y\)/g, "👍").replace(/\(H\)/g, "😎").replace(/:-D/g, "😄").replace(/:-\)/g, "🙂")}</span>`; log.appendChild(p); log.scrollTop = log.scrollHeight; };
     const first = P.name.split(" ")[0];
@@ -663,6 +688,10 @@
     const send = () => { const t = ta.value.trim(); if (!t) return; ta.value = ""; say("You", t); setTimeout(() => wins.has(ctx.key) && say(first, reply(t)), 600); };
     body.querySelector(".send").onclick = send;
     ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+    const pick = body.querySelector(".emopick");
+    body.querySelector(".emo").onclick = (e) => { e.stopPropagation(); pick.classList.toggle("hidden"); };
+    pick.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; ta.setRangeText(b.textContent, ta.selectionStart, ta.selectionEnd, "end"); pick.classList.add("hidden"); ta.focus(); });
+    body.addEventListener("click", (e) => { if (!e.target.closest(".emopick, .emo")) pick.classList.add("hidden"); });
     body.querySelector(".nudge").onclick = () => {
       ctx.el.classList.remove("shake"); void ctx.el.offsetWidth; ctx.el.classList.add("shake");
       say("You", "*sent a nudge*"); setTimeout(() => wins.has(ctx.key) && say(first, "Whoa, that shook my screen! I'm awake and ready to code! (H)"), 700);
