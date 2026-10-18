@@ -729,3 +729,32 @@ button { font: inherit; }
 .stat-chart .bar i { position: absolute; bottom: 0; left: 10%; right: 10%; background: linear-gradient(#5a9cff, #1e5fcf); border-radius: 2px 2px 0 0; min-height: 1px; }
 .stat-chart .bar em { position: absolute; bottom: 0; left: 30%; right: 30%; background: #f2a900; border-radius: 2px 2px 0 0; }
 .stat-chart small { position: absolute; bottom: -16px; font-size: 10px; color: #666; }
+
+/* ---------- Paint tool box (XP style) ---------- */
+.paint-tools { width: 62px; padding: 4px 3px; display: flex; flex-direction: column; gap: 6px; align-items: center; background: #ece9d8; border-right: 1px solid #aca899; overflow-y: auto; }
+.paint-tools .pt-grid { display: grid; grid-template-columns: 26px 26px; gap: 1px; }
+.paint-tools .pt-grid button { width: 26px; height: 26px; padding: 4px; display: flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 2px; background: none; cursor: pointer; }
+.paint-tools .pt-grid button:hover { border-color: #fff #808080 #808080 #fff; background: #f4f3ee; }
+.paint-tools .pt-grid button.on { border-color: #808080 #fff #fff #808080; background: #fff repeating-conic-gradient(#e6e6e6 0 25%, #fff 0 50%) 0 0 / 4px 4px; }
+.paint-tools .pt-grid svg { width: 16px; height: 16px; display: block; }
+.paint-tools .pt-opts { width: 52px; min-height: 62px; padding: 3px; border: 1px solid; border-color: #808080 #fff #fff #808080; background: #f4f3ee; display: flex; flex-direction: column; justify-content: center; }
+.paint-tools .sizes, .paint-tools .modes { display: flex; flex-direction: column; gap: 2px; }
+.paint-tools .sizes[hidden], .paint-tools .modes[hidden], .paint-tools .nopt[hidden] { display: none; }
+.paint-tools .sizes button, .paint-tools .modes button { height: 14px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border: 0; background: none; cursor: pointer; }
+.paint-tools .sizes i { display: block; width: 100%; background: #000; border-radius: 1px; }
+.paint-tools .modes i { display: block; width: 30px; height: 10px; }
+.paint-tools .m-outline { border: 1.5px solid #000; }
+.paint-tools .m-both { border: 1.5px solid #000; background: #9e9e9e; }
+.paint-tools .m-fill { background: #9e9e9e; }
+.paint-tools .sizes button.on, .paint-tools .modes button.on { background: #316ac5; }
+.paint-tools .sizes button.on i { background: #fff; }
+.paint-tools .modes button.on .m-outline, .paint-tools .modes button.on .m-both { border-color: #fff; }
+.paint-tools .nopt { font-size: 10px; color: #888; text-align: center; }
+.paint-tools .pt-name { font-size: 10px; color: #333; text-align: center; line-height: 1.2; }
+
+/* full-screen windows */
+.win:fullscreen, .win.is-full { left: 0 !important; top: 0 !important; width: 100vw !important; height: 100vh !important; transform: none !important; border-width: 0; border-radius: 0; }
+.win:fullscreen .titlebar { border-radius: 0; margin: 0; }
+.win:fullscreen .resize { display: none; }
+.win::backdrop { background: #000; }
+.fsbtn { font-size: 13px; }

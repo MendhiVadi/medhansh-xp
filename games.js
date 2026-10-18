@@ -837,6 +837,8 @@
     const track = (e) => { if (state === "paused") return; const r = cv.getBoundingClientRect(); pad.x = clamp((e.clientX - r.left) / r.width * W - pad.w / 2, 0, W - pad.w); };
     stage.addEventListener("pointermove", track);
     stage.addEventListener("pointerdown", (e) => { track(e); launch(); });
+    // moving the mouse off the play area pauses the game (touch and pen keep playing)
+    cv.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse" && state === "run") pause(); });
     listen(ctx, "keydown", (e) => {
       if (!ctx.isActive() || e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === "ArrowLeft") { e.preventDefault(); kl = true; }

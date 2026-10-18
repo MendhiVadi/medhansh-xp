@@ -166,6 +166,8 @@
     snake:    { title: "Snake", icon: "snake", w: 420, h: 480, render: lazyGame("snake") },
     breakout: { title: "Brick Breaker", icon: "breakout", w: 520, h: 460, render: lazyGame("breakout") },
   };
+  // windows that can go true full screen (title-bar ⛶ button or F11)
+  ["solitaire", "spider", "mine", "pinball", "snake", "breakout", "wmp", "pictures", "paint"].forEach((k) => (APPS[k].full = true));
   APPS.reset = { title: "Reset Desktop", icon: "showdesk", action: () => askReset() };
   const GAME_IDS = ["solitaire", "spider", "mine", "pinball", "snake", "breakout"];
   const DESKTOP = ["about", "projects", "resume", "ie", "contact", "msn", "cmd", "calendar", "games", "pictures", "wmp", "paint", "notepad", "stats", "board", "reset", "recycle"];
@@ -174,12 +176,12 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=25"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=26"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=25"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=26"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyExtra(name) {
@@ -221,7 +223,7 @@
     if (!app.fixed) { el.style.width = w + "px"; el.style.height = h + "px"; }
     el.innerHTML = `
       <div class="titlebar">${I[app.icon]}<span class="ttl">${esc(app.title)}</span>
-        <button class="tbtn" data-a="min" title="Minimize" aria-label="Minimize">_</button>
+        ${app.full ? `<button class="tbtn fsbtn" data-a="fs" title="Full screen (F11)" aria-label="Full screen">⛶</button>` : ""}<button class="tbtn" data-a="min" title="Minimize" aria-label="Minimize">_</button>
         ${app.fixed ? "" : `<button class="tbtn" data-a="max" title="Maximize" aria-label="Maximize">□</button>`}
         <button class="tbtn close" data-a="close" title="Close" aria-label="Close">×</button>
       </div><div class="wbody"></div>${app.fixed ? "" : `<div class="resize"></div>`}`;
@@ -243,6 +245,7 @@
       if (a === "close") close(key);
       if (a === "min") minimize(key);
       if (a === "max") el.classList.toggle("max");
+      if (a === "fs") toggleFull(el);
     });
     el.querySelector(".titlebar").addEventListener("dblclick", (e) => { if (!app.fixed && !e.target.closest(".tbtn")) el.classList.toggle("max"); });
     drag(el.querySelector(".titlebar"), el, false);
@@ -273,13 +276,26 @@
     close: (k) => close(k),
     open: (id, o) => { const k = Object.keys(APPS).find((a) => a === id || APPS[a].title.toLowerCase() === String(id).toLowerCase() || (DESK_LABEL[a] || "").toLowerCase() === String(id).toLowerCase()); if (!k) return false; openApp(k, o); return true; },
     msg: (t, h) => msgBox(t, h),
-    photos: [{ src: "photo-full.jpg?v=25", title: "Medhansh.jpg" }, { src: "photo.jpg?v=25", title: "Avatar.jpg" }],
+    photos: [{ src: "photo-full.jpg?v=26", title: "Medhansh.jpg" }, { src: "photo.jpg?v=26", title: "Avatar.jpg" }],
     // Shared data everyone sees. Games: sys.scores.submit(game, score, extra) / sys.scores.top(game, n, ascending)
     scores: { top: (g, n, asc) => Cloud.top(g, n, asc), submit: (g, s, x) => { askName(); return Cloud.submit(g, s, x); }, name: () => playerName(), askName },
     pictures: { list: () => Cloud.pictures(), data: (id) => Cloud.pictureData(id), add: (t, d, w, h) => { askName(); return Cloud.pictureAdd(t, d, w, h); }, remove: (id) => Cloud.pictureDelete(id) },
     esc,
     P,
   };
+  // real full screen where the browser allows it, otherwise maximize
+  function toggleFull(el) {
+    if (document.fullscreenElement === el) return document.exitFullscreen?.();
+    if (el.requestFullscreen) el.requestFullscreen({ navigationUI: "hide" }).catch(() => el.classList.toggle("max"));
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else el.classList.toggle("max");
+  }
+  document.addEventListener("fullscreenchange", () => wins.forEach((w) => w.el.classList.toggle("is-full", document.fullscreenElement === w.el)));
+  addEventListener("keydown", (e) => {
+    if (e.key !== "F11" || !activeKey) return;
+    const w = wins.get(activeKey); if (!w?.app.full) return;
+    e.preventDefault(); toggleFull(w.el);
+  });
   function minimize(key) { const w = wins.get(key); if (!w) return; w.el.classList.add("min"); if (activeKey === key) activeKey = null; paintActive(); }
   function focus(key) {
     const w = wins.get(key); if (!w) return;
@@ -992,7 +1008,20 @@ Approximate round trip times in milli-seconds:
   function renderPaint(body, ctx) {
     const colors = ["#000000", "#808080", "#800000", "#808000", "#008000", "#008080", "#000080", "#800080", "#808040", "#004040", "#0080ff", "#004080", "#8000ff", "#804000",
                     "#ffffff", "#c0c0c0", "#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff", "#ffff80", "#00ff80", "#80ffff", "#8080ff", "#ff0080", "#ff8040"];
-    const TOOLS = [["pencil", "✏️", "Pencil"], ["brush", "🖌️", "Brush"], ["spray", "💨", "Airbrush"], ["eraser", "🧽", "Eraser"], ["fill", "🪣", "Fill"], ["picker", "💧", "Pick color"], ["line", "╱", "Line"], ["rect", "▭", "Rectangle"], ["ellipse", "◯", "Ellipse"], ["text", "A", "Text"]];
+    const G = (d) => `<svg viewBox="0 0 16 16" aria-hidden="true">${d}</svg>`;
+    const TOOLS = [
+      ["pencil", "Pencil", G('<path d="M3 13l1-3 7-7 2 2-7 7z" fill="#f2c94c" stroke="#7a5a1e"/><path d="M3 13l1-3 2 2z" fill="#333"/>')],
+      ["brush", "Brush", G('<path d="M10 2l4 4-5 5-4-4z" fill="#8a6d3b"/><path d="M5 7l4 4c-1 2-3 3-6 3 0-3 1-5 2-7z" fill="#1e7ae6"/>')],
+      ["spray", "Airbrush", G('<rect x="5" y="6" width="6" height="8" rx="1" fill="#c0c0c0" stroke="#555"/><rect x="7" y="3" width="2" height="3" fill="#555"/><g fill="#d0362f"><circle cx="3" cy="3" r=".8"/><circle cx="2" cy="6" r=".8"/><circle cx="4.5" cy="1.5" r=".7"/></g>')],
+      ["eraser", "Eraser", G('<path d="M2 11l6-6 5 5-4 4H5z" fill="#f8bbd0" stroke="#a0566e"/><path d="M2 11l3 3" stroke="#a0566e"/><path d="M5 14h9" stroke="#888"/>')],
+      ["fill", "Fill with color", G('<path d="M3 8l5-5 5 5-5 5z" fill="#fff" stroke="#333"/><path d="M4 9h8l-4 4z" fill="#1e7ae6"/><path d="M13 9c1 2 1 3 0 3s-1-1 0-3z" fill="#1e7ae6"/>')],
+      ["picker", "Pick color", G('<path d="M11 2l3 3-2 2-3-3z" fill="#555"/><path d="M9 4l3 3-6 6H3v-3z" fill="#bfe3ff" stroke="#333"/>')],
+      ["line", "Line", G('<path d="M2 14L14 2" stroke="#000" stroke-width="1.6"/>')],
+      ["rect", "Rectangle", G('<rect x="2.5" y="4.5" width="11" height="8" fill="none" stroke="#000" stroke-width="1.4"/>')],
+      ["ellipse", "Ellipse", G('<ellipse cx="8" cy="8.5" rx="6" ry="4.5" fill="none" stroke="#000" stroke-width="1.4"/>')],
+      ["text", "Text", G('<text x="8" y="13" font-size="12" font-family="Times New Roman,serif" font-weight="bold" text-anchor="middle">A</text>')],
+    ];
+    const SIZED = ["pencil", "brush", "spray", "eraser", "line"], SHAPES = ["rect", "ellipse"];
     const inner = chrome(body, { menus: [
       { label: "File", items: [{ label: "New", act: () => { snap(); clear(); } }, { label: "Open...", act: () => fileIn.click() }, { label: "Save As PNG...", key: "Ctrl+S", act: () => save() }, { label: "Share to My Pictures...", act: () => share() }, "-", { label: "Exit", act: ctx.close }] },
       { label: "Edit", items: () => [{ label: "Undo", key: "Ctrl+Z", disabled: !undo.length, act: () => doUndo() }, { label: "Redo", key: "Ctrl+Y", disabled: !redo.length, act: () => doRedo() }, "-", { label: "Clear Image", act: () => { snap(); clear(); } }] },
@@ -1003,9 +1032,14 @@ Approximate round trip times in milli-seconds:
     ] });
     inner.style.overflow = "hidden";
     inner.innerHTML = `<div class="paint">
-        <div class="paint-tools">${TOOLS.map(([id, ic, t]) => `<button data-t="${id}" title="${t}" aria-label="${t}">${ic}</button>`).join("")}
-          <div class="sizes">${[1, 3, 6, 12].map((s) => `<button data-s="${s}" title="${s}px"><i style="height:${Math.min(s, 10)}px"></i></button>`).join("")}</div>
-          <label class="fillshape"><input type="checkbox"> Fill</label></div>
+        <div class="paint-tools" role="toolbar" aria-label="Tools">
+          <div class="pt-grid">${TOOLS.map(([id, t, ic]) => `<button data-t="${id}" title="${t}" aria-label="${t}" aria-pressed="false">${ic}</button>`).join("")}</div>
+          <div class="pt-opts" aria-label="Tool options">
+            <div class="sizes">${[1, 3, 6, 12].map((s) => `<button data-s="${s}" title="${s}px" aria-label="${s} pixel"><i style="height:${Math.min(s, 9)}px"></i></button>`).join("")}</div>
+            <div class="modes">${[["outline", "Outline"], ["both", "Outline and fill"], ["fill", "Fill only"]].map(([m, t]) => `<button data-m="${m}" title="${t}" aria-label="${t}"><i class="m-${m}"></i></button>`).join("")}</div>
+            <div class="nopt">No options</div>
+          </div>
+          <div class="pt-name"></div></div>
         <div class="paint-area"><canvas width="800" height="520"></canvas></div></div>
       <div class="paint-bottom"><div class="swatch"><i class="bgc"></i><i class="fgc"></i></div><div class="palette">${colors.map((c) => `<i style="background:${c}" data-c="${c}"></i>`).join("")}</div>
         <input type="color" class="picker" hidden><input type="file" accept="image/*" class="filein" hidden></div>
@@ -1013,7 +1047,8 @@ Approximate round trip times in milli-seconds:
     body.appendChild(inner.querySelector(".paint-bottom")); body.appendChild(inner.querySelector(".statusbar"));
     const cv = inner.querySelector("canvas"), g = cv.getContext("2d", { willReadFrequently: true });
     const toolsEl = inner.querySelector(".paint-tools"), paletteEl = body.querySelector(".paint-bottom"), picker = body.querySelector(".picker"), fileIn = body.querySelector(".filein");
-    const posEl = body.querySelector(".ppos"), fillBox = inner.querySelector(".fillshape input");
+    const posEl = body.querySelector(".ppos");
+    let shapeMode = "outline";
     let tool = "pencil", size = 3, fg = "#000000", bg = "#ffffff", undo = [], redo = [], drawing = null, editingFg = true;
     const clear = () => { g.save(); g.globalCompositeOperation = "source-over"; g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.restore(); };
     const snap = () => { undo.push(g.getImageData(0, 0, cv.width, cv.height)); if (undo.length > 15) undo.shift(); redo = []; };
@@ -1032,10 +1067,19 @@ Approximate round trip times in milli-seconds:
     function transform(sx, sy) { snap(); const img = document.createElement("canvas"); img.width = cv.width; img.height = cv.height; img.getContext("2d").drawImage(cv, 0, 0); g.save(); g.setTransform(sx, 0, 0, sy, sx < 0 ? cv.width : 0, sy < 0 ? cv.height : 0); g.drawImage(img, 0, 0); g.restore(); }
     function invert() { snap(); const d = g.getImageData(0, 0, cv.width, cv.height), a = d.data; for (let i = 0; i < a.length; i += 4) { a[i] = 255 - a[i]; a[i + 1] = 255 - a[i + 1]; a[i + 2] = 255 - a[i + 2]; } g.putImageData(d, 0, 0); }
     const paintSwatch = () => { body.querySelector(".fgc").style.background = fg; body.querySelector(".bgc").style.background = bg; };
-    const setTool = (t) => { tool = t; toolsEl.querySelectorAll("[data-t]").forEach((b) => b.classList.toggle("on", b.dataset.t === t)); cv.style.cursor = t === "text" ? "text" : "crosshair"; };
+    const setTool = (t) => {
+      tool = t;
+      toolsEl.querySelectorAll("[data-t]").forEach((b) => { const on = b.dataset.t === t; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+      // the options box shows what matters for the chosen tool
+      toolsEl.querySelector(".sizes").hidden = !SIZED.includes(t); toolsEl.querySelector(".modes").hidden = !SHAPES.includes(t); toolsEl.querySelector(".nopt").hidden = SIZED.includes(t) || SHAPES.includes(t);
+      toolsEl.querySelector(".pt-name").textContent = TOOLS.find((x) => x[0] === t)[1];
+      body.querySelector(".pstat").textContent = { pencil: "Draws a free-form line one pixel wide.", brush: "Draws using a brush with the selected size.", spray: "Draws using an airbrush of the selected size.", eraser: "Erases a portion of the picture, using the selected eraser shape.", fill: "Fills an area with the current drawing color.", picker: "Picks up a color from the picture for drawing.", line: "Draws a straight line. Hold Shift for 45° steps.", rect: "Draws a rectangle. Hold Shift for a square.", ellipse: "Draws an ellipse. Hold Shift for a circle.", text: "Inserts text into the picture." }[t];
+      cv.style.cursor = t === "text" ? "text" : t === "fill" || t === "picker" ? "cell" : "crosshair";
+    };
     const setSize = (s) => { size = s; toolsEl.querySelectorAll("[data-s]").forEach((b) => b.classList.toggle("on", +b.dataset.s === s)); };
-    setTool("pencil"); setSize(3); clear(); paintSwatch();
-    toolsEl.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; b.dataset.t ? setTool(b.dataset.t) : setSize(+b.dataset.s); });
+    const setMode = (m) => { shapeMode = m; toolsEl.querySelectorAll("[data-m]").forEach((b) => b.classList.toggle("on", b.dataset.m === m)); };
+    setTool("pencil"); setSize(3); setMode("outline"); clear(); paintSwatch();
+    toolsEl.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; if (b.dataset.t) setTool(b.dataset.t); else if (b.dataset.s) setSize(+b.dataset.s); else if (b.dataset.m) setMode(b.dataset.m); });
     paletteEl.addEventListener("click", (e) => { const c = e.target.dataset.c; if (c) { fg = c; paintSwatch(); } });
     paletteEl.addEventListener("contextmenu", (e) => { const c = e.target.dataset.c; if (c) { e.preventDefault(); bg = c; paintSwatch(); } });
     paletteEl.addEventListener("dblclick", (e) => { if (e.target.dataset.c) { editingFg = true; picker.value = fg; picker.click(); } });
@@ -1079,8 +1123,9 @@ Approximate round trip times in milli-seconds:
       if (d.tool === "line") { g.moveTo(d.x, d.y); g.lineTo(d.x + w, d.y + h); }
       else if (d.tool === "rect") g.rect(d.x, d.y, w, h);
       else g.ellipse(d.x + w / 2, d.y + h / 2, Math.abs(w / 2), Math.abs(h / 2), 0, 0, 7);
-      if (fillBox.checked && d.tool !== "line") g.fill();
-      g.stroke();
+      if (d.tool === "line") return g.stroke();
+      if (shapeMode === "fill") { g.fillStyle = d.color; g.fill(); }
+      else { if (shapeMode === "both") g.fill(); g.stroke(); }
     }
     cv.addEventListener("contextmenu", (e) => e.preventDefault());
     cv.addEventListener("pointerdown", (e) => {
@@ -1935,7 +1980,7 @@ TERMS
   countVisit();
   // Vercel Web Analytics (cookie-free): only load it when it's switched on for the project, so there's no 404
   if (/\.vercel\.app$/.test(location.hostname)) fetch("/_vercel/insights/script.js", { method: "HEAD" }).then((r) => { if (r.ok) { const sc = document.createElement("script"); sc.defer = true; sc.src = "/_vercel/insights/script.js"; document.head.appendChild(sc); } }).catch(() => {});
-  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=25"; document.head.appendChild(l); } });
+  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=26"; document.head.appendChild(l); } });
   (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => Tasks.sync().then(() => { checkReminders(true); paintBell(); }));
   setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });
