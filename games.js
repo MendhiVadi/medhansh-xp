@@ -5,11 +5,11 @@
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const loop = (ctx, step) => {
     // rAF loop that sleeps while the window is minimized or the tab is hidden
-    let raf = 0, last = 0, dead = false;
+    let raf = 0, last = 0, dead = false, hidden = false;
     const frame = (t) => {
       if (dead) return;
       const dt = last ? Math.min(50, t - last) : 16; last = t;
-      if (ctx.isVisible()) step(dt); else last = 0;
+      if (ctx.isVisible()) { step(dt, hidden); hidden = false; } else { last = 0; hidden = true; }
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
@@ -382,7 +382,8 @@
       const h = sn[0], out = [];
       for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
         if (sn.some((p) => p.x === x && p.y === y) || obs.some((p) => p.x === x && p.y === y) || (food && food.x === x && food.y === y) || (bonus && bonus.x === x && bonus.y === y)) continue;
-        if (pad >= 0 && Math.max(Math.abs(x - h.x), Math.abs(y - h.y)) <= pad) continue;
+        const dx = Math.abs(x - h.x), dy = Math.abs(y - h.y);
+        if (pad >= 0 && Math.max(wrap ? Math.min(dx, N - dx) : dx, wrap ? Math.min(dy, N - dy) : dy) <= pad) continue;
         out.push({ x, y });
       }
       return out;
@@ -461,8 +462,8 @@
         g.fillStyle = "#000"; g.beginPath(); g.arc(ex + dir.x * 1.2, ey + dir.y * 1.2, 1.3, 0, 7); g.fill();
       }
     }
-    loop(ctx, (dt) => {
-      if (state === "run" && (document.hidden || !ctx.isActive())) pause();
+    loop(ctx, (dt, resumed) => {
+      if (state === "run" && (resumed || document.hidden || !ctx.isActive())) pause();
       if (state === "run") { if (bonus && (bonus.ttl -= dt) <= 0) bonus = null; acc += dt; while (acc >= speed && state === "run") { acc -= speed; tick(); } }
       draw();
     });
@@ -591,7 +592,7 @@
       if (lives <= 0) gameOver(); else { state = "ready"; say("<small>Click to launch</small>"); }
     }
     function nextLevel() {
-      level++; pups.length = 0; build(); resetBall(); hud(); state = "banner"; bannerT = 1500; snd.seq([523, 659, 784], 0.09, 0.1, "triangle");
+      level++; pups.length = 0; widenT = slowT = stickyT = 0; build(); resetBall(); hud(); state = "banner"; bannerT = 1500; snd.seq([523, 659, 784], 0.09, 0.1, "triangle");
       if (level > bestLvl) { bestLvl = level; ctx.store.lset("xp-breakout-level", bestLvl); }
       say(`<b>Level ${level}</b><br><small>Get ready</small>`);
     }
@@ -721,8 +722,8 @@
       let tx = 6;
       for (const [n, t] of [["WIDE", widenT], ["SLOW", slowT], ["CATCH", stickyT]]) if (t > 0) { const s = n + " " + Math.ceil(t / 1000) + "s"; g.fillText(s, tx, H - 6); tx += g.measureText(s).width + 10; }
     }
-    loop(ctx, (dt) => {
-      if (state === "run" && (document.hidden || !ctx.isActive())) pause();
+    loop(ctx, (dt, resumed) => {
+      if (state === "run" && (resumed || document.hidden || !ctx.isActive())) pause();
       if (state !== "paused") update(dt);
       draw();
     });
@@ -788,7 +789,7 @@
       const a0 = Math.PI + Math.PI * i / AN, a1 = Math.PI + Math.PI * (i + 1) / AN;
       addW(200 + 188 * Math.cos(a0), 190 + 188 * Math.sin(a0), 200 + 188 * Math.cos(a1), 190 + 188 * Math.sin(a1), 0.3);
     }
-    addW(12, 190, 12, 610); addW(388, 190, 388, 610); addW(364, 140, 364, 600); addW(364, 564, 388, 564, 0.1);
+    addW(12, 190, 12, 610); addW(12, 215, 72, 262, 0.3); addW(388, 190, 388, 610); addW(364, 140, 364, 600); addW(364, 564, 388, 564, 0.1);
     for (const m of [0, 1]) { // left side, then mirrored right side
       const X = (x) => (m ? MX - x : x);
       addW(X(46), 430, X(46), 490); addW(X(46), 490, X(120), 527, 0.3);
@@ -879,7 +880,7 @@
     function help() {
       if (state === "play" || state === "ready") pause();
       stage.querySelector(".sol-win")?.remove();
-      stage.insertAdjacentHTML("beforeend", `<div class="sol-win" style="text-align:left;line-height:1.5;max-width:88%"><b>How to play</b><div style="margin:6px 0 10px">Left flipper: Z, Left Shift or ←<br>Right flipper: /, M, Right Shift or →<br>Plunger: hold Space or ↓, release to launch<br>Touch: tap left/right half of the table, use the Launch button<br>Drop all 3 targets for a bonus multiplier.<br>Light all 3 top lanes to rank up.<br>Ball saver for the first 5 seconds. Extra balls at 25k and 75k.<br>F2 new game, P pause.</div><button class="xpbtn">OK</button></div>`);
+      stage.insertAdjacentHTML("beforeend", `<div class="sol-win" style="text-align:left;line-height:1.5;max-width:88%"><b>How to play</b><div style="margin:6px 0 10px">Left flipper: Z, Left Shift or ←<br>Right flipper: /, M, Right Shift or →<br>Plunger: hold Space or ↓, release to launch<br>Touch: tap left/right half of the table, use the Launch button<br>Drop all 3 targets for a bonus multiplier.<br>Light all 3 top lanes to rank up.<br>Ball saver for the first 5 seconds. Extra balls at 25k, 75k and 150k.<br>F2 new game, P pause.</div><button class="xpbtn">OK</button></div>`);
       const o = stage.querySelector(".sol-win");
       o.addEventListener("pointerdown", (e) => e.stopPropagation());
       o.querySelector("button").onclick = () => { o.remove(); if (state === "paused") pause(); };
@@ -1029,8 +1030,8 @@
         g.fillStyle = "#000"; g.fillText(msgText, 201, 351); g.fillStyle = "#c8ff6a"; g.fillText(msgText, 200, 350); g.globalAlpha = 1;
       }
     }
-    loop(ctx, (dt) => {
-      if (state === "play" && (document.hidden || !ctx.isActive())) pause();
+    loop(ctx, (dt, resumed) => {
+      if (state === "play" && (resumed || document.hidden || !ctx.isActive())) pause();
       if (state !== "paused") update(dt);
       draw();
     });
