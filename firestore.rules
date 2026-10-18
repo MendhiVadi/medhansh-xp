@@ -15,7 +15,9 @@ service cloud.firestore {
     }
 
     function validMessage(d) {
-      return d.keys().hasOnly(['name', 'email', 'subject', 'message', 'createdAt', 'read'])
+      return d.keys().hasOnly(['name', 'email', 'subject', 'message', 'phone', 'via', 'createdAt', 'read'])
+        && (!('phone' in d) || (d.phone is string && d.phone.size() <= 20))
+        && (!('via' in d) || d.via in ['email', 'phone'])
         && d.name is string && d.name.size() > 0 && d.name.size() <= 80
         && d.email is string && d.email.size() <= 120 && d.email.matches('^[^@ ]+@[^@ ]+[.][^@ ]{2,}$')
         && d.subject is string && d.subject.size() > 0 && d.subject.size() <= 140
