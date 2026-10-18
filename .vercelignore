@@ -3,4 +3,7 @@
 .gitignore
 README.md
 node_modules
+firebase.json
+.firebaserc
+firestore.rules
 *.adminsdk*.json

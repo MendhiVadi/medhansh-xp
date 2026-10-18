@@ -5,7 +5,7 @@
 window.PROFILE = {
   name: "Medhansh Khattar",
   initials: "MK",
-  photo: "photo.jpg?v=17",          // square avatar; photo-full.jpg is the full portrait
+  photo: "photo.jpg?v=18",          // square avatar; photo-full.jpg is the full portrait
   role: "AI/ML Engineer",
   subtitle: "Founder & CEO, Yap-less · CS @ VIT Bhopal",
   location: "Navi Mumbai, Maharashtra, India",
@@ -87,6 +87,8 @@ window.PROFILE = {
       desc: "Research paper: does news sentiment improve stock prediction? Comparing FinBERT sentiment features across machine-learning models.",
       github: "", url: "", resume: false }
   ],
+  // Firebase web config (public by design; firestore.rules controls access)
+  firebase: { projectId: "resume-41921", apiKey: "AIzaSyAHb5rOYR0knifNMFUfh6RQZpvj4kkJu5M" },
   links: {
     email: "medhanshkhattar.in@gmail.com",
     github: "https://github.com/MendhiVadi",

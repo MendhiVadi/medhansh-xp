@@ -12,22 +12,40 @@
   // Profile photo with initials fallback (if photo.jpg is missing the initials stay visible)
   const avatar = (cls = "") => `<span class="avatar ${cls}">${esc(P.initials)}${P.photo ? `<img src="${esc(P.photo)}" alt="${esc(P.name)}" decoding="async" onerror="this.remove()">` : ""}</span>`;
 
-  // Shared backend (/api on Vercel, backed by Firestore). When it can't be reached (offline, or a plain
-  // static server locally) the apps keep working with this browser's storage and sync again later.
+  // Shared backend: Firestore, called straight from the browser over its REST API. Access is controlled by
+  // firestore.rules (shared notepad, shared tasks, write-only contact messages). When it can't be reached the
+  // apps keep working with this browser's storage and sync again later.
+  const FB = P.firebase || {};
+  const FS = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents`;
+  const enc = (o) => ({ fields: Object.fromEntries(Object.entries(o).map(([k, v]) => [k, typeof v === "boolean" ? { booleanValue: v } : Number.isInteger(v) ? { integerValue: String(v) } : { stringValue: String(v ?? "") }])) });
+  const dec = (doc) => { const o = { id: doc.name.split("/").pop() }; for (const [k, v] of Object.entries(doc.fields || {})) o[k] = "integerValue" in v ? Number(v.integerValue) : "booleanValue" in v ? v.booleanValue : v.stringValue ?? null; return o; };
   const Cloud = {
     ok: null,
-    async req(path, { method = "GET", body } = {}) {
+    async req(path, { method = "GET", body, query = "" } = {}) {
+      if (!FB.projectId) { this.set(false); throw new Error("Backend not configured"); }
       const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 8000);
       try {
-        const r = await fetch("/api/" + path, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined, signal: ctl.signal, cache: "no-store" });
+        const r = await fetch(`${FS}/${path}?${query}${FB.apiKey ? `${query ? "&" : ""}key=${FB.apiKey}` : ""}`, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined, signal: ctl.signal, cache: "no-store" });
         const j = await r.json().catch(() => ({}));
-        if (r.status === 404 || r.status >= 500) { this.set(false); throw Object.assign(new Error(j.error || "Server unavailable"), { status: r.status, body: j }); }
-        if (!r.ok) throw Object.assign(new Error(j.error || r.statusText), { status: r.status, body: j });
+        if (r.status === 404 && method === "GET") { this.set(true); return null; }
+        if (r.status >= 500) { this.set(false); throw Object.assign(new Error("Server unavailable"), { status: r.status }); }
+        if (!r.ok) { this.set(true); throw Object.assign(new Error(r.status === 429 ? "Too many changes. Wait a moment." : r.status === 403 ? "That change isn't allowed." : j.error?.message || r.statusText), { status: r.status }); }
         this.set(true); return j;
       } catch (e) { if (!e.status) this.set(false); throw e; } finally { clearTimeout(t); }
     },
     set(v) { if (this.ok !== v) { this.ok = v; document.dispatchEvent(new CustomEvent("cloud")); } },
     label() { return this.ok ? "Shared · synced" : this.ok === false ? "Offline · saved in this browser" : "Connecting…"; },
+    async noteGet() { const d = await this.req("shared/notepad"); return d ? dec(d) : { text: null, updatedAt: 0 }; },
+    async notePut(text) { const updatedAt = Date.now(); await this.req("shared/notepad", { method: "PATCH", body: enc({ text, updatedAt }) }); return { updatedAt }; },
+    async tasks() {
+      const out = []; let page = "";
+      for (let i = 0; i < 5; i++) { const j = await this.req("tasks", { query: `pageSize=300${page ? "&pageToken=" + page : ""}` }); (j?.documents || []).forEach((d) => out.push(dec(d))); if (!(page = j?.nextPageToken)) break; }
+      return out;
+    },
+    async taskCreate(t) { const now = Date.now(); const d = await this.req("tasks", { method: "POST", body: enc({ ...t, createdAt: now, updatedAt: now }) }); return dec(d); },
+    async taskUpdate(id, patch) { const p = { ...patch, updatedAt: Date.now() }; await this.req("tasks/" + encodeURIComponent(id), { method: "PATCH", body: enc(p), query: Object.keys(p).map((k) => "updateMask.fieldPaths=" + k).join("&") }); },
+    async taskDelete(id) { await this.req("tasks/" + encodeURIComponent(id), { method: "DELETE" }); },
+    async contact(m) { await this.req("messages", { method: "POST", body: enc({ ...m, createdAt: Date.now(), read: false }) }); },
   };
   const readLocal = (k, d) => { try { const v = JSON.parse(store.lget(k)); return v ?? d; } catch { return d; } };
 
@@ -95,7 +113,7 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=17"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=18"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyGame(name) {
@@ -375,17 +393,23 @@
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       form.querySelectorAll(".bad").forEach((x) => x.classList.remove("bad")); err.textContent = "";
-      const data = Object.fromEntries(new FormData(form));
+      const raw = Object.fromEntries(new FormData(form));
+      if (raw.website) return; // hidden field only bots fill in
+      const data = { name: raw.name.trim(), email: raw.email.trim(), subject: raw.subject.trim(), message: raw.message.trim() };
+      const bad = {};
+      if (!data.name) bad.name = "Please enter your name.";
+      if (!/^[^@ ]+@[^@ ]+[.][^@ ]{2,}$/.test(data.email)) bad.email = "Please enter a valid email address.";
+      if (!data.subject) bad.subject = "Please add a subject.";
+      if (data.message.length < 5) bad.message = "Please write a message.";
+      if (Object.keys(bad).length) { Object.keys(bad).forEach((k) => form.elements[k].classList.add("bad")); err.textContent = Object.values(bad).join(" "); return; }
       btn.disabled = true; btn.textContent = "Sending…";
       try {
-        await Cloud.req("contact", { method: "POST", body: data });
+        await Cloud.contact(data);
         inner.innerHTML = `<div class="csent"><b>✅ Message sent!</b><p>Thanks, ${esc(data.name)}. I'll get back to you at ${esc(data.email)}.</p><button class="xpbtn">Close</button></div>`;
         inner.querySelector("button").onclick = ctx.close;
       } catch (ex) {
         btn.disabled = false; btn.textContent = "✉ Send";
-        const fe = ex.body?.errors || {};
-        Object.keys(fe).forEach((k) => form.elements[k]?.classList.add("bad"));
-        err.innerHTML = ex.status && ex.status < 500 && ex.status !== 404 ? esc(Object.values(fe).join(" ") || ex.message) : `Couldn't reach the server. <a href="#" class="cmail">Send it by email instead</a>.`;
+        err.innerHTML = ex.status && ex.status < 500 ? esc(ex.message) : `Couldn't reach the server. <a href="#" class="cmail">Send it by email instead</a>.`;
         err.querySelector(".cmail")?.addEventListener("click", (c) => { c.preventDefault(); mailto(); });
       }
     });
@@ -714,13 +738,13 @@
     const local = (v) => store.lset("xp-notepad", v);
     async function push() {
       clearTimeout(timer); timer = 0; const text = ta.value; local(text);
-      try { const r = await Cloud.req("notepad", { method: "PUT", body: { text } }); lastRemote = r.updatedAt; dirty = false; store.lset("xp-notepad-dirty", "0"); status("☁ Saved · shared with everyone"); }
+      try { const r = await Cloud.notePut(text); lastRemote = r.updatedAt; dirty = false; store.lset("xp-notepad-dirty", "0"); status("☁ Saved · shared with everyone"); }
       catch (e) { dirty = true; store.lset("xp-notepad-dirty", "1"); status(e.status === 429 ? "Saving too fast, retrying…" : "💾 Offline · saved in this browser"); if (e.status === 429) timer = setTimeout(push, 3000); }
     }
     const queue = () => { local(ta.value); status("Saving…"); clearTimeout(timer); timer = setTimeout(push, 800); };
     async function pull(force) {
       try {
-        const r = await Cloud.req("notepad");
+        const r = await Cloud.noteGet();
         if (dirty && !force) return push(); // our offline edits win once we're back online
         if (r.updatedAt > lastRemote || force) {
           lastRemote = r.updatedAt;
@@ -1303,10 +1327,9 @@
       try {
         // push anything created while offline, then take the server's list
         for (const t of this.list.filter((x) => x.pending)) {
-          const { task } = await Cloud.req("tasks", { method: "POST", body: pick(t) });
-          Object.assign(t, task, { pending: false });
+          Object.assign(t, await Cloud.taskCreate(pick(t)), { pending: false });
         }
-        const { tasks } = await Cloud.req("tasks");
+        const tasks = (await Cloud.tasks()).sort((a, b) => a.date.localeCompare(b.date));
         const mine = new Map(this.list.map((t) => [t.id, t]));
         this.list = tasks.map((t) => ({ ...t, notified: mine.get(t.id)?.notified ?? (Tasks.due(t) != null && Tasks.due(t) < Date.now()), snooze: mine.get(t.id)?.snooze || null }));
         this.save();
@@ -1315,24 +1338,25 @@
     async add(t) {
       const task = { id: "tmp-" + Date.now().toString(36), done: false, notified: false, ...t, pending: true };
       this.list.push(task); this.save();
-      try { const { task: srv } = await Cloud.req("tasks", { method: "POST", body: pick(task) }); Object.assign(task, srv, { pending: false }); this.save(); }
-      catch (e) { if (e.status === 400 || e.status === 409 || e.status === 429) { this.list = this.list.filter((x) => x !== task); this.save(); msgBox("Calendar", esc(e.message), "⚠️"); } }
+      try { Object.assign(task, await Cloud.taskCreate(pick(task)), { pending: false }); this.save(); }
+      catch (e) { if (e.status === 400 || e.status === 403 || e.status === 429) { this.list = this.list.filter((x) => x !== task); this.save(); msgBox("Calendar", esc(e.message), "⚠️"); } }
     },
     async update(id, patch) {
       const t = this.list.find((x) => x.id === id); if (!t) return;
       Object.assign(t, patch); this.save();
       const shared = Object.fromEntries(Object.entries(patch).filter(([k]) => SHARED.includes(k)));
       if (!Object.keys(shared).length || t.pending) return;
-      try { await Cloud.req("tasks", { method: "PATCH", body: { id, ...shared } }); } catch (e) { if (e.status === 404) { this.list = this.list.filter((x) => x.id !== id); this.save(); } }
+      try { await Cloud.taskUpdate(id, pick(t)); } catch (e) { if (e.status === 404) { this.list = this.list.filter((x) => x.id !== id); this.save(); } }
     },
     async remove(id) {
       const t = this.list.find((x) => x.id === id);
       this.list = this.list.filter((x) => x.id !== id); this.save();
-      if (t && !t.pending) try { await Cloud.req("tasks?id=" + encodeURIComponent(id), { method: "DELETE" }); } catch {}
+      if (t && !t.pending) try { await Cloud.taskDelete(id); } catch {}
     },
     async clearDone() {
+      const done = this.list.filter((t) => t.done && !t.pending);
       this.list = this.list.filter((t) => !t.done); this.save();
-      try { await Cloud.req("tasks?done=1", { method: "DELETE" }); } catch {}
+      for (const t of done) try { await Cloud.taskDelete(t.id); } catch {}
     },
   };
   const pick = (t) => Object.fromEntries(SHARED.map((k) => [k, t[k]]).filter(([, v]) => v !== undefined));
