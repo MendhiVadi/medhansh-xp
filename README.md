@@ -25,7 +25,7 @@ The Notepad and Calendar tasks are stored in Firestore (project `resume-41921`),
 ```
 
 ## Cache busting
-JS, CSS and images are cached for a year (see `vercel.json`). After changing one, bump the `?v=N` number everywhere it appears: `index.html` (style, data, app, games prefetch, photos and social images), the `games.js?v=N` URL in `app.js`, `photo` in `data.js`, and the `data.js` tag in `resume.html`.
+JS, CSS and images are cached for a year (see `vercel.json`). After changing one, bump the `?v=N` number everywhere it appears: `index.html` (style, data, app, games prefetch, photos and social images), the `games.js?v=N` and `extras.js?v=N` URLs and `sys.photos` in `app.js`, `photo` in `data.js`, and the `data.js` tag in `resume.html`.
 
 ## Run locally
 ```bash

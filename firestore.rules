@@ -14,17 +14,6 @@ service cloud.firestore {
         && d.updatedAt is int;
     }
 
-    function validMessage(d) {
-      return d.keys().hasOnly(['name', 'email', 'subject', 'message', 'phone', 'via', 'createdAt', 'read'])
-        && (!('phone' in d) || (d.phone is string && d.phone.size() <= 20))
-        && (!('via' in d) || d.via in ['email', 'phone'])
-        && d.name is string && d.name.size() > 0 && d.name.size() <= 80
-        && d.email is string && d.email.size() <= 120 && d.email.matches('^[^@ ]+@[^@ ]+[.][^@ ]{2,}$')
-        && d.subject is string && d.subject.size() > 0 && d.subject.size() <= 140
-        && d.message is string && d.message.size() >= 5 && d.message.size() <= 4000
-        && d.createdAt is int && d.read == false;
-    }
-
     // Shared notepad: one document, readable and editable by everyone
     match /shared/notepad {
       allow read: if true;
@@ -40,9 +29,5 @@ service cloud.firestore {
       allow delete: if true;
     }
 
-    // Contact messages are delivered by email after OTP verification (api/contact); nothing is written here
-    match /messages/{id} {
-      allow read, write: if false;
-    }
   }
 }

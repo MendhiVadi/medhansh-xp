@@ -210,9 +210,9 @@
     css();
     body.innerHTML = BAR + `<div class="x-root"><div class="x-wmp"><div class="main"><div class="vis"><canvas></canvas><div class="np"></div></div><div class="pl"></div></div>
       <div class="ctl"><input class="seek" type="range" min="0" max="1000" value="0"><div class="btns">
-      <button class="shuf" title="Shuffle">&#8644;</button><button class="rep" title="Repeat">&#8635;</button><button class="stop" title="Stop">&#9632;</button>
-      <button class="prev" title="Previous">&#9198;</button><button class="play big" title="Play">&#9654;</button><button class="next" title="Next">&#9197;</button>
-      <button class="mute" title="Mute">&#128266;</button><span class="tm">00:00 / 0:00</span><input class="vol" type="range" min="0" max="100"></div></div></div></div>`;
+      <button class="shuf" title="Shuffle" aria-label="Shuffle">&#8644;</button><button class="rep" title="Repeat" aria-label="Repeat">&#8635;</button><button class="stop" title="Stop" aria-label="Stop">&#9632;</button>
+      <button class="prev" title="Previous" aria-label="Previous">&#9198;</button><button class="play big" title="Play" aria-label="Play">&#9654;</button><button class="next" title="Next" aria-label="Next">&#9197;</button>
+      <button class="mute" title="Mute" aria-label="Mute">&#128266;</button><span class="tm">00:00 / 0:00</span><input class="vol" aria-label="Volume" type="range" min="0" max="100"></div></div></div></div>`;
     const $ = (s) => body.querySelector(s);
     const cv = $("canvas"), g2 = cv.getContext("2d"), npEl = $(".np"), plEl = $(".pl"), seek = $(".seek"), tmEl = $(".tm"), volEl = $(".vol");
     const playBtn = $(".play"), muteBtn = $(".mute");
