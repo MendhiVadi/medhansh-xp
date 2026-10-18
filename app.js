@@ -79,6 +79,16 @@
     display: `<svg viewBox="0 0 32 32"><rect x="3" y="5" width="26" height="18" rx="2" fill="#d8d8d0" stroke="#666"/><rect x="5" y="7" width="22" height="14" fill="url(#gsky2)"/><path d="M12 23h8l1 4H11z" fill="#bbb" stroke="#666"/><defs><linearGradient id="gsky2" x2="0" y2="1"><stop offset="0" stop-color="#2a6ee7"/><stop offset=".65" stop-color="#8fc3f5"/><stop offset=".66" stop-color="#5aa83a"/></linearGradient></defs></svg>`,
     showdesk: `<svg viewBox="0 0 32 32"><rect x="3" y="6" width="26" height="18" rx="2" fill="#4f95ea" stroke="#fff"/><path d="M3 18c8-5 18-5 26 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="#4c9b2d"/><rect x="9" y="26" width="14" height="2" fill="#fff"/></svg>`,
     calendar: `<svg viewBox="0 0 32 32"><rect x="4" y="6" width="24" height="22" rx="2" fill="#fff" stroke="#555"/><rect x="4" y="6" width="24" height="6" fill="#d0362f"/><rect x="9" y="3" width="2.5" height="6" rx="1" fill="#555"/><rect x="20.5" y="3" width="2.5" height="6" rx="1" fill="#555"/><text x="16" y="25" font-size="11" font-family="Arial" font-weight="bold" fill="#0a246a" text-anchor="middle">${new Date().getDate()}</text></svg>`,
+    calc: `<svg viewBox="0 0 32 32"><rect x="6" y="3" width="20" height="26" rx="2" fill="#d4d0c8" stroke="#555"/><rect x="9" y="6" width="14" height="5" fill="#c8e6a0" stroke="#555"/><g fill="#555"><rect x="9" y="14" width="3" height="3"/><rect x="14.5" y="14" width="3" height="3"/><rect x="20" y="14" width="3" height="3"/><rect x="9" y="19" width="3" height="3"/><rect x="14.5" y="19" width="3" height="3"/><rect x="20" y="19" width="3" height="8" fill="#d0362f"/><rect x="9" y="24" width="8.5" height="3"/></g></svg>`,
+    wmp: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="url(#wmpg)" stroke="#1d3d8f"/><path d="M13 10l9 6-9 6z" fill="#fff"/><defs><radialGradient id="wmpg" cx=".35" cy=".3"><stop offset="0" stop-color="#9fd6ff"/><stop offset="1" stop-color="#1f5fcf"/></radialGradient></defs></svg>`,
+    pictures: `<svg viewBox="0 0 32 32"><path d="M3 8h10l2 3h14v16H3z" fill="#f2c94c" stroke="#b8860b"/><rect x="9" y="13" width="17" height="12" fill="#fff" stroke="#555"/><path d="M10 24l5-6 3 3 3-4 4 7z" fill="#5aa83a"/><circle cx="21" cy="16" r="1.6" fill="#f2a900"/></svg>`,
+    taskmgr: `<svg viewBox="0 0 32 32"><rect x="3" y="5" width="26" height="22" rx="1" fill="#000" stroke="#777"/><rect x="3" y="5" width="26" height="4" fill="#2f71cd"/><path d="M6 22l4-5 3 3 4-8 3 6 3-3 3 2" fill="none" stroke="#3f3" stroke-width="1.6"/></svg>`,
+    control: `<svg viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="3" fill="#dfe8f7" stroke="#4a6fa0"/><circle cx="12" cy="12" r="4" fill="#f2a900"/><rect x="18" y="9" width="7" height="6" fill="#5aa83a"/><rect x="7" y="18" width="7" height="7" fill="#1e7ae6"/><path d="M18 22h7M21.5 18.5v7" stroke="#d0362f" stroke-width="2.4"/></svg>`,
+    run: `<svg viewBox="0 0 32 32"><rect x="4" y="7" width="24" height="18" rx="2" fill="#fff" stroke="#555"/><rect x="4" y="7" width="24" height="4" fill="#2f71cd"/><path d="M9 20h10M15 16l4 4-4 4" stroke="#215dc6" stroke-width="1.8" fill="none"/></svg>`,
+    search: `<svg viewBox="0 0 32 32"><circle cx="13" cy="13" r="8" fill="#dbeeff" stroke="#215dc6" stroke-width="2.5"/><path d="M19 19l8 8" stroke="#8a6d3b" stroke-width="4" stroke-linecap="round"/></svg>`,
+    privacy: `<svg viewBox="0 0 32 32"><path d="M16 3l11 4v8c0 7-5 12-11 14C10 27 5 22 5 15V7z" fill="#5aa83a" stroke="#2e6a12"/><path d="M11 16l4 4 7-8" stroke="#fff" stroke-width="2.6" fill="none"/></svg>`,
+    pinball: `<svg viewBox="0 0 32 32"><rect x="6" y="2" width="20" height="28" rx="4" fill="#1a1450" stroke="#888"/><circle cx="12" cy="10" r="3" fill="#e5410c"/><circle cx="20" cy="9" r="3" fill="#f2a900"/><circle cx="16" cy="15" r="3" fill="#1e7ae6"/><path d="M9 25l5 2M23 25l-5 2" stroke="#ddd" stroke-width="2" stroke-linecap="round"/><circle cx="17" cy="21" r="1.6" fill="#fff"/></svg>`,
+    spider: `<svg viewBox="0 0 32 32"><rect x="4" y="6" width="15" height="21" rx="2" fill="#2f5fd0" stroke="#123" transform="rotate(-12 11 16)"/><rect x="12" y="5" width="15" height="21" rx="2" fill="#fff" stroke="#333"/><circle cx="19.5" cy="15.5" r="3" fill="#111"/><path d="M15 12l2 2M24 12l-2 2M14.5 16h2M24.5 16h-2M15 20l2-2M24 20l-2-2" stroke="#111"/></svg>`,
     yapless: `<svg viewBox="0 0 32 32"><rect x="3" y="5" width="26" height="19" rx="6" fill="#ff7a32"/><path d="M10 24l-2 5 7-5" fill="#ff7a32"/><path d="M10 12h12M10 17h7" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>`,
   };
 
@@ -99,22 +109,45 @@
     computer: { title: "My Computer", icon: "computer", w: 600, h: 400, render: renderComputer },
     calendar: { title: "Calendar", icon: "calendar", w: 640, h: 470, render: (b, c) => renderCalendar(b, c) },
     games:    { title: "Games", icon: "games", w: 560, h: 340, render: renderGames },
+    pinball:  { title: "3D Pinball - Space Cadet", icon: "pinball", w: 440, h: 660, render: lazyGame("pinball") },
+    spider:   { title: "Spider Solitaire", icon: "spider", w: 720, h: 540, render: lazyGame("spider") },
+    calc:     { title: "Calculator", icon: "calc", w: 270, h: 320, render: lazyExtra("calculator") },
+    wmp:      { title: "Windows Media Player", icon: "wmp", w: 500, h: 380, render: lazyExtra("mediaplayer") },
+    pictures: { title: "My Pictures", icon: "pictures", w: 580, h: 440, render: lazyExtra("pictures") },
+    taskmgr:  { title: "Windows Task Manager", icon: "taskmgr", w: 420, h: 440, render: lazyExtra("taskmgr") },
+    control:  { title: "Control Panel", icon: "control", w: 600, h: 420, render: (b, c) => renderControl(b, c) },
+    run:      { title: "Run", icon: "run", w: 360, h: 190, render: (b, c) => renderRun(b, c) },
+    search:   { title: "Search Results", icon: "search", w: 560, h: 420, render: (b, c) => renderSearch(b, c) },
+    help:     { title: "Help and Support Center", icon: "help", w: 640, h: 460, render: (b, c) => renderHelp(b, c) },
+    privacy:  { title: "Privacy.txt - Notepad", icon: "privacy", w: 560, h: 440, render: (b, c) => renderPrivacy(b, c) },
     display:  { title: "Display Properties", icon: "display", w: 420, h: 470, render: renderDisplay },
     solitaire:{ title: "Solitaire", icon: "solitaire", w: 640, h: 520, render: lazyGame("solitaire") },
     snake:    { title: "Snake", icon: "snake", w: 420, h: 480, render: lazyGame("snake") },
     breakout: { title: "Brick Breaker", icon: "breakout", w: 520, h: 460, render: lazyGame("breakout") },
   };
   APPS.reset = { title: "Reset Desktop", icon: "showdesk", action: () => askReset() };
-  const GAME_IDS = ["solitaire", "mine", "snake", "breakout"];
-  const DESKTOP = ["about", "projects", "resume", "ie", "contact", "msn", "cmd", "calendar", "games", "paint", "notepad", "reset", "recycle"];
-  const DESK_LABEL = { reset: "Reset Desktop", about: "About Me", resume: "Resume", projects: "My Projects", contact: "Contact Me", ie: "Internet Explorer", cmd: "Command Prompt", msn: "MSN Messenger", mine: "Minesweeper", paint: "Paint", notepad: "Notepad", recycle: "Recycle Bin", computer: "My Computer", games: "Games", calendar: "Calendar", solitaire: "Solitaire", snake: "Snake", breakout: "Brick Breaker", display: "Display" };
+  const GAME_IDS = ["solitaire", "spider", "mine", "pinball", "snake", "breakout"];
+  const DESKTOP = ["about", "projects", "resume", "ie", "contact", "msn", "cmd", "calendar", "games", "pictures", "wmp", "paint", "notepad", "reset", "recycle"];
+  const DESK_LABEL = { reset: "Reset Desktop", pinball: "3D Pinball", spider: "Spider Solitaire", calc: "Calculator", wmp: "Media Player", pictures: "My Pictures", taskmgr: "Task Manager", control: "Control Panel", run: "Run", search: "Search", help: "Help and Support", privacy: "Privacy", about: "About Me", resume: "Resume", projects: "My Projects", contact: "Contact Me", ie: "Internet Explorer", cmd: "Command Prompt", msn: "MSN Messenger", mine: "Minesweeper", paint: "Paint", notepad: "Notepad", recycle: "Recycle Bin", computer: "My Computer", games: "Games", calendar: "Calendar", solitaire: "Solitaire", snake: "Snake", breakout: "Brick Breaker", display: "Display" };
 
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=19"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=20"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
+  let extrasReady;
+  const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
+    const s = document.createElement("script"); s.src = "extras.js?v=20"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    document.head.appendChild(s);
+  });
+  function lazyExtra(name) {
+    return (body, ctx) => {
+      body.innerHTML = `<div class="loading">Loading…</div>`;
+      loadExtras().then(() => { if (wins.get(ctx.key)?.el === ctx.el) { body.innerHTML = ""; window.EXTRAS[name](body, ctx); } })
+        .catch(() => (body.innerHTML = `<div class="loading">Could not load this program. Check your connection.</div>`));
+    };
+  }
   function lazyGame(name) {
     return (body, ctx) => {
       body.innerHTML = `<div class="loading">Loading…</div>`;
@@ -182,6 +215,7 @@
       isVisible: () => !document.hidden && !el.classList.contains("min") && wins.has(key),
       isActive: () => activeKey === key,
       menu: (bar, menus) => wireMenu(bar, menus),
+      sys,
     };
     app.render(el.querySelector(".wbody"), ctx);
     // any menubar without its own handlers still gets working File / View / Help menus
@@ -191,6 +225,15 @@
     focus(key);
     return rec;
   }
+  const sys = {
+    windows: () => [...wins].filter(([k]) => !k.startsWith("msg") && k !== "askreset").map(([k, w]) => ({ key: k, title: w.el.querySelector(".ttl").textContent, minimized: w.el.classList.contains("min"), active: k === activeKey })),
+    focus: (k) => { const w = wins.get(k); if (w) { w.el.classList.remove("min"); focus(k); } },
+    close: (k) => close(k),
+    open: (id, o) => { const k = Object.keys(APPS).find((a) => a === id || APPS[a].title.toLowerCase() === String(id).toLowerCase() || (DESK_LABEL[a] || "").toLowerCase() === String(id).toLowerCase()); if (!k) return false; openApp(k, o); return true; },
+    msg: (t, h) => msgBox(t, h),
+    photos: [{ src: "photo-full.jpg?v=20", title: "Medhansh.jpg" }, { src: "photo.jpg?v=20", title: "Avatar.jpg" }],
+    P,
+  };
   function minimize(key) { const w = wins.get(key); if (!w) return; w.el.classList.add("min"); if (activeKey === key) activeKey = null; paintActive(); }
   function focus(key) {
     const w = wins.get(key); if (!w) return;
@@ -244,6 +287,7 @@
     });
   }
   function msgBox(title, text, icon = "ℹ️") {
+    if (icon === "⚠️" || icon === "⛔") xpSound("error"); else xpSound("ding");
     openApp(null, { key: "msg" + Date.now() + "_" + cascade, app: { title, icon: "info", w: 360, h: 170, render: (b, ctx) => {
       b.innerHTML = `<div class="msgbox"><span class="msgbox-ico">${icon}</span><div>${text}</div></div><div class="msgbox-actions"><button class="xpbtn">OK</button></div>`;
       const ok = b.querySelector("button"); ok.onclick = ctx.close; setTimeout(() => ok.focus(), 0);
@@ -374,46 +418,92 @@
     ]);
   }
 
+  // Contact: visitor picks email or phone, verifies their email with a 4-digit code (api/otp), then the
+  // message is emailed to the site owner (api/contact). A copy is also kept in Firestore.
+  const api = async (path, data) => {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 15000);
+    try {
+      const r = await fetch("/api/" + path, data ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data), signal: ctl.signal } : { signal: ctl.signal, cache: "no-store" });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw Object.assign(new Error(j.error || "Server unavailable"), { status: r.status, body: j });
+      return j;
+    } finally { clearTimeout(t); }
+  };
   function renderContact(body, ctx) {
     const inner = chrome(body, { menus: [
-      { label: "File", items: [{ label: "Send", act: () => form.requestSubmit() }, { label: "Email instead", act: () => mailto() }, "-", { label: "Close", act: ctx.close }] },
-      { label: "Help", items: [{ label: "About", act: () => msgBox("Contact", `Messages go straight to ${esc(P.name)}.<br>Your details are only used to reply to you.`) }] },
+      { label: "File", items: [{ label: "Email instead", act: () => mailto() }, "-", { label: "Close", act: ctx.close }] },
+      { label: "Help", items: [{ label: "About", act: () => msgBox("Contact", `Your email is verified with a one-time code before the message reaches ${esc(P.name)}.<br>Your details are only used to reply to you. See <a href="#" data-open="privacy">Privacy</a>.`) }] },
     ] });
     inner.innerHTML = `<form class="form contact" novalidate>
+      <div class="cstep"><b>1</b> Your details <span>›</span> <b>2</b> Verify email <span>›</span> <b>3</b> Sent</div>
       <label><span>To:</span><input value="${esc(P.name)}" readonly tabindex="-1"></label>
-      <label><span>Name:</span><input name="name" maxlength="80" autocomplete="name" placeholder="your name" required></label>
-      <label><span>Email:</span><input name="email" type="email" maxlength="120" autocomplete="email" placeholder="you@example.com" required></label>
-      <label><span>Subject:</span><input name="subject" maxlength="140" placeholder="what's this about?" required></label>
+      <div class="cvia" role="radiogroup" aria-label="How should I reach you?"><span>Reach me by:</span><label><input type="radio" name="via" value="email" checked> Email</label><label><input type="radio" name="via" value="phone"> Phone</label></div>
+      <label><span>Name:</span><input name="name" maxlength="80" autocomplete="name" placeholder="your name"></label>
+      <label><span>Email:</span><input name="email" type="email" maxlength="120" autocomplete="email" placeholder="you@example.com (we'll send a code)"></label>
+      <label class="cphone hidden"><span>Phone:</span><input name="phone" type="tel" maxlength="20" autocomplete="tel" placeholder="+91 98765 43210"></label>
+      <label><span>Subject:</span><input name="subject" maxlength="140" placeholder="what's this about?"></label>
       <input name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <textarea name="message" maxlength="4000" placeholder="Write your message..." required></textarea>
+      <textarea name="message" maxlength="4000" placeholder="Write your message..."></textarea>
+      <div class="ccode hidden"><span>Enter the 4-digit code sent to <b class="cto"></b>:</span><input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="4" pattern="[0-9]{4}" placeholder="••••"><button type="button" class="xpbtn cresend">Resend</button></div>
       <div class="cerr" role="alert"></div>
-      <div class="cfoot"><span class="muted">Or email <a href="mailto:${esc(links.email)}">${esc(links.email)}</a></span><button class="xpbtn csend" type="submit">✉ Send</button></div></form>`;
-    const form = inner.querySelector("form"), err = form.querySelector(".cerr"), btn = form.querySelector(".csend");
-    const mailto = () => { const f = new FormData(form); location.href = `mailto:${links.email}?subject=${encodeURIComponent(f.get("subject") || "")}&body=${encodeURIComponent(`${f.get("message") || ""}\n\n- ${f.get("name") || ""}`)}`; };
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      form.querySelectorAll(".bad").forEach((x) => x.classList.remove("bad")); err.textContent = "";
-      const raw = Object.fromEntries(new FormData(form));
-      if (raw.website) return; // hidden field only bots fill in
-      const data = { name: raw.name.trim(), email: raw.email.trim(), subject: raw.subject.trim(), message: raw.message.trim() };
-      const bad = {};
-      if (!data.name) bad.name = "Please enter your name.";
-      if (!/^[^@ ]+@[^@ ]+[.][^@ ]{2,}$/.test(data.email)) bad.email = "Please enter a valid email address.";
-      if (!data.subject) bad.subject = "Please add a subject.";
-      if (data.message.length < 5) bad.message = "Please write a message.";
-      if (Object.keys(bad).length) { Object.keys(bad).forEach((k) => form.elements[k].classList.add("bad")); err.textContent = Object.values(bad).join(" "); return; }
+      <div class="cfoot"><span class="muted cnote">Your email is verified with a one-time code.</span><button class="xpbtn csend" type="submit">Send code</button></div></form>`;
+    const form = inner.querySelector("form"), err = form.querySelector(".cerr"), btn = form.querySelector(".csend"), F = form.elements;
+    const steps = form.querySelectorAll(".cstep b");
+    let token = null, sentTo = "", cooldown = 0, cdTimer;
+    const step = (n) => steps.forEach((s, i) => s.classList.toggle("on", i === n - 1));
+    const mailto = () => location.href = `mailto:${links.email}?subject=${encodeURIComponent(F.subject.value)}&body=${encodeURIComponent(`${F.message.value}\n\n- ${F.name.value}${F.phone.value ? "\n" + F.phone.value : ""}`)}`;
+    const fail = (msg, fields = {}) => { Object.keys(fields).forEach((k) => F[k]?.classList.add("bad")); err.innerHTML = msg; };
+    const unavailable = () => fail(`Verified messages aren't available right now. <a href="#" class="cmail">Email me directly</a> instead.`);
+    err.addEventListener("click", (e) => { if (e.target.closest(".cmail")) { e.preventDefault(); mailto(); } });
+    form.querySelectorAll('[name="via"]').forEach((r) => r.addEventListener("change", () => form.querySelector(".cphone").classList.toggle("hidden", F.via.value !== "phone")));
+    step(1);
+    api("otp").then((j) => { if (!j.enabled) { form.querySelector(".cnote").textContent = "Verified messages are not set up yet."; } }).catch(() => {});
+    const validate = () => {
+      const bad = {}, d = { via: F.via.value, name: F.name.value.trim(), email: F.email.value.trim(), phone: F.phone.value.trim(), subject: F.subject.value.trim(), message: F.message.value.trim() };
+      if (!d.name) bad.name = "Please enter your name.";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) bad.email = "Please enter a valid email address.";
+      if (d.via === "phone" && !/^\+?[0-9 ()-]{7,20}$/.test(d.phone)) bad.phone = "Please enter a valid phone number.";
+      if (!d.subject) bad.subject = "Please add a subject.";
+      if (d.message.length < 5) bad.message = "Please write a message.";
+      return [d, bad];
+    };
+    const tickCooldown = () => { const b = form.querySelector(".cresend"); b.disabled = cooldown > 0; b.textContent = cooldown > 0 ? `Resend (${cooldown}s)` : "Resend"; if (cooldown-- > 0) cdTimer = setTimeout(tickCooldown, 1000); };
+    async function sendCode() {
+      const [d, bad] = validate();
+      if (Object.keys(bad).length) return fail(esc(Object.values(bad).join(" ")), bad);
+      btn.disabled = true; btn.textContent = "Sending code…";
+      try {
+        token = (await api("otp", { email: d.email })).token; sentTo = d.email.toLowerCase();
+        form.querySelector(".cto").textContent = d.email; form.querySelector(".ccode").classList.remove("hidden");
+        btn.textContent = "Verify & send"; step(2); F.code.value = ""; F.code.focus();
+        clearTimeout(cdTimer); cooldown = 30; tickCooldown();
+      } catch (e) {
+        btn.textContent = "Send code";
+        if (!e.status || e.status === 404 || e.status >= 500) unavailable(); else fail(esc(e.message), e.body?.field ? { [e.body.field]: 1 } : {});
+      } finally { btn.disabled = false; }
+    }
+    async function verifyAndSend() {
+      const [d, bad] = validate();
+      if (Object.keys(bad).length) return fail(esc(Object.values(bad).join(" ")), bad);
+      if (d.email.toLowerCase() !== sentTo) { form.querySelector(".ccode").classList.add("hidden"); token = null; btn.textContent = "Send code"; step(1); return fail("Your email changed. Send a new code."); }
+      if (!/^\d{4}$/.test(F.code.value.trim())) return fail("Enter the 4-digit code from the email.", { code: 1 });
       btn.disabled = true; btn.textContent = "Sending…";
       try {
-        await Cloud.contact(data);
-        inner.innerHTML = `<div class="csent"><b>✅ Message sent!</b><p>Thanks, ${esc(data.name)}. I'll get back to you at ${esc(data.email)}.</p><button class="xpbtn">Close</button></div>`;
+        await api("contact", { ...d, token, code: F.code.value.trim(), website: F.website.value });
+        Cloud.contact({ name: d.name, email: d.email, subject: d.subject, message: d.message, phone: d.phone, via: d.via }).catch(() => {});
+        step(3); clearTimeout(cdTimer);
+        inner.innerHTML = `<div class="csent"><b>✅ Message sent!</b><p>Thanks, ${esc(d.name)}. Your email is verified and I'll get back to you ${d.via === "phone" ? `at ${esc(d.phone)}` : `at ${esc(d.email)}`}.</p><button class="xpbtn">Close</button></div>`;
         inner.querySelector("button").onclick = ctx.close;
-      } catch (ex) {
-        btn.disabled = false; btn.textContent = "✉ Send";
-        err.innerHTML = ex.status && ex.status < 500 ? esc(ex.message) : `Couldn't reach the server. <a href="#" class="cmail">Send it by email instead</a>.`;
-        err.querySelector(".cmail")?.addEventListener("click", (c) => { c.preventDefault(); mailto(); });
+      } catch (e) {
+        btn.disabled = false; btn.textContent = "Verify & send";
+        if (!e.status || e.status === 404 || e.status >= 500) unavailable(); else fail(esc(e.message), e.body?.errors || {});
       }
-    });
-    setTimeout(() => form.elements.name.focus(), 0);
+    }
+    form.addEventListener("submit", (e) => { e.preventDefault(); form.querySelectorAll(".bad").forEach((x) => x.classList.remove("bad")); err.textContent = ""; token ? verifyAndSend() : sendCode(); });
+    form.querySelector(".cresend").addEventListener("click", () => { token = null; sendCode(); });
+    F.code.addEventListener("input", () => { F.code.value = F.code.value.replace(/\D/g, "").slice(0, 4); if (F.code.value.length === 4) form.requestSubmit(); });
+    ctx.onClose(() => clearTimeout(cdTimer));
+    setTimeout(() => F.name.focus(), 0);
   }
 
   function renderIE(body, ctx) {
@@ -938,9 +1028,125 @@
 
   function renderGames(body) {
     const inner = chrome(body, { addr: "C:\\Program Files\\Games", addrIcon: "games" });
-    const blurb = { solitaire: "Classic Klondike", mine: "3 difficulty levels", snake: "Eat, grow, repeat", breakout: "Smash every brick" };
+    const blurb = { spider: "1, 2 or 4 suits", pinball: "Space Cadet-style table", solitaire: "Classic Klondike", mine: "3 difficulty levels", snake: "Eat, grow, repeat", breakout: "Smash every brick" };
     inner.innerHTML = `<div class="explorer">${taskPane([["Games", `<span>Double-click a game to play. High scores are saved in this browser.</span>`]])}
       <div class="ex-main"><div class="grid-items">${GAME_IDS.map((id) => `<div class="fitem" data-open="${id}" title="${esc(blurb[id])}">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id])}</span><small>${esc(blurb[id])}</small></div>`).join("")}</div></div></div>`;
+  }
+
+  // ---------------- Control Panel, Run, Search, Help, Privacy ----------------
+  function renderControl(body) {
+    const inner = chrome(body, { addr: "Control Panel", addrIcon: "control" });
+    const items = [["display", "Appearance and Themes", "Wallpaper, screen saver"], ["sounds", "Sounds and Audio Devices", "Startup sounds, volume"], ["datetime", "Date and Time", "Calendar and reminders"], ["network", "Network Connections", "Your real connection"], ["taskmgr", "Performance and Maintenance", "Task Manager"], ["user", "User Accounts", "About the owner"], ["reset", "Reset Desktop", "Back to normal"], ["privacy", "Privacy and Terms", "How data is used"]];
+    inner.innerHTML = `<div class="explorer">${taskPane([["See Also", appLink("help", "Help and Support") + appLink("run", "Run...")]])}
+      <div class="ex-main"><h3 class="cp-h">Pick a category</h3><div class="cp-grid">${items.map(([k, t, d]) => `<button class="cp-item" data-k="${k}">${I[{ sounds: "wmp", datetime: "calendar", network: "ie", user: "user" }[k] || APPS[k]?.icon || "control"]}<span><b>${t}</b><small>${d}</small></span></button>`).join("")}</div></div></div>`;
+    inner.querySelector(".cp-grid").addEventListener("click", (e) => {
+      const k = e.target.closest("[data-k]")?.dataset.k; if (!k) return;
+      if (k === "sounds") return soundsDialog();
+      if (k === "datetime") return openApp("calendar");
+      if (k === "network") return toggleTray("net");
+      if (k === "user") return openApp("about");
+      openApp(k);
+    });
+  }
+  function soundsDialog() {
+    openApp(null, { key: "sounds", app: { title: "Sounds and Audio Devices", icon: "wmp", w: 380, h: 260, render: (b, c) => {
+      b.innerHTML = `<div class="disp"><div class="disp-pane"><label><input type="checkbox" class="snd-on" ${store.lget("xp-sounds") !== "0" ? "checked" : ""}> Play Windows startup, shutdown and error sounds</label>
+        <div class="snd-row"><button class="xpbtn" data-s="startup">▶ Startup</button><button class="xpbtn" data-s="shutdown">▶ Shutdown</button><button class="xpbtn" data-s="ding">▶ Ding</button><button class="xpbtn" data-s="error">▶ Error</button></div>
+        <p class="muted">Volume and mute are in the speaker icon on the taskbar.</p></div><div class="disp-actions"><button class="xpbtn ok">OK</button></div></div>`;
+      b.querySelector(".snd-on").onchange = (e) => store.lset("xp-sounds", e.target.checked ? "1" : "0");
+      b.querySelector(".snd-row").onclick = (e) => { const s = e.target.closest("[data-s]")?.dataset.s; if (s) xpSound(s, true); };
+      b.querySelector(".ok").onclick = c.close;
+    } } });
+  }
+  // Short synthesized XP-style system sounds (no audio files)
+  function xpSound(kind, force) {
+    if (!force && store.lget("xp-sounds") === "0") return;
+    if (muted || vol === 0) return;
+    try {
+      const A = window.AudioContext || window.webkitAudioContext; const ac = xpSound.ac ||= new A(); if (ac.state === "suspended") ac.resume();
+      const seq = { startup: [[311, 0, .5], [466, .18, .5], [622, .36, .6], [831, .54, .9], [698, .9, 1.2]], shutdown: [[831, 0, .5], [622, .2, .5], [466, .4, .6], [311, .6, 1]], ding: [[1047, 0, .4], [1319, .08, .5]], error: [[220, 0, .25], [196, .16, .35]] }[kind] || [];
+      const g0 = ac.createGain(); g0.gain.value = .18 * vol / 100; g0.connect(ac.destination);
+      seq.forEach(([f, t, d]) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = kind === "error" ? "square" : "triangle"; o.frequency.value = f; g.gain.setValueAtTime(0, ac.currentTime + t); g.gain.linearRampToValueAtTime(1, ac.currentTime + t + .03); g.gain.exponentialRampToValueAtTime(.001, ac.currentTime + t + d); o.connect(g).connect(g0); o.start(ac.currentTime + t); o.stop(ac.currentTime + t + d + .05); });
+    } catch {}
+  }
+  function renderRun(body, ctx) {
+    body.innerHTML = `<form class="runbox"><div class="msgbox"><span class="msgbox-ico">🏃</span><div>Type the name of a program, folder or website, and the portfolio will open it for you.</div></div>
+      <label class="runrow">Open: <input class="runin" list="runlist" spellcheck="false" autocomplete="off"></label><datalist id="runlist">${Object.keys(APPS).filter((k) => !APPS[k].action).map((k) => `<option value="${k}">`).join("")}<option value="notepad"><option value="calc"><option value="cmd"><option value="https://en.wikipedia.org"></datalist>
+      <div class="msgbox-actions"><button class="xpbtn">OK</button><button type="button" class="xpbtn rcancel">Cancel</button></div></form>`;
+    const f = body.querySelector("form"), inp = body.querySelector(".runin");
+    body.querySelector(".rcancel").onclick = ctx.close;
+    f.addEventListener("submit", (e) => {
+      e.preventDefault(); const v = inp.value.trim(); if (!v) return;
+      const alias = { mspaint: "paint", "notepad.exe": "notepad", "calc.exe": "calc", "cmd.exe": "cmd", taskmgr: "taskmgr", iexplore: "ie", explorer: "computer", winmine: "mine", sol: "solitaire", spider: "spider", pinball: "pinball", wmplayer: "wmp", control: "control" }[v.toLowerCase()];
+      if (/^(https?:\/\/|www\.)/i.test(v) || /\.[a-z]{2,}(\/|$)/i.test(v)) { ctx.close(); const had = wins.has("ie"), w = openApp("ie", { url: v }); if (had) w?.navigate?.(v); return; }
+      if (sys.open(alias || v.toLowerCase())) return ctx.close();
+      xpSound("error"); msgBox(v, `Windows cannot find '${esc(v)}'. Make sure you typed the name correctly, and then try again.`, "⛔");
+    });
+    setTimeout(() => inp.focus(), 0);
+  }
+  function renderSearch(body, ctx) {
+    const inner = chrome(body, { addr: "Search Results", addrIcon: "search" });
+    inner.innerHTML = `<div class="explorer"><div class="taskpane"><div class="tp-box"><h4>Search Companion</h4><div><label>What are you looking for?</label><input class="sq" placeholder="e.g. CARLA, Python, Yap-less" autocomplete="off"><small class="muted">Searches apps, projects, skills and the resume.</small></div></div></div><div class="ex-main"><div class="sres"></div></div></div>`;
+    const q = inner.querySelector(".sq"), out = inner.querySelector(".sres");
+    const corpus = [
+      ...Object.keys(APPS).filter((k) => !APPS[k].action).map((k) => ({ t: DESK_LABEL[k] || APPS[k].title, d: "Program", icon: APPS[k].icon, open: k })),
+      ...P.projects.map((p, i) => ({ t: p.name, d: p.desc, icon: "project", proj: i, extra: (p.stack || []).join(" ") })),
+      ...Object.entries(P.skills || {}).map(([k, v]) => ({ t: k, d: v.join(", "), icon: "resume", open: "resume" })),
+      ...(P.experience || []).map((x) => ({ t: `${x.title} - ${x.org}`, d: x.points.join(" "), icon: "resume", open: "resume" })),
+      ...(P.achievements || []).map((a) => ({ t: a, d: "Honors & Awards", icon: "resume", open: "resume" })),
+    ];
+    const run = () => {
+      const words = q.value.toLowerCase().split(/\s+/).filter(Boolean);
+      const hits = words.length ? corpus.filter((c) => words.every((w) => (c.t + " " + c.d + " " + (c.extra || "")).toLowerCase().includes(w))) : [];
+      out.innerHTML = !words.length ? `<p class="muted">Type above to search.</p>` : hits.length ? `<p class="muted">${hits.length} result${hits.length === 1 ? "" : "s"}</p>` + hits.slice(0, 40).map((h, i) => `<div class="shit" tabindex="0" data-i="${i}">${I[h.icon] || I.doc}<span><b>${esc(h.t)}</b><small>${esc(h.d.slice(0, 140))}</small></span></div>`).join("") : `<p class="muted">Search is complete. There are no results to display.</p>`;
+      out.onclick = out.onkeydown = (e) => { if (e.type === "keydown" && e.key !== "Enter") return; const h = hits[+e.target.closest("[data-i]")?.dataset.i]; if (!h) return; h.proj != null ? openProject(h.proj) : openApp(h.open); };
+    };
+    q.addEventListener("input", run); run(); setTimeout(() => q.focus(), 0);
+  }
+  function renderHelp(body) {
+    const inner = chrome(body, { addr: "Help and Support Center", addrIcon: "help" });
+    const topics = [
+      ["Getting around", "Double-click a desktop icon to open it (one tap on a phone). Drag windows by their title bar; drag icons to rearrange them. The Start button lists everything."],
+      ["Shortcuts", "Win: Start menu · Alt+F4 or Ctrl+W: close window · Ctrl+Shift+Esc: Task Manager · Win+R: Run · F2: new game · Delete: remove a desktop shortcut."],
+      ["Shared Notepad and Calendar", "The Notepad and Calendar are shared by everyone who visits. Changes are saved to the server as you type."],
+      ["Contacting me", "Open Contact Me, choose email or phone, and verify your email with the 4-digit code. Only then is the message sent."],
+      ["Something looks wrong?", "Use Reset Desktop (desktop icon, Start menu or right-click) to restore icons, wallpaper and deleted shortcuts."],
+      ["Privacy", "See Privacy.txt for what is stored and why."],
+    ];
+    inner.innerHTML = `<div class="explorer">${taskPane([["Pick a task", appLink("reset", "Reset the desktop") + appLink("contact", "Contact me") + appLink("privacy", "Privacy and terms") + appLink("taskmgr", "See what's running")]])}
+      <div class="ex-main doc"><h1>Help and Support Center</h1><p class="muted">Windows XP Portfolio Edition</p>${topics.map(([h, t]) => `<h2>${h}</h2><p>${t}</p>`).join("")}</div></div>`;
+  }
+  function renderPrivacy(body) {
+    const inner = chrome(body, { menu: ["File", "Edit", "Format", "View", "Help"] });
+    inner.innerHTML = `<textarea class="notepad" readonly>${esc(`PRIVACY NOTICE AND TERMS OF USE
+Last updated: ${new Date().getFullYear()}
+
+This is the personal portfolio of ${P.name} (${P.location}).
+
+WHAT IS STORED
+- Contact Me: your name, email, optional phone number and message. Your email
+  is verified with a one-time code first. The message is emailed to me and a
+  copy is kept in a private database (Google Firebase) that only I can read.
+- Shared Notepad and Calendar: anything you type there is public. Everyone who
+  visits can see and change it. Please don't put personal information in them.
+- Your browser keeps small preferences (icon layout, wallpaper, volume, game
+  scores) in local storage. They never leave your device.
+- Hosting (Vercel) and visit analytics (Vercel Web Analytics, no cookies) see
+  anonymous technical data such as pages viewed, country and browser.
+
+WHAT IS NOT DONE
+- No ads, no selling or sharing your details, no mailing lists.
+
+YOUR CHOICES
+- Ask me to delete a message you sent: ${links.email}
+- Clear this site's local storage in your browser to reset your preferences.
+
+TERMS
+- The site is provided as is, for fun and to show my work.
+- Don't post abusive or illegal content in the shared Notepad or Calendar;
+  it may be removed.
+`)}</textarea>`;
+    inner.style.overflow = "hidden";
   }
 
   // ---------------- Wallpapers / Display Properties ----------------
@@ -1008,7 +1214,17 @@
   const rows = () => Math.max(1, Math.floor((innerHeight - 30 - PAD) / CELL_H));
   const cols = () => Math.max(1, Math.floor((innerWidth - PAD) / CELL_W));
   const cellKey = (c, r) => c + "," + r;
+  const phone = () => innerWidth <= 640;
   function layoutIcons(reset) {
+    if (phone()) {
+      // phone home screen: fixed 4-column grid in a simple order, nothing saved
+      const C = 4, cw = Math.floor((innerWidth - 12) / C);
+      iconsEl.classList.add("phone");
+      iconEls.forEach((el, i) => { el.style.width = cw + "px"; el.style.transform = `translate(${6 + (i % C) * cw}px,${8 + ((i / C) | 0) * 96}px)`; });
+      iconsEl.style.height = (8 + Math.ceil(iconEls.length / C) * 96) + "px";
+      return;
+    }
+    iconsEl.classList.remove("phone"); iconsEl.style.height = ""; iconEls.forEach((el) => (el.style.width = ""));
     if (reset) iconPos = {};
     const R = rows(), C = cols(), taken = new Set();
     // keep saved spots that still fit on screen, then flow the rest top-to-bottom
@@ -1049,7 +1265,8 @@
   const dropTarget = (x, y, skip) => document.elementsFromPoint(x, y).find((el) => !skip.some((s) => s.contains(el)));
   iconsEl.addEventListener("pointerdown", (e) => {
     const d = e.target.closest(".dicon"); if (!d || e.button !== 0) return;
-    e.stopPropagation(); closeMenus(); closeTray(); hideCtx();
+    e.stopPropagation();
+    if (phone()) { const t0 = Date.now(), x0 = e.clientX, y0 = e.clientY; d.addEventListener("pointerup", (u) => { if (Date.now() - t0 < 600 && Math.hypot(u.clientX - x0, u.clientY - y0) < 10) openApp(d.dataset.id); }, { once: true }); return; } closeMenus(); closeTray(); hideCtx();
     if (e.ctrlKey || e.metaKey) { d.classList.toggle("sel"); return; }
     if (!d.classList.contains("sel")) selectIcons([d]);
     const group = iconEls.filter((x) => x.classList.contains("sel"));
@@ -1172,11 +1389,12 @@
 
   // ---------------- Start menu ----------------
   const sm = $("#startMenu"), startBtn = $("#startBtn");
-  const left = [["ie", "Internet Explorer", "Browse the web"], ["contact", "Contact Me", "Send me a message"], null, ["about", "About Me"], ["resume", "Resume"], ["projects", "My Projects"], ["cmd", "Command Prompt"], ["msn", "MSN Messenger"], ["notepad", "Notepad"], ["paint", "Paint"]];
+  const left = [["ie", "Internet Explorer", "Browse the web"], ["contact", "Contact Me", "Send me a message"], null, ["about", "About Me"], ["resume", "Resume"], ["projects", "My Projects"], ["cmd", "Command Prompt"], ["msn", "MSN Messenger"], ["wmp", "Windows Media Player"], ["paint", "Paint"]];
   $("#smLeft").innerHTML = left.map((x) => x ? `<li data-open="${x[0]}">${I[APPS[x[0]].icon]}<span>${x[2] ? `<b>${x[1]}</b><small>${x[2]}</small>` : x[1]}</span></li>` : "<hr>").join("");
   $("#smRight").innerHTML = [
-    `<li data-open="computer">${I.computer}<b>My Computer</b></li>`, `<li data-open="games">${I.games}Games</li>`, `<li data-open="calendar">${I.calendar}Calendar</li>`, `<li data-open="recycle">${I.recycle}Recycle Bin</li>`, "<hr>",
-    `<li data-open="display">${I.display}Display Properties</li>`, `<li data-reset>${I.showdesk}Reset Desktop</li>`, `<li data-help>${I.help}Help and Support</li>`,
+    `<li data-open="computer">${I.computer}<b>My Computer</b></li>`, `<li data-open="pictures">${I.pictures}My Pictures</li>`, `<li data-open="games">${I.games}Games</li>`, `<li data-open="calendar">${I.calendar}Calendar</li>`, "<hr>",
+    `<li data-open="control">${I.control}Control Panel</li>`, `<li data-open="taskmgr">${I.taskmgr}Task Manager</li>`, `<li data-open="calc">${I.calc}Calculator</li>`, `<li data-open="notepad">${I.notepad}Notepad</li>`, "<hr>",
+    `<li data-open="help">${I.help}Help and Support</li>`, `<li data-open="search">${I.search}Search</li>`, `<li data-open="run">${I.run}Run...</li>`,
   ].join("");
   const toggleStart = (on) => { sm.classList.toggle("hidden", !on); startBtn.classList.toggle("on", on); if (on) closeTray(); };
   startBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleStart(sm.classList.contains("hidden")); });
@@ -1195,6 +1413,10 @@
     metaAlone = e.key === "Meta" && !e.repeat;
   });
 
+  addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.shiftKey && e.key === "Escape") { e.preventDefault(); openApp("taskmgr"); }
+    if ((e.metaKey || e.key === "OS") && e.key.toLowerCase() === "r") { e.preventDefault(); metaAlone = false; openApp("run"); }
+  });
   let metaAlone = false;
   addEventListener("keyup", (e) => { if (e.key === "Meta" && metaAlone) toggleStart(sm.classList.contains("hidden")); metaAlone = false; });
 
@@ -1533,7 +1755,7 @@
     setTimeout(() => show("#login"), fast ? 400 : 2800);
   }
   function logon() {
-    show("#desktop"); store.set("xp-logged", "1");
+    show("#desktop"); if (store.get("xp-logged") !== "1") xpSound("startup"); store.set("xp-logged", "1");
     if (!store.get("xp-welcomed")) { store.set("xp-welcomed", "1"); setTimeout(() => openApp("about"), 300); }
   }
   $("#userTile").addEventListener("click", logon);
@@ -1549,6 +1771,7 @@
     show("#blackout");
     const msg = $("#blackoutMsg"), on = $("#powerOn");
     on.classList.add("hidden");
+    xpSound("shutdown");
     msg.textContent = a === "restart" ? "Windows is restarting..." : a === "standby" ? "Computer sleeping... click to wake." : "Windows is shutting down...";
     if (a === "restart") setTimeout(() => boot(false), 1600);
     else if (a === "standby") $("#blackout").onclick = () => { $("#blackout").onclick = null; show("#login"); };

@@ -627,3 +627,42 @@ button { font: inherit; }
 .about-more .link svg { width: 16px; height: 16px; }
 
 .cell.mark { color: #000080; font-weight: bold; }
+
+/* contact: steps, reach-by choice, code entry */
+.cstep { display: flex; align-items: center; gap: 6px; color: #888; font-size: 11px; }
+.cstep b { width: 18px; height: 18px; border-radius: 50%; background: #d6dff7; color: #215dc6; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
+.cstep b.on { background: #316ac5; color: #fff; }
+.cvia { display: flex; align-items: center; gap: 12px; }
+.cvia > span { width: 56px; text-align: right; }
+.cvia label { display: flex; align-items: center; gap: 4px; }
+.ccode { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 8px; background: #ffffe1; border: 1px solid #e0d68a; }
+.ccode input { width: 76px; text-align: center; font: bold 18px "Lucida Console", monospace; letter-spacing: 6px; }
+
+/* Control Panel, Run, Search, sounds */
+.cp-h { margin: 0 0 10px; font: bold 14px Trebuchet MS, Tahoma, sans-serif; color: #215dc6; }
+.cp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+.cp-item { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid transparent; background: none; text-align: left; cursor: pointer; border-radius: 3px; font: inherit; }
+.cp-item:hover, .cp-item:focus-visible { border-color: #c9d8f1; background: #eef3fc; }
+.cp-item svg { width: 36px; height: 36px; flex-shrink: 0; }
+.cp-item b { display: block; color: #0a246a; }
+.cp-item small { color: #666; }
+.runbox { display: flex; flex-direction: column; height: 100%; }
+.runrow { display: flex; align-items: center; gap: 8px; padding: 0 16px 12px; }
+.runrow input { flex: 1; font: 12px Tahoma, sans-serif; padding: 2px 4px; border: 1px solid #7f9db9; }
+.snd-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.tp-box .sq { width: 100%; font: 12px Tahoma, sans-serif; padding: 2px 4px; border: 1px solid #7f9db9; }
+.shit { display: flex; gap: 10px; align-items: flex-start; padding: 6px; border-radius: 3px; cursor: pointer; }
+.shit:hover, .shit:focus { background: #eef3fc; outline: none; }
+.shit svg { width: 28px; height: 28px; flex-shrink: 0; }
+.shit b { display: block; color: #0645ad; }
+.shit small { color: #555; }
+
+/* phone home screen */
+@media (max-width: 640px) {
+  .icons.phone { bottom: auto; overflow: visible; }
+  .desktop { overflow-y: auto; contain: none; }
+  .icons.phone .dicon { padding: 8px 2px; gap: 6px; transition: none; touch-action: manipulation; }
+  .icons.phone .dicon svg { width: 46px; height: 46px; }
+  .icons.phone .dicon span { font-size: 11.5px; max-width: 100%; }
+  .icons.phone .dicon:active svg { transform: scale(.92); }
+}
