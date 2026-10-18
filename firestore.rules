@@ -60,6 +60,26 @@ service cloud.firestore {
           || (request.resource.data.n == resource.data.n && resource.data.used == false && request.resource.data.used == true));
     }
 
+    // Visit counters: stats/site and stats/d-YYYY-MM-DD; each write can add at most 1 view and 1 visitor
+    match /stats/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['views', 'visitors'])
+        && request.resource.data.views in [0, 1] && request.resource.data.visitors in [0, 1];
+      allow update: if request.resource.data.keys().hasOnly(['views', 'visitors'])
+        && request.resource.data.views - resource.data.views in [0, 1]
+        && request.resource.data.visitors - resource.data.visitors in [0, 1];
+    }
+
+    // Open message board: anyone can post (no sign-in), nobody can edit or delete from the site
+    match /board/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['from', 'to', 'text', 'createdAt'])
+        && request.resource.data.from is string && request.resource.data.from.size() > 0 && request.resource.data.from.size() <= 30
+        && request.resource.data.to is string && request.resource.data.to.size() > 0 && request.resource.data.to.size() <= 30
+        && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 280
+        && request.resource.data.createdAt is int;
+    }
+
     // Shared calendar tasks
     match /tasks/{id} {
       allow read: if true;
