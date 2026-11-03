@@ -1150,10 +1150,10 @@
     const RANKS = ["Cadet", "Ensign", "Lieutenant", "Captain", "Commander", "Admiral", "Fleet Admiral"];
     const EXTRA = [50000, 150000, 400000];
     // each rank has one mission; a mission's count grows every time it comes around again
-    const MISSIONS = [["Hit the bumpers", "bump", 8], ["Spin the gate", "spin", 12], ["Drop a target bank", "bank", 1], ["Enter the black hole", "hole", 1], ["Fire the slingshots", "sling", 6], ["Light the top lanes", "lanes", 1]];
+    const MISSIONS = [["Hit the bumpers", "bump", 8], ["Spin the gate", "spin", 8], ["Hit the drop targets", "target", 3], ["Enter the black hole", "hole", 1], ["Fire the slingshots", "sling", 6], ["Light the top lanes", "lanes", 1]];
     const LEFT = ["KeyZ", "ShiftLeft", "ArrowLeft"], RIGHT = ["Slash", "ShiftRight", "KeyM", "ArrowRight"], PLUNGE = ["Space", "ArrowDown"], NUDGE = { KeyX: [70, -30], Period: [-70, -30], ArrowUp: [0, -90] };
     body.innerHTML = BAR + `<div class="game-hud"><span>Score: <b class="sc">0</b></span><span>Ball: <b class="bl">1/3</b></span><span>Multiplier: <b class="mu">x1</b></span><span>Best: <b class="bs">0</b></span></div><div class="pb-led"><span class="pb-rank">CADET</span><span class="pb-mis"></span></div><div class="game-stage"><canvas width="${W}" height="${H}"></canvas><div class="game-msg"></div><button class="xpbtn pb-launch" style="position:absolute;right:8px;bottom:8px;width:84px;height:84px;border-radius:50%;font:bold 14px Tahoma,sans-serif;z-index:5;display:none;touch-action:none">LAUNCH</button></div>`;
-    body.classList.add("game-body");
+    body.classList.add("game-body", "pb-body");
     const cv = body.querySelector("canvas"), g = cv.getContext("2d"), msg = body.querySelector(".game-msg"), stage = cv.parentElement, btn = body.querySelector(".pb-launch");
     cv.style.imageRendering = "auto";
     const $ = (s) => body.querySelector(s);
@@ -1221,7 +1221,7 @@
     let nx = 0, ny = -1, hitVn = 0;
     let state = "ready", prev = "ready", score = 0, ball = 1, maxBalls = 3, mult = 1, rank = 0, extraIdx = 0, fresh = true, saverT = 0, pull = 0, held = false;
     let msgText = "", msgT = 0, dtReset = 0, spA = 0, spV = 0, spN = 0, spIn = false, stuckT = 0, overAt = 0, dirty = true, touchL = false, touchR = false, plungeTouch = false, pl = false, pr = false;
-    let misIdx = 0, misN = 0, bonus = 0, holeT = 0, holeCd = 0, launchT = 0, tiltM = 0, tilted = false, nudgeX = 0, nudgeY = 0, clock = 0, pullTick = 0, gen = 0;
+    let events = {}, misIdx = 0, misN = 0, bonus = 0, holeT = 0, holeCd = 0, launchT = 0, tiltM = 0, tilted = false, nudgeX = 0, nudgeY = 0, clock = 0, pullTick = 0, gen = 0;
     const touchDev = (window.matchMedia && matchMedia("(pointer: coarse)").matches) || "ontouchstart" in window;
     if (touchDev) btn.style.display = "";
 
@@ -1238,7 +1238,7 @@
     }
     // progress on the current mission; finishing it is the only way to rank up
     function mission(k, n = 1) {
-      dirty = true;
+      dirty = true; events[k] = (events[k] || 0) + n; // every scoring event of this game, for the test hook
       if (MISSIONS[misIdx % MISSIONS.length][1] !== k) return;
       misN += n;
       if (misN < misNeed()) return;
@@ -1247,7 +1247,7 @@
     }
     function serve(f) { B.x = LX; B.y = LY; B.vx = B.vy = 0; state = "ready"; fresh = f; pull = 0; held = false; stuckT = 0; tilted = false; tiltM = 0; holeT = 0; dirty = true; }
     function newGame() {
-      gen++; ctx.skipWait(); score = 0; ball = 1; maxBalls = 3; extraIdx = 0; mult = 1; rank = 0; saverT = 0; msgT = 0; dtReset = 0; spV = 0; misIdx = 0; misN = 0; bonus = 0; holeCd = 0; launchT = 0;
+      gen++; ctx.skipWait(); events = {}; score = 0; ball = 1; maxBalls = 3; extraIdx = 0; mult = 1; rank = 0; saverT = 0; msgT = 0; dtReset = 0; spV = 0; misIdx = 0; misN = 0; bonus = 0; holeCd = 0; launchT = 0;
       lanes[0] = lanes[1] = lanes[2] = false; dtAlive[0] = dtAlive[1] = dtAlive[2] = 1;
       bumpF.fill(0); slingF.fill(0); slingCd.fill(0);
       serve(true); dirty = true; say(intro());
@@ -1363,9 +1363,9 @@
         if (d2 < HPULL * HPULL) { const d = Math.sqrt(d2), a = 900 * (1 - d / HPULL); B.vx += dx / d * a * h; B.vy += dy / d * a * h; }
       }
       for (let i = 0; i < 3; i++) if (dtAlive[i] && colSeg(DTX, DTY0 + DTGAP * i, DTX, DTY0 + DTGAP * i + DTLEN, 3, 3, 0.3, 0, 0, 0)) {
-        dtAlive[i] = 0; dtF[i] = 150; add(200); snd.blip(700 + i * 120, 0.06, "triangle", 0.9, 0, 0, "tgt");
+        dtAlive[i] = 0; dtF[i] = 150; add(200); mission("target"); snd.blip(700 + i * 120, 0.06, "triangle", 0.9, 0, 0, "tgt");
         if (!dtAlive[0] && !dtAlive[1] && !dtAlive[2]) {
-          add(1000); if (mult < 5) mult++; dirty = true; dtReset = 900; flash("MULTIPLIER x" + mult); snd.seq([523, 659, 784, 1047], 0.07, 0.09, "triangle"); mission("bank");
+          add(1000); if (mult < 5) mult++; dirty = true; dtReset = 900; flash("MULTIPLIER x" + mult); snd.seq([523, 659, 784, 1047], 0.07, 0.09, "triangle");
         }
       }
       for (let i = 0; i < 2; i++) {
@@ -1530,7 +1530,7 @@
     ]);
     observe(ctx, stage, () => fitCanvas(cv, W, H));
     ctx.onClose(() => { if (score > best) ctx.store.lset("xp-pinball-best", score); });
-    ctx.el.__g = { get state() { return state; }, B, fl, kd, get score() { return score; }, get ball() { return ball; }, get maxBalls() { return maxBalls; }, get rank() { return rank; }, get mult() { return mult; }, get mis() { return [misIdx, misN, misNeed()]; }, get tilted() { return tilted; }, get holeT() { return holeT; }, get bonus() { return bonus; }, add, mission, nudge, launch, BX, BY, HX, HY };
+    ctx.el.__g = { get state() { return state; }, B, fl, kd, get score() { return score; }, get ball() { return ball; }, get maxBalls() { return maxBalls; }, get rank() { return rank; }, get mult() { return mult; }, get mis() { return [misIdx, misN, misNeed()]; }, get tilted() { return tilted; }, get holeT() { return holeT; }, get bonus() { return bonus; }, get events() { return events; }, add, mission, nudge, launch, BX, BY, HX, HY };
     newGame();
   }
 

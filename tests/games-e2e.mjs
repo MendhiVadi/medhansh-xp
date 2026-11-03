@@ -398,6 +398,9 @@ await test("pinball", async () => {
   await key("r", 1); await sleep(80); await ev(`(()=>{const i=document.querySelector(".runin"); i.value="pinball"; i.closest("form").requestSubmit();})()`); await sleep(100); await shot("34-pin-splash"); await key(" "); await sleep(150);
   const g = G("pinball");
   await sleep(200); await shot("35-pin-intro");
+  // a short screen keeps a 360px minimum so the score line fits; the cabinet fill covers the rest
+  const bars = await ev(`(()=>{const w=document.querySelector('.win[data-key="pinball"]'); return {gap:w.querySelector(".game-stage").clientWidth-w.querySelector("canvas").getBoundingClientRect().width, w:w.offsetWidth, fill:getComputedStyle(w.querySelector(".game-stage")).backgroundImage}})()`);
+  ok("the window is as wide as the table (or its 360px minimum), and filled beside it", (bars.gap <= 4 || bars.w === 360) && /gradient/.test(bars.fill), JSON.stringify(bars));
   ok("panel shows rank and mission", /CADET/.test(await ev(`document.querySelector(".pb-rank").textContent`)) && /Hit the bumpers: 0\/8/.test(await ev(`document.querySelector(".pb-mis").textContent`)));
   // bot: hold the plunger to launch; flip when the ball is about to reach a flipper
   await ev(`window.__pb={maxX:0,minX:999,minY:9999,maxY:0,stuck:0,stuckMax:0,lx:0,ly:0,frames:0,holes:0,hole0:false}; window.__tick=()=>{ const w=document.querySelector('.win[data-key="pinball"]'); const G=w?.__g; if(!G) return; const B=G.B, p=window.__pb; p.frames++;
@@ -433,9 +436,9 @@ await test("pinball", async () => {
   ok("the panel says TILT", /TILT/.test(await until(`document.querySelector(".pb-mis").textContent==="TILT"`, 500) ? "TILT" : ""));
   // missions
   await ev(`(()=>{const G=${g}; for(let i=0;i<8;i++) G.mission("bump");})()`); await sleep(50);
-  ok("finishing a mission ranks up", (await ev(`${g}.rank`)) === 1 && (await ev(`${g}.mis.join()`)) === "1,0,12");
+  ok("finishing a mission ranks up", (await ev(`${g}.rank`)) === 1 && (await ev(`${g}.mis.join()`)) === "1,0,8");
   await ev(`(()=>{const G=${g}; G.mission("bump");})()`);
-  ok("the wrong event doesn't count", (await ev(`${g}.mis.join()`)) === "1,0,12");
+  ok("the wrong event doesn't count", (await ev(`${g}.mis.join()`)) === "1,0,8");
   await closeAll();
 });
 await test("games folder and career", async () => {
