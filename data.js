@@ -5,7 +5,7 @@
 window.PROFILE = {
   name: "Medhansh Khattar",
   initials: "MK",
-  photo: "photo.jpg?v=35",          // square avatar; photo-full.jpg is the full portrait
+  photo: "photo.jpg?v=36",          // square avatar; photo-full.jpg is the full portrait
   role: "AI/ML Engineer",
   subtitle: "Founder & CEO, Yap-less · CS @ VIT Bhopal",
   location: "Navi Mumbai, Maharashtra, India",
@@ -70,7 +70,8 @@ window.PROFILE = {
       github: "https://github.com/MendhiVadi/autonomous-driving-agent", url: "" },
     { name: "Vision Assist", year: "2026", stack: ["Python", "YOLO (Ultralytics)", "Computer Vision", "Text-to-Speech"],
       desc: "Real-time webcam scene description for visually impaired users: detects objects with YOLO and says what it sees and where (\"very close: a person ahead, two chairs on the left\"), as a web app with an API or a desktop app.",
-      github: "https://github.com/MendhiVadi/vision-assist", url: "https://vision-assist-two.vercel.app" },
+      github: "https://github.com/MendhiVadi/vision-assist", url: "https://vision-assist-two.vercel.app",
+      newTab: "Vision Assist uses your camera, and browsers only allow that on its own page, not inside Internet Explorer here." },
     { name: "Asteroid Watch", year: "2026", stack: ["TypeScript", "Vite", "3D Graphics", "Python", "Orbital Mechanics"],
       desc: "3D browser dashboard of 42,670 known near-Earth asteroids from NASA JPL data. Fast Kepler orbits for every object, accurate N-body simulation for the one you pick, and impact / approaching / receding screening to 2100.",
       github: "https://github.com/MendhiVadi/asteroid-watch", url: "" },

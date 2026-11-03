@@ -326,6 +326,42 @@ await test("instagram link", async () => {
   ok("cmd contact prints it", (await ev(`document.querySelector(".cmd .out").textContent`)).includes("Instagram:   " + IG));
   await closeAll();
 });
+await test("vision assist opens in a new tab", async () => {
+  await load(); const VA = "https://vision-assist-two.vercel.app";
+  const dlg = () => ev(`(()=>{const w=[...document.querySelectorAll(".win")].find(w=>/Open in new tab/.test(w.textContent)&&w.querySelector(".msgbox")); return w?w.querySelector(".msgbox").textContent:null})()`);
+  const answer = (yes) => click(`.win:last-of-type .msgbox-actions .${yes ? "yes" : "no"}`);
+  await openApp("ie"); await sleep(400);
+  await ev(`window.__opened=[]; window.__realOpen=window.open; window.open=(...a)=>{__opened.push(a); return null}`);
+  // 1. the home card
+  await click(`.ie-home .link-card[href^="${VA}"]`); await sleep(250);
+  ok("the Favorites card asks first, saying why", /camera/.test((await dlg()) || ""));
+  await answer(false); await sleep(200);
+  ok("Cancel stays on the page and opens nothing", (await ev(`__opened.length`)) === 0 && (await ev(`!document.querySelector(".iehomepage").classList.contains("hidden")`)));
+  // 2. the address bar, from another page: history must not change on Cancel
+  await ev(`(()=>{const i=document.querySelector(".ieurl"); i.value="https://example.org/"; i.closest("form").requestSubmit();})()`); await sleep(300);
+  await ev(`(()=>{const i=document.querySelector(".ieurl"); i.value="${VA}/"; i.closest("form").requestSubmit();})()`); await sleep(250);
+  ok("the address bar asks too", /camera/.test((await dlg()) || ""));
+  await answer(false); await sleep(200);
+  ok("Cancel keeps the current page and history", (await ev(`document.querySelector(".ieurl").value`)) === "https://example.org/" && (await ev(`document.querySelector(".ieback").disabled`)) === false && (await ev(`document.querySelector(".iefwd").disabled`)) === true);
+  // 3. the Favorites menu, accepted
+  await click(`.win[data-key="ie"] .menubar [data-mi="2"]`); await sleep(60); await ev(`[...document.querySelectorAll(".dropdown [data-k]")].find(d=>/Vision/.test(d.textContent)).click()`); await sleep(250);
+  await answer(true); await sleep(200);
+  ok("Open in new tab calls window.open(url, _blank, noopener)", JSON.stringify(await ev(`__opened[0]`)) === JSON.stringify([VA, "_blank", "noopener"]), JSON.stringify(await ev(`__opened`)));
+  // 4. the Projects window's live demo link
+  await closeAll(); await openApp("projects"); await sleep(300);
+  await ev(`[...document.querySelectorAll(".win .fitem")].find(e=>/Vision/.test(e.textContent)).dispatchEvent(new MouseEvent("dblclick",{bubbles:true}))`); await sleep(400);
+  await ev(`window.open=(...a)=>{__opened.push(a); return null}; __opened=[]`);
+  await click(`[data-browse-url^="${VA}"]`); await sleep(400);
+  ok("the Projects window's live demo asks too", /camera/.test((await dlg()) || ""));
+  // a real click on the real window.open: the browser lets it through
+  await ev(`window.open=window.__realOpen`);
+  const before = (await (await fetch(`http://127.0.0.1:${DBG}/json`)).json()).filter((t) => t.type === "page").length;
+  await answer(true); await sleep(800);
+  const after = (await (await fetch(`http://127.0.0.1:${DBG}/json`)).json()).filter((t) => t.type === "page");
+  ok("a real click isn't stopped by the pop-up blocker", after.length === before + 1 && after.some((t) => t.url.startsWith(VA) || t.url === "about:blank"), after.map((t) => t.url).join(" "));
+  for (const t of after) if (t.url.startsWith(VA) || (t.url === "about:blank" && t.id !== target.id)) await fetch(`http://127.0.0.1:${DBG}/json/close/${t.id}`).catch(() => {});
+  await closeAll();
+});
 if (process.env.SHOT) { label = "shot"; await send("Page.addScriptToEvaluateOnNewDocument", { source: `try{sessionStorage.setItem("xp-logged","1")}catch{}` }); await load(); await openApp("paint"); await sleep(500); const s = await send("Page.captureScreenshot", { format: "png" }); fs.writeFileSync(SHOTS + "/paint.png", Buffer.from(s.data, "base64")); }
 const fails = res.filter(([, c]) => !c).length;
 console.log(`\n${res.length - fails}/${res.length} passed; dialogs seen: ${dialogs.length}`);
