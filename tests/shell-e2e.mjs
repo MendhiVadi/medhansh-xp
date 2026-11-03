@@ -315,6 +315,17 @@ await test("player name", async () => {
   ok("cancel posts as Anonymous", (await ev(`Object.values(__fs.board).find(d=>d.text==="bye")?.from`)) === "Anonymous");
   ok("and doesn't ask again this session", (await ev(`sessionStorage.getItem("xp-name-asked")`)) === "1" && (await ev(`!sessionStorage.getItem("xp-player-name")`)));
 });
+await test("instagram link", async () => {
+  await load(); const IG = "https://www.instagram.com/mendhi_vadi/";
+  await openApp("about"); await sleep(300);
+  ok("About Me lists Instagram, opening in a new tab", await ev(`(()=>{const a=[...document.querySelectorAll('.win a')].find(a=>a.href===${JSON.stringify(IG)}); return !!a && a.target==="_blank" && /noopener/.test(a.rel) && !!a.querySelector("svg") && /Instagram/.test(a.textContent)})()`));
+  await closeAll(); await openApp("ie"); await sleep(400);
+  ok("Explorer's Profiles list it", await ev(`(()=>{const a=[...document.querySelectorAll('.ie-home .link-card')].find(a=>a.href===${JSON.stringify(IG)}); return !!a && a.target==="_blank"})()`));
+  await closeAll(); await openApp("cmd"); await sleep(200);
+  await ev(`(()=>{const i=document.querySelector(".cmd input"); i.value="contact"; i.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true}));})()`); await sleep(200);
+  ok("cmd contact prints it", (await ev(`document.querySelector(".cmd .out").textContent`)).includes("Instagram:   " + IG));
+  await closeAll();
+});
 if (process.env.SHOT) { label = "shot"; await send("Page.addScriptToEvaluateOnNewDocument", { source: `try{sessionStorage.setItem("xp-logged","1")}catch{}` }); await load(); await openApp("paint"); await sleep(500); const s = await send("Page.captureScreenshot", { format: "png" }); fs.writeFileSync(SHOTS + "/paint.png", Buffer.from(s.data, "base64")); }
 const fails = res.filter(([, c]) => !c).length;
 console.log(`\n${res.length - fails}/${res.length} passed; dialogs seen: ${dialogs.length}`);

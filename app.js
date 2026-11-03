@@ -147,6 +147,7 @@
     paint: `<svg viewBox="0 0 32 32"><path d="M5 22c0-9 7-16 14-16 6 0 9 4 9 8 0 5-5 4-7 6-2 3 1 7-5 7-6 0-11-1-11-5z" fill="#f4e2c4" stroke="#8a6d3b"/><circle cx="12" cy="14" r="2" fill="#e53"/><circle cx="18" cy="11" r="2" fill="#3a3"/><circle cx="23" cy="14" r="2" fill="#36e"/><circle cx="11" cy="21" r="2" fill="#fc0"/></svg>`,
     github: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="#24292e"/><path d="M12 26v-3c-3 1-4-1-4.5-2M20 26v-3.5c0-1-.3-1.6-.8-2 3-.4 5-1.6 5-5.5 0-1.2-.4-2.2-1.1-3 .2-.6.3-1.7-.1-3 0 0-1-.3-3.2 1.2a11 11 0 0 0-5.6 0C12 8.7 11 9 11 9c-.4 1.3-.3 2.4-.1 3-.7.8-1.1 1.8-1.1 3 0 3.9 2 5.1 5 5.5-.4.4-.7 1-.8 1.8" fill="none" stroke="#fff" stroke-width="1.5"/></svg>`,
     linkedin: `<svg viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" rx="4" fill="#0a66c2"/><path d="M9 13v10M9 9v.5M14 23v-10M14 17c0-2.5 1.5-4 3.5-4s3.5 1 3.5 4v6" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>`,
+    instagram: `<svg viewBox="0 0 32 32"><defs><radialGradient id="igg" cx="30%" cy="107%" r="150%"><stop offset="0" stop-color="#fdf497"/><stop offset=".1" stop-color="#fdf497"/><stop offset=".5" stop-color="#fd5949"/><stop offset=".68" stop-color="#d6249f"/><stop offset="1" stop-color="#285aeb"/></radialGradient></defs><rect x="3" y="3" width="26" height="26" rx="7" fill="url(#igg)"/><rect x="8.5" y="8.5" width="15" height="15" rx="4.5" fill="none" stroke="#fff" stroke-width="2"/><circle cx="16" cy="16" r="3.6" fill="none" stroke="#fff" stroke-width="2"/><circle cx="20.6" cy="11.4" r="1.1" fill="#fff"/></svg>`,
     x: `<svg viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" rx="4" fill="#000"/><path d="M9 8l14 16M23 8L9 24" stroke="#fff" stroke-width="2.2"/></svg>`,
     globe: `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12" fill="#4aa3ff" stroke="#1a5aa8"/><path d="M4 16h24M16 4c-5 6-5 18 0 24M16 4c5 6 5 18 0 24" stroke="#fff" fill="none"/><path d="M9 9c2 2 5 0 6 3s-3 3-2 6 4 1 4 5" stroke="#3cae2c" stroke-width="2.5" fill="none"/></svg>`,
     pdf: `<svg viewBox="0 0 32 32"><path d="M7 3h13l6 6v20H7z" fill="#fff" stroke="#555"/><rect x="5" y="16" width="18" height="8" fill="#d0021b"/><text x="14" y="22.5" font-size="6" font-family="Arial" font-weight="bold" fill="#fff" text-anchor="middle">PDF</text></svg>`,
@@ -232,12 +233,12 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=34"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=35"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=34"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=35"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyExtra(name) {
@@ -344,7 +345,7 @@
     confirm: (t, h, ok) => confirmBox(t, h, ok),
     notify: (t, h, o) => notify(t, h, o),
     career: { read: () => Career.read(), record: (g, r) => Career.record(g, r), levelOf: (p) => Career.levelOf(p), rank: (l) => Career.rank(l) },
-    photos: [{ src: "photo-full.jpg?v=34", title: "Medhansh.jpg" }, { src: "photo.jpg?v=34", title: "Avatar.jpg" }],
+    photos: [{ src: "photo-full.jpg?v=35", title: "Medhansh.jpg" }, { src: "photo.jpg?v=35", title: "Avatar.jpg" }],
     // Shared data everyone sees. Games: sys.scores.submit(game, score, extra) / sys.scores.top(game, n, ascending)
     scores: { top: (g, n, asc) => Cloud.top(g, n, asc), submit: async (g, s, x) => { await askName(); return Cloud.submit(g, s, x); }, name: () => playerName(), askName },
     pictures: { list: () => Cloud.pictures(), data: (id) => Cloud.pictureData(id), add: async (t, d, w, h) => { await askName(); return Cloud.pictureAdd(t, d, w, h); }, remove: (id) => Cloud.pictureDelete(id) },
@@ -586,7 +587,7 @@
     inner.innerHTML = `<div class="explorer">
       ${taskPane([
         ["Quick Links", appLink("resume", "View my resume") + appLink("projects", "Browse my projects") + appLink("contact", "Send me a message")],
-        ["Elsewhere", yap() + ext(links.github, "GitHub", "github") + ext(links.linkedin, "LinkedIn", "linkedin") + ext(links.twitter, "X / Twitter", "x") + ext(links.website, "Website", "globe") || "<span class='muted'>Links coming soon</span>"],
+        ["Elsewhere", yap() + ext(links.github, "GitHub", "github") + ext(links.linkedin, "LinkedIn", "linkedin") + ext(links.instagram, "Instagram", "instagram") + ext(links.twitter, "X / Twitter", "x") + ext(links.website, "Website", "globe") || "<span class='muted'>Links coming soon</span>"],
       ])}
       <div class="ex-main doc">
         <div class="about-head">${avatar()}
@@ -742,7 +743,7 @@
       <div class="statusbar"><span class="iestat">Done</span></div>`;
     const $b = (q) => body.querySelector(q), urlIn = $b(".ieurl"), frame = $b(".ieframe"), home = $b(".iehomepage"), bar = $b(".iebar"), stat = $b(".iestat");
     const hist = [], HOME = "about:favorites"; let pos = -1;
-    const L = [["GitHub", links.github, "github"], ["LinkedIn", links.linkedin, "linkedin"], ["X / Twitter", links.twitter, "x"], ["Website", links.website, "globe"], ["Email", "mailto:" + links.email, "mail"], ["Resume (PDF)", links.resumePdf, "pdf"]].filter(([, u]) => u && u !== "mailto:");
+    const L = [["GitHub", links.github, "github"], ["LinkedIn", links.linkedin, "linkedin"], ["Instagram", links.instagram, "instagram"], ["X / Twitter", links.twitter, "x"], ["Website", links.website, "globe"], ["Email", "mailto:" + links.email, "mail"], ["Resume (PDF)", links.resumePdf, "pdf"]].filter(([, u]) => u && u !== "mailto:");
     const demos = P.projects.filter((p) => p.url);
     home.innerHTML = `<div class="ie-home"><h1>${esc(P.name)}'s Favorites</h1><div class="muted">Type an address or a search above, or pick a page.</div>
       <h3>Live projects (open right here)</h3><div class="link-cards">${demos.map((p) => `<a class="link-card" href="${esc(p.url)}" data-browse>${I.globe}<span><b>${esc(p.name)}</b><small>${esc(p.url.replace(/^https?:\/\//, ""))}</small></span></a>`).join("")}</div>
@@ -839,7 +840,7 @@
       skills: () => "Technical Proficiencies:\n" + Object.entries(P.skills).map(([k, v]) => `  • ${(k + ":").padEnd(13)} ${v.join(", ")}`).join("\n"),
       projects: () => P.projects.map((p, i) => `${i + 1}. ${p.name} - ${p.desc} (${(p.stack || []).join(", ")})${[p.github, p.url].filter(Boolean).map((u) => "\n   " + u).join("")}`).join("\n"),
       resume: () => (openApp("resume"), "Opening Resume.doc..."),
-      contact: () => "Contact Channels:\n" + [["Email", links.email], ["Yap-less", links.yapless || "website coming soon"], ["GitHub", links.github], ["LinkedIn", links.linkedin], ["X / Twitter", links.twitter], ["Website", links.website]].filter(([, v]) => v).map(([k, v]) => `  ${(k + ":").padEnd(10)}${v}`).join("\n"),
+      contact: () => "Contact Channels:\n" + [["Email", links.email], ["Yap-less", links.yapless || "website coming soon"], ["GitHub", links.github], ["LinkedIn", links.linkedin], ["Instagram", links.instagram], ["X / Twitter", links.twitter], ["Website", links.website]].filter(([, v]) => v).map(([k, v]) => `  ${(k + ":").padEnd(13)}${v}`).join("\n"),
       whoami: () => `${P.hostname.toLowerCase()}\\${P.name.split(" ")[0].toLowerCase()}`,
       date: () => "Current date is: " + new Date().toLocaleDateString(),
       time: () => "Current time is: " + new Date().toLocaleTimeString(),
@@ -2310,7 +2311,7 @@ TERMS
   countVisit();
   // Vercel Web Analytics (cookie-free): only load it when it's switched on for the project, so there's no 404
   if (/\.vercel\.app$/.test(location.hostname)) fetch("/_vercel/insights/script.js", { method: "HEAD" }).then((r) => { if (r.ok) { const sc = document.createElement("script"); sc.defer = true; sc.src = "/_vercel/insights/script.js"; document.head.appendChild(sc); } }).catch(() => {});
-  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=34"; document.head.appendChild(l); } });
+  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=35"; document.head.appendChild(l); } });
   (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => Tasks.sync().then(() => { checkReminders(true); paintBell(); }));
   setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });
