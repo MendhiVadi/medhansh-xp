@@ -61,7 +61,7 @@ const FAKE = (logged) => `(() => {
     if (s.includes("/tasks")) return J({ documents: [] }); if (s.includes("/pictures")) return J({ documents: [] });
     return J({}, 404);
   };
-  try { ${logged ? `sessionStorage.setItem("xp-logged","1"); sessionStorage.setItem("xp-welcomed","1"); localStorage.setItem("xp-toured","1"); localStorage.setItem("xp-player-name","Bot");` : ""} } catch {}
+  try { ${logged ? `sessionStorage.setItem("xp-logged","1"); sessionStorage.setItem("xp-welcomed","1"); sessionStorage.setItem("xp-player-name","Bot"); localStorage.setItem("xp-toured","1");` : ""} } catch {}
   window.__sounds = [];
   Object.defineProperty(window, "XPS", { configurable: true, set(v) { const p = v.play; v.play = function (n, f) { window.__sounds.push(n); return p.call(this, n, f); }; Object.defineProperty(window, "XPS", { value: v, writable: true, configurable: true }); } });
 })();`;
@@ -71,7 +71,7 @@ const setFake = async (logged) => { if (fakeId) await send("Page.removeScriptToE
 const load = async (logged = true, clear = false) => {
   await setFake(logged);
   await send("Page.navigate", { url: `http://127.0.0.1:${PORT}/` }); await sleep(700);
-  if (clear) { await ev(`localStorage.clear(); ${logged ? `localStorage.setItem("xp-toured","1"); localStorage.setItem("xp-player-name","Bot");` : ""}`); await send("Page.reload"); await sleep(700); }
+  if (clear) { await ev(`localStorage.clear(); ${logged ? `localStorage.setItem("xp-toured","1");` : ""}`); await send("Page.reload"); await sleep(700); }
 };
 const openApp = async (name) => { await key("r", 1); await sleep(100); await ev(`(()=>{const i=document.querySelector(".runin"); i.value=${JSON.stringify(name)}; i.closest("form").requestSubmit();})()`); await sleep(250); };
 const closeAll = async () => { for (let i = 0; i < 15; i++) { const n = await ev(`(()=>{const b=[...document.querySelectorAll(".win .tbtn[data-a=close]")].pop(); if(b){b.click(); return 1} return 0})()`); if (!n) break; await sleep(30); } };
@@ -221,6 +221,21 @@ await test("minesweeper", async () => {
   ok("Minesweeper times post through the same idempotent path", await ev(`__scoreUrls.every(u=>u.includes("scores/mine-Beginner/entries?documentId=") && new URL(u).searchParams.get("documentId").length>=16)`), await ev(`__scoreUrls.join(" ")`));
   const c = await ev(`JSON.parse(localStorage.getItem("xp-career"))`);
   ok("career recorded a loss and a win", c.games.mine.played === 2 && c.games.mine.won === 1 && c.pts > 0, JSON.stringify(c.games.mine));
+  await closeAll();
+});
+await test("name before the first world score", async () => {
+  await load(true, true); await ev(`sessionStorage.removeItem("xp-player-name"); sessionStorage.removeItem("xp-name-asked"); localStorage.setItem("xp-last-name","Ace")`);
+  const win = async () => { await openApp("mine"); await sleep(100); await click(`.cell[data-i="0"]`); await sleep(40); const gr = await ev(`${G("mine")}.grid()`); await ev(`(()=>{ const g=${JSON.stringify(gr)}; g.forEach((v,i)=>{ const c=document.querySelector('.cell[data-i="'+i+'"]'); if(v!==-1&&!c.classList.contains("open")) c.click(); }); })()`); await sleep(1100); };
+  await win();
+  ok("a win asks for a name first, prefilled", (await ev(`document.querySelector(".askbox input")?.value`)) === "Ace");
+  await ev(`(()=>{const i=document.querySelector(".askbox input"); i.value="Ace2"; document.querySelector(".askbox").requestSubmit();})()`);
+  ok("the time posts under that name", await until(`__scores.at(-1)?.name?.stringValue==="Ace2"`, 2000));
+  await closeAll(); await win();
+  ok("the next win doesn't ask again", !(await ev(`!!document.querySelector(".askbox")`)) && (await until(`__scores.length===2 && __scores.at(-1).name.stringValue==="Ace2"`, 2000)));
+  await closeAll();
+  await ev(`sessionStorage.removeItem("xp-player-name"); sessionStorage.removeItem("xp-name-asked")`); await win();
+  await ev(`[...document.querySelectorAll(".win")].find(w=>w.querySelector(".askbox")).querySelector(".tbtn[data-a=close]").click()`);
+  ok("cancel posts as Visitor", await until(`__scores.length===3 && __scores.at(-1).name.stringValue==="Visitor"`, 2000));
   await closeAll();
 });
 await test("solitaire", async () => {

@@ -113,16 +113,20 @@
     post(from, to, text) { return this.create("board", "board|" + hashKey([from, to, text].join("\n")), { from, to, text, createdAt: Date.now() }); },
     submit(game, score, extra = {}) { const name = playerName() || "Visitor"; return this.create(`scores/${encodeURIComponent(game)}/entries`, "score|" + hashKey([game, name, Math.round(score), JSON.stringify(extra)].join("|")), { name, score: Math.round(score), ...extra, createdAt: Date.now() }); },
   };
-  const playerName = () => (store.lget("xp-player-name") || "").slice(0, 20);
-  // Ask once for a display name for leaderboards and shared pictures (a visitor who cancels stays "Visitor")
-  let nameAsked = false;
-  async function askName() {
-    let n = playerName();
-    if (!n && !nameAsked && store.lget("xp-player-name-asked") !== "1") {
-      nameAsked = true; store.lset("xp-player-name-asked", "1");
-      n = ((await askBox("Your Name", "Your name for the world leaderboard and shared pictures (shown to everyone):")) || "").trim().replace(/[<>]/g, "").slice(0, 20); if (n) store.lset("xp-player-name", n);
-    }
-    return n || "Visitor";
+  // One display name for scores, shared pictures and the message board. It lasts for this browser session; the dialog
+  // is prefilled with the last name used. Cancelling posts as Visitor (or Anonymous) and the next session asks again.
+  const cleanName = (n) => String(n || "").trim().replace(/[<>]/g, "").slice(0, 20);
+  const playerName = () => cleanName(store.get("xp-player-name"));
+  const setPlayerName = (n) => { n = cleanName(n); store.set("xp-player-name", n); if (n) store.lset("xp-last-name", n); store.set("xp-name-asked", "1"); dispatchEvent(new Event("xp-name")); return n; };
+  let naming = null;
+  function askName(force = false) {
+    const n = playerName();
+    if (n && !force) return Promise.resolve(n);
+    if (!force && store.get("xp-name-asked") === "1") return Promise.resolve(n);
+    // two posts at once share one dialog
+    return (naming ||= askBox("Your Name", [{ label: "Your name, shown to everyone on the leaderboards, My Pictures and the Message Board:", value: n || store.lget("xp-last-name") || store.lget("xp-player-name") || store.lget("xp-board-name") || "" }])
+      .then((v) => { store.set("xp-name-asked", "1"); return v ? setPlayerName(v[0]) : playerName(); })
+      .finally(() => { naming = null; }));
   }
   const readLocal = (k, d) => { try { const v = JSON.parse(store.lget(k)); return v ?? d; } catch { return d; } };
 
@@ -228,12 +232,12 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=32"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=33"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=32"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=33"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyExtra(name) {
@@ -339,7 +343,7 @@
     confirm: (t, h, ok) => confirmBox(t, h, ok),
     notify: (t, h, o) => notify(t, h, o),
     career: { read: () => Career.read(), record: (g, r) => Career.record(g, r), levelOf: (p) => Career.levelOf(p), rank: (l) => Career.rank(l) },
-    photos: [{ src: "photo-full.jpg?v=32", title: "Medhansh.jpg" }, { src: "photo.jpg?v=32", title: "Avatar.jpg" }],
+    photos: [{ src: "photo-full.jpg?v=33", title: "Medhansh.jpg" }, { src: "photo.jpg?v=33", title: "Avatar.jpg" }],
     // Shared data everyone sees. Games: sys.scores.submit(game, score, extra) / sys.scores.top(game, n, ascending)
     scores: { top: (g, n, asc) => Cloud.top(g, n, asc), submit: async (g, s, x) => { await askName(); return Cloud.submit(g, s, x); }, name: () => playerName(), askName },
     pictures: { list: () => Cloud.pictures(), data: (id) => Cloud.pictureData(id), add: async (t, d, w, h) => { await askName(); return Cloud.pictureAdd(t, d, w, h); }, remove: (id) => Cloud.pictureDelete(id) },
@@ -1368,14 +1372,15 @@ Approximate round trip times in milli-seconds:
     const paint = () => {
       const d = Career.read(), lv = Career.levelOf(d.pts), from = Career.needFor(lv), to = Career.needFor(lv + 1), best = (id, g) => (id === "mine" ? (g.bestTime ? g.bestTime + "s" : "—") : g.bestScore ? g.bestScore.toLocaleString() : "—");
       inner.innerHTML = `<div class="explorer">${taskPane([
-        ["Player", `<span class="pcard"><b>Level ${lv}: ${esc(Career.rank(lv))}</b><span class="xpbar" role="progressbar" aria-valuenow="${d.pts - from}" aria-valuemax="${to - from}"><i style="width:${Math.round((d.pts - from) / (to - from) * 100)}%"></i></span><small>${d.pts - from} of ${to - from} XP to level ${lv + 1}</small></span>`],
+        ["Player", `<span class="pcard"><span class="pname">${esc(playerName() || "No name yet")} <a href="#" class="pname-change">Change name…</a></span><b>Level ${lv}: ${esc(Career.rank(lv))}</b><span class="xpbar" role="progressbar" aria-valuenow="${d.pts - from}" aria-valuemax="${to - from}"><i style="width:${Math.round((d.pts - from) / (to - from) * 100)}%"></i></span><small>${d.pts - from} of ${to - from} XP to level ${lv + 1}</small></span>`],
         [`Trophies (${d.trophies.length}/${TROPHIES.length})`, TROPHIES.map(([k, t, how]) => `<span class="trophy ${d.trophies.includes(k) ? "got" : ""}" title="${esc(how)}">${d.trophies.includes(k) ? "★" : "☆"} ${esc(t)}</span>`).join("")],
       ])}
       <div class="ex-main"><div class="grid-items">${GAME_IDS.map((id) => `<div class="fitem" data-open="${id}" title="${esc(blurb[id])}">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id])}</span><small>${esc(blurb[id])}</small></div>`).join("")}</div>
         <table class="gstats"><thead><tr><th>Game</th><th>Played</th><th>Won</th><th>Streak</th><th>Level</th><th>Best</th></tr></thead><tbody>${GAME_IDS.map((id) => { const g = d.games[id] || {}; return `<tr><td>${esc(DESK_LABEL[id])}</td><td>${g.played || 0}</td><td>${g.won || 0}</td><td>${g.bestStreak || 0}</td><td>${g.bestLevel || "—"}</td><td>${best(id, g)}</td></tr>`; }).join("")}</tbody></table></div></div>`;
       applyOrder(ctx.el, ctx.key); focusableItems(ctx.el);
     };
-    paint(); addEventListener("xp-career", paint); ctx.onClose(() => removeEventListener("xp-career", paint));
+    paint(); addEventListener("xp-career", paint); addEventListener("xp-name", paint); ctx.onClose(() => { removeEventListener("xp-career", paint); removeEventListener("xp-name", paint); });
+    inner.addEventListener("click", (e) => { if (e.target.closest(".pname-change")) { e.preventDefault(); askName(true); } });
   }
 
   // ---------------- Player career: every game earns XP points, and points earn levels ----------------
@@ -1569,12 +1574,16 @@ TERMS
     const docked = !ctx;
     body.classList.add("mboard");
     body.innerHTML = `${docked ? `<div class="mb-head">${I.board}<b>Message Board</b><button class="mb-min" title="Hide" aria-label="Hide message board">–</button></div>` : ""}
-      <form class="mb-form"><div class="mb-row"><input name="from" maxlength="30" placeholder="Your name (optional)" aria-label="Your name"><input name="to" maxlength="30" placeholder="To (optional)" aria-label="To"></div>
+      <form class="mb-form"><div class="mb-row"><input name="from" maxlength="20" placeholder="Your name (optional)" aria-label="Your name" autocomplete="off"><input name="to" maxlength="30" placeholder="To (optional)" aria-label="To"></div>
         <textarea name="text" maxlength="280" placeholder="Leave a message for anyone…" aria-label="Message" required></textarea>
         <div class="mb-row"><small class="mb-count">0 / 280</small><button class="xpbtn">Post</button></div></form>
       <div class="mb-list" aria-live="polite"><p class="muted">Loading messages…</p></div>`;
     const form = body.querySelector("form"), list = body.querySelector(".mb-list"), F = form.elements;
-    F.from.value = store.lget("xp-board-name") || playerName() || "";
+    F.from.value = playerName();
+    // typing here changes the name everywhere for this session
+    F.from.addEventListener("change", () => { F.from.value = setPlayerName(F.from.value); });
+    const showName = () => { if (document.activeElement !== F.from) F.from.value = playerName(); };
+    addEventListener("xp-name", showName); if (ctx) ctx.onClose(() => removeEventListener("xp-name", showName));
     let sig = null;
     const ago = (t) => { const s = Math.max(0, (Date.now() - t) / 1000); return s < 60 ? "just now" : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : new Date(t).toLocaleDateString([], { month: "short", day: "numeric" }); };
     const paint = (rows) => {
@@ -1590,9 +1599,12 @@ TERMS
       const text = F.text.value.trim(); if (!text) return;
       if (boardState.busy) return; // Ctrl+Enter submits even while the button is disabled
       if (Date.now() - boardState.last < 15000) return msgBox("Message Board", "Please wait a few seconds before posting again.", "⚠️");
-      const from = (F.from.value.trim() || "Anonymous").slice(0, 30), to = (F.to.value.trim() || "Everyone").slice(0, 30);
       const btn = form.querySelector("button"); boardState.busy = true; btn.disabled = true;
-      try { await Cloud.post(from, to, text); boardState.last = Date.now(); store.lset("xp-board-name", F.from.value.trim()); F.text.value = ""; F.to.value = ""; body.querySelector(".mb-count").textContent = "0 / 280"; dispatchEvent(new Event("xp-board")); }
+      try {
+        // a name typed in the field counts as the answer; otherwise ask once this session
+        if (cleanName(F.from.value) && !playerName()) setPlayerName(F.from.value);
+        const from = (await askName()) || "Anonymous", to = (F.to.value.trim() || "Everyone").slice(0, 30);
+        await Cloud.post(from, to, text); boardState.last = Date.now(); F.text.value = ""; F.to.value = ""; body.querySelector(".mb-count").textContent = "0 / 280"; dispatchEvent(new Event("xp-board")); }
       catch { msgBox("Message Board", "Couldn't post right now. Please try again: it won't be posted twice.", "⚠️"); }
       finally { boardState.busy = false; btn.disabled = false; }
     });
@@ -2281,7 +2293,7 @@ TERMS
   countVisit();
   // Vercel Web Analytics (cookie-free): only load it when it's switched on for the project, so there's no 404
   if (/\.vercel\.app$/.test(location.hostname)) fetch("/_vercel/insights/script.js", { method: "HEAD" }).then((r) => { if (r.ok) { const sc = document.createElement("script"); sc.defer = true; sc.src = "/_vercel/insights/script.js"; document.head.appendChild(sc); } }).catch(() => {});
-  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=32"; document.head.appendChild(l); } });
+  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=33"; document.head.appendChild(l); } });
   (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => Tasks.sync().then(() => { checkReminders(true); paintBell(); }));
   setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });

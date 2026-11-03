@@ -261,7 +261,7 @@ await test("resume page and real boot flow", async () => {
   const shot = await send("Page.captureScreenshot", { format: "png" }); fs.writeFileSync(SHOTS + "/desktop.png", Buffer.from(shot.data, "base64"));
 });
 await test("message board posts once", async () => {
-  await load(); await clearStorage();
+  await load(); await clearStorage(); await ev(`sessionStorage.setItem("xp-player-name","Tester")`);
   const posts = () => ev(`__fs.log.filter(l=>l.m==="POST"&&l.p==="/board").length`), docs = () => ev(`Object.keys(__fs.board||{}).length`);
   const type = async (sel, text) => { await click(sel); await ev(`document.querySelector(${JSON.stringify(sel)}).value=${JSON.stringify(text)}`); };
   // a reply slower than the 8 s timeout, though the write landed: no error, no duplicate
@@ -291,6 +291,29 @@ await test("message board posts once", async () => {
   ok("retrying checks the same id first and stores one message", r.copies === 1 && r.checks >= 1, JSON.stringify(r));
   ok("and the docked board refreshes too", /retry me/.test(await ev(`document.querySelector(".board-dock .mb-list").textContent`)));
   await closeAll();
+});
+await test("player name", async () => {
+  await load(); await clearStorage(); await ev(`__fs.board={}; sessionStorage.removeItem("xp-player-name"); sessionStorage.removeItem("xp-name-asked"); localStorage.setItem("xp-last-name","Old")`);
+  ok("the board's name field won't autofill", (await ev(`document.querySelector(".board-dock input[name=from]").autocomplete`)) === "off");
+  await click(".board-dock textarea"); await ev(`document.querySelector(".board-dock textarea").value="hi"`); await key("Enter", 2); await sleep(300);
+  ok("the first post asks for a name, prefilled with the last one", (await ev(`document.querySelector(".askbox input")?.value`)) === "Old");
+  await ev(`(()=>{const i=document.querySelector(".askbox input"); i.value="Neo"; document.querySelector(".askbox").requestSubmit();})()`); await sleep(400);
+  ok("the post goes out under that name", (await ev(`Object.values(__fs.board).map(d=>d.from).join()`)) === "Neo" && (await ev(`document.querySelector(".board-dock input[name=from]").value`)) === "Neo");
+  ok("kept for the session, not forever", (await ev(`sessionStorage.getItem("xp-player-name")`)) === "Neo" && !(await ev(`localStorage.getItem("xp-player-name")||localStorage.getItem("xp-player-name-asked")`)));
+  await openApp("games"); await sleep(300);
+  ok("the Games folder shows the name", /Neo/.test(await ev(`document.querySelector(".pcard").textContent`)));
+  await click(".pname-change"); await sleep(300);
+  ok("and can change it", (await ev(`document.querySelector(".askbox input")?.value`)) === "Neo");
+  await ev(`(()=>{const i=document.querySelector(".askbox input"); i.value="Trin"; document.querySelector(".askbox").requestSubmit();})()`); await sleep(300);
+  ok("the new name shows everywhere", /Trin/.test(await ev(`document.querySelector(".pcard").textContent`)) && (await ev(`document.querySelector(".board-dock input[name=from]").value`)) === "Trin");
+  await closeAll();
+  // a new session asks again; cancelling posts as Anonymous
+  await ev(`sessionStorage.removeItem("xp-player-name"); sessionStorage.removeItem("xp-name-asked")`); await load();
+  await click(".board-dock textarea"); await ev(`document.querySelector(".board-dock textarea").value="bye"`); await key("Enter", 2); await sleep(300);
+  ok("a new session asks again, prefilled", (await ev(`document.querySelector(".askbox input")?.value`)) === "Trin");
+  await ev(`[...document.querySelectorAll(".win")].pop().querySelector(".tbtn[data-a=close]").click()`); await sleep(400);
+  ok("cancel posts as Anonymous", (await ev(`Object.values(__fs.board).find(d=>d.text==="bye")?.from`)) === "Anonymous");
+  ok("and doesn't ask again this session", (await ev(`sessionStorage.getItem("xp-name-asked")`)) === "1" && (await ev(`!sessionStorage.getItem("xp-player-name")`)));
 });
 if (process.env.SHOT) { label = "shot"; await send("Page.addScriptToEvaluateOnNewDocument", { source: `try{sessionStorage.setItem("xp-logged","1")}catch{}` }); await load(); await openApp("paint"); await sleep(500); const s = await send("Page.captureScreenshot", { format: "png" }); fs.writeFileSync(SHOTS + "/paint.png", Buffer.from(s.data, "base64")); }
 const fails = res.filter(([, c]) => !c).length;

@@ -905,6 +905,8 @@ html.busy, html.busy * { cursor: var(--cur-busy) !important; }
 /* the cabinet around the table when the window is wider than it (maximized, full screen, resized) */
 .pb-body .game-stage { background: radial-gradient(ellipse at 50% 35%, #1d0f4a, #07041a 75%); }
 .pb-body .game-stage canvas { box-shadow: 0 0 0 2px #2b3a8c, 0 0 22px rgba(90, 120, 255, .3); }
+.pcard .pname { display: block; margin-bottom: 4px; font-weight: bold; }
+.pcard .pname a { font-weight: normal; }
 .pb-led { flex-shrink: 0; display: flex; justify-content: space-between; gap: 10px; padding: 3px 8px; background: #140800; color: #ffae00; font: bold 12px "Lucida Console", Consolas, monospace; text-shadow: 0 0 5px #ff7a00; border-top: 1px solid #000; border-bottom: 2px solid #3a2410; white-space: nowrap; overflow: hidden; }
 .pb-mis { overflow: hidden; text-overflow: ellipsis; }
 
