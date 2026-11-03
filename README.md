@@ -8,7 +8,12 @@ Medhansh Khattar's portfolio as a Windows XP desktop in the browser. Live at htt
 - **Apps:** About Me, Resume (WordPad), My Projects, Contact Me (verified, emailed to you, nothing stored), Internet Explorer (a working in-page browser that falls back to a sandboxed proxy, `api/proxy.js`, for sites that refuse framing), Command Prompt (`help`), MSN Messenger, Notepad (shared), Paint, Calculator, Windows Media Player, My Pictures (shared; anyone can add or delete), Calendar (shared tasks and reminders), Display Properties (wallpapers and a screen saver preview), Control Panel, Task Manager, Run, Search, Help, Privacy, My Computer and Recycle Bin.
 - **Message Board:** an open board docked on the right of the desktop (a window on small screens). Anyone can post to anyone, no sign-in. Posts can't be edited or deleted from the site; remove unwanted ones in the Firebase console (`board` collection) or with `firebase firestore:delete board/<id>`.
 - **Site Statistics:** total views, unique visitors and a 14-day traffic chart, counted in Firestore (`stats` collection).
-- **Games:** Solitaire, Spider Solitaire, Minesweeper (3 levels plus custom), Snake, Brick Breaker and 3D Pinball, with public world leaderboards (`scores` collection). They load only when first opened.
+- **Games:** Solitaire, Spider Solitaire, Minesweeper (3 levels plus custom), Snake, Brick Breaker and 3D Pinball, with public world leaderboards (`scores` collection). They load only when first opened (`games.js`).
+  - **Levels:** Snake is a campaign through 10 mazes (Level Select unlocks the ones you've reached; Endless and wrap-around are options). Brick Breaker has 12 designed levels with steel, unbreakable, bomb and power-up bricks, then repeats them harder. Pinball ranks you from Cadet to Fleet Admiral by finishing the mission on its panel (bumpers, the spinner, drop targets, the black hole, slingshots, the top lanes).
+  - **Pinball controls:** hold Space or ↓ to pull the plunger; flippers on Z / Left Shift / ← and / / M / Right Shift / →; nudge with X, . or ↑ (too many nudges at once is a TILT); P pauses, F2 starts again. On touch screens, tap either half of the table and use the Launch button.
+  - **Career and trophies:** every finished game earns XP points toward a career level (level n+1 starts at 50·n·(n+1) points, from Guest up to Root), and 11 trophies unlock along the way. The Games folder shows your level, trophies and per-game records. Solitaire and Spider count a game abandoned after a move as a loss.
+- **Sounds:** an XP-style sound scheme synthesized in the browser (`sound.js`, no audio files): start-up, log on and off, window, menu and game sounds. Control Panel > Sounds plays each one; the tray's volume control sets their level and has a Mute box, and each game has its own Sound switch.
+- **Space to skip:** every start-up screen, splash, deal, level banner and end-of-game pause can be cut short with Space or a tap (not while typing in a field).
 - **Shortcuts:** Alt+W closes a window, Alt+T opens Task Manager, Alt+R opens Run, Ctrl+Esc opens Start, F11 goes full screen. Browsers and Windows keep Ctrl+W, Alt+F4, Ctrl+Shift+Esc and Win+R for themselves in a normal tab, so those only work as fallbacks.
 
 Shared data lives in Firestore (project `resume-41921`), and the browser talks to it directly. `firestore.rules` is the only gatekeeper and validates every field: `shared/notepad` and `tasks` (anyone can edit), `pictures` (add and delete), `scores` and `board` (add only), `stats` (visit counters, +1 at most) and `otp` (code attempt counters, written by `api/contact.js`). If Firestore can't be reached, the Notepad and Calendar keep working from the visitor's browser and sync later. Icon positions, wallpaper, reminder state and personal best scores stay per browser.
@@ -28,13 +33,28 @@ Shared data lives in Firestore (project `resume-41921`), and the browser talks t
 ```
 
 ## Cache busting
-JS, CSS and images are cached for a year (see `vercel.json`). After changing one, bump the `?v=N` number everywhere it appears: `index.html` (style, data, app, photos and social images), the `games.js?v=N` (loader and prefetch) and `extras.js?v=N` URLs and `sys.photos` in `app.js`, `photo` in `data.js`, and the `data.js` tag in `resume.html`.
+JS, CSS and images are cached for a year (see `vercel.json`). After changing one, bump the `?v=N` number everywhere it appears: `index.html` (style, data, sound, app, photos and social images), the `games.js?v=N` (loader and prefetch) and `extras.js?v=N` URLs and `sys.photos` in `app.js`, `photo` in `data.js`, and the `data.js` tag in `resume.html`.
 
 ## Run locally
 ```bash
 python -m http.server 5173
 ```
 Then open http://localhost:5173.
+
+## Tests
+`tests/` drives a local copy of the site in headless Chrome over the DevTools protocol, with Firestore faked inside the page, so nothing reaches production. They need Node 22+ (for the global `WebSocket`).
+
+```bash
+npm install
+node tests/api-test.mjs .
+node tests/shell-e2e.mjs . shots
+node tests/games-e2e.mjs . shots
+```
+
+- `api-test.mjs`: the contact-form codes and the browser proxy's address checks (the live proxy checks skip themselves when offline).
+- `shell-e2e.mjs`: the desktop, apps, Notepad sync and the in-site browser (its proxy checks need internet access).
+- `games-e2e.mjs`: start-up and sounds, then all six games: bots that play Snake, Brick Breaker and Pinball through their levels, real mouse drags in the card games, interrupted delays, every menu item, random keys and clicks, reduced motion and phone layout.
+- The second argument is a folder for screenshots. `ONLY=<text>` runs just the tests whose name contains it, `SEED=<n>` changes the random input, and `CHROME=<path>` picks the browser (otherwise the usual Windows, macOS and Linux locations are tried).
 
 ## Deploy
 Static HTML/CSS/JS with no build step. Run `vercel --prod` from this folder. `vercel.json` sets the caching headers and `nosniff`, Referrer-Policy and Permissions-Policy. Rule changes deploy separately with `firebase deploy --only firestore:rules`.
