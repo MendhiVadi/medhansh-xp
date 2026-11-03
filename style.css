@@ -764,3 +764,189 @@ button { font: inherit; }
 .win:fullscreen .resize { display: none; }
 .win::backdrop { background: #000; }
 .fsbtn { font-size: 13px; }
+
+/* ======================================================================
+   Windows XP finish: pointers, scroll bars, title-bar buttons, start-up screens, menus, dialogs and game chrome
+   ====================================================================== */
+:root { --cur: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='24'%3E%3Cpath d='M1.500 1.500v17l4.300-4.100 3 6.900 2.800-1.200-3-6.800h6z' fill='%23fff' stroke='%23000' stroke-width='1.100' stroke-linejoin='round'/%3E%3C/svg%3E") 1 1, default;
+  --cur-busy: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='26'%3E%3Cpath d='M3 1.500h14v2.500h-1.500c0 5-3 6-4 9 1 3 4 4 4 9h1.500v2.500H3V22h1.500c0-5 3-6 4-9-1-3-4-4-4-9H3z' fill='%23fff' stroke='%23000'/%3E%3Cpath d='M6.500 6h7c-.5 2-2.500 3-3.500 5.500C9 9 7 8 6.500 6zM6 22c.5-2.500 2.500-3.500 4-5 1.500 1.500 3.500 2.500 4 5z' fill='%23d9a300'/%3E%3C/svg%3E") 10 13, wait; }
+html, body, .dicon, .titlebar, .menubar span, .ctx div, .dropdown div, .fitem, .cell, .wall-list div, .tbtn, .xpbtn, .task, .start-btn, .sm-body li, .sm-foot button, .user-tile, .turnoff, .shut-body button, .shut-foot button, .tray-ico, .tray-clock, .quick button, .cp-item, .sm-fly li, .card, .slot, .smiley, .mine-levels button { cursor: var(--cur); }
+html.busy, html.busy * { cursor: var(--cur-busy) !important; }
+
+@media (hover: hover) {
+  ::-webkit-scrollbar { width: 17px; height: 17px; }
+  ::-webkit-scrollbar-track { background: linear-gradient(90deg, #e8e7dc, #fbfbf7 40%, #f1f0e7); }
+  ::-webkit-scrollbar-track:horizontal { background: linear-gradient(#e8e7dc, #fbfbf7 40%, #f1f0e7); }
+  ::-webkit-scrollbar-thumb { border: 1px solid #fff; outline: 1px solid #9cb6ef; outline-offset: -1px; border-radius: 3px; background: linear-gradient(90deg, #cad9fb, #b7cbf8 50%, #a5bdf5) center no-repeat; box-shadow: inset 0 0 0 1px #e9efff; }
+  ::-webkit-scrollbar-thumb:horizontal { background: linear-gradient(#cad9fb, #b7cbf8 50%, #a5bdf5); }
+  ::-webkit-scrollbar-thumb:hover { background: linear-gradient(90deg, #dbe6fd, #c7d7fb 50%, #b7ccf8); }
+  ::-webkit-scrollbar-button { width: 17px; height: 17px; display: block; border: 1px solid #fff; outline: 1px solid #9cb6ef; outline-offset: -1px; border-radius: 3px; background-color: #c5d6fb; background-repeat: no-repeat; background-position: center; }
+  ::-webkit-scrollbar-button:start:increment, ::-webkit-scrollbar-button:end:decrement { display: none; }
+  ::-webkit-scrollbar-button:vertical:decrement { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M.5 5 4.500 1l4 4' fill='none' stroke='%234d6185' stroke-width='1.600'/%3E%3C/svg%3E"); }
+  ::-webkit-scrollbar-button:vertical:increment { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M.5 1l4 4 4-4' fill='none' stroke='%234d6185' stroke-width='1.600'/%3E%3C/svg%3E"); }
+  ::-webkit-scrollbar-button:horizontal:decrement { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='9'%3E%3Cpath d='M5 .5 1 4.500l4 4' fill='none' stroke='%234d6185' stroke-width='1.600'/%3E%3C/svg%3E"); }
+  ::-webkit-scrollbar-button:horizontal:increment { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='9'%3E%3Cpath d='M1 .5l4 4-4 4' fill='none' stroke='%234d6185' stroke-width='1.600'/%3E%3C/svg%3E"); }
+  ::-webkit-scrollbar-corner { background: #ece9d8; }
+  .cmd::-webkit-scrollbar-track { background: #1c1c1c; }
+}
+
+/* title-bar buttons drawn as in Luna rather than with text */
+.tbtn { font-size: 0; border-color: #fff; border-radius: 3px; box-shadow: inset -1px -1px 2px rgba(0,0,60,.45), inset 1px 1px 1px rgba(255,255,255,.5); background-color: #2f6df0; background-repeat: no-repeat; background-position: center, center; background-size: auto, 100% 100%; }
+.tbtn:active { filter: brightness(.82); }
+.win.inactive .tbtn { filter: saturate(.55) brightness(1.15); }
+.tbtn[data-a="min"] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Crect x='2' y='9' width='7' height='3' fill='%23fff'/%3E%3C/svg%3E"), radial-gradient(circle at 30% 25%, #6da2ff, #1f5ae2 70%, #1644b8); }
+.tbtn[data-a="max"] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Crect x='2' y='2' width='9' height='9' fill='none' stroke='%23fff' stroke-width='1.500'/%3E%3Crect x='2' y='2' width='9' height='2.500' fill='%23fff'/%3E%3C/svg%3E"), radial-gradient(circle at 30% 25%, #6da2ff, #1f5ae2 70%, #1644b8); }
+.win.max .tbtn[data-a="max"] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Crect x='4.500' y='1.500' width='7' height='6' fill='none' stroke='%23fff'/%3E%3Crect x='4.500' y='1.500' width='7' height='2' fill='%23fff'/%3E%3Crect x='1.500' y='5' width='7' height='6.500' fill='%232f6df0' stroke='%23fff'/%3E%3Crect x='1.500' y='5' width='7' height='2' fill='%23fff'/%3E%3C/svg%3E"), radial-gradient(circle at 30% 25%, #6da2ff, #1f5ae2 70%, #1644b8); }
+.tbtn[data-a="fs"] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Cpath d='M2 5V2h3M8 2h3v3M11 8v3H8M5 11H2V8' fill='none' stroke='%23fff' stroke-width='1.500'/%3E%3C/svg%3E"), radial-gradient(circle at 30% 25%, #6da2ff, #1f5ae2 70%, #1644b8); }
+.tbtn.close { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Cpath d='M2.500 2.500l8 8m0-8l-8 8' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E"), radial-gradient(circle at 30% 25%, #f2a08a, #e0451f 70%, #b02c0c); }
+.flyrect { position: fixed; z-index: 9400; pointer-events: none; border: 2px solid #0831d9; border-radius: 6px 6px 0 0; background: linear-gradient(#0997ff, #0053ee 18px, rgba(236,233,216,.35) 18px); }
+
+/* start-up: self test, then the blue screens between steps */
+.post { background: #000; color: #c8c8c8; padding: 24px clamp(16px, 4vw, 48px); font: 14px/1.5 "Lucida Console", Consolas, "Courier New", monospace; }
+.post pre { margin: 0; font: inherit; white-space: pre-wrap; }
+.skip-hint { color: rgba(255,255,255,.72); font-size: 12px; animation: hintblink 1.6s ease-in-out infinite; }
+.post .skip-hint { position: absolute; left: clamp(16px, 4vw, 48px); bottom: 24px; }
+.skip-hint.inline { font-size: 11px; }
+.login-bottom .skip-hint.inline { margin-left: auto; }
+@keyframes hintblink { 50% { opacity: .45; } }
+.login, .boot { animation: screenfade .35s ease-out; }
+@keyframes screenfade { from { opacity: 0; } }
+.welcome .login-mid { background: radial-gradient(circle at 15% 15%, #92b4f2, #5a7edc 45%); }
+.welcome-box { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 16px; }
+.welcome-box i { font: italic bold clamp(36px, 7vw, 60px) "Franklin Gothic Medium", "Trebuchet MS", Arial, sans-serif; color: #fff; text-shadow: 2px 2px 4px rgba(0,20,90,.55); }
+.welcome-box span { font-size: 15px; color: #e8f0ff; }
+.blackout p.safe { color: #ff9d2e; font: bold clamp(16px, 2.6vw, 24px) Arial, sans-serif; text-align: center; padding: 0 16px; }
+.desktop.arrive .icons { animation: screenfade .8s ease-out; }
+.desktop.arrive .taskbar { animation: barrise .45s ease-out; }
+@keyframes barrise { from { transform: translateY(30px); } }
+
+/* the shutdown dialog drains the colour out of the screen, slowly, as XP did */
+.modal-bg { background: rgba(0,0,0,.3); animation: greyfade 1.4s ease-in both; }
+@keyframes greyfade { from { background: rgba(0,0,0,0); backdrop-filter: grayscale(0); -webkit-backdrop-filter: grayscale(0); } to { background: rgba(0,0,0,.3); backdrop-filter: grayscale(1); -webkit-backdrop-filter: grayscale(1); } }
+.shut-box { animation: winopen .18s ease-out; }
+
+/* start menu and its fly-out */
+.start-menu { animation: smrise .13s ease-out; transform-origin: 0 100%; }
+@keyframes smrise { from { transform: translateY(14px); opacity: .25; } }
+.sm-all { justify-content: center; gap: 10px; font-weight: bold; }
+.sm-all.on { background: #2f71cd; color: #fff; }
+.sm-go { font-style: normal; font-size: 9px; margin-left: auto; color: #2a9a2a; }
+.sm-all .sm-go { margin-left: 0; }
+.sm-all:hover .sm-go, .sm-all.on .sm-go, .sm-fly li:hover > .sm-go { color: #fff; }
+.sm-fly { position: absolute; left: min(378px, calc(100vw - 230px)); bottom: 30px; z-index: 9510; animation: screenfade .12s ease-out; }
+.sm-fly ul { list-style: none; margin: 0; padding: 2px; min-width: 190px; background: #fff; border: 1px solid #0b3b9e; box-shadow: 2px 2px 6px rgba(0,0,0,.45); }
+.sm-fly li { position: relative; display: flex; align-items: center; gap: 8px; padding: 3px 8px; min-height: 24px; white-space: nowrap; }
+.sm-fly li > svg { width: 18px; height: 18px; flex-shrink: 0; }
+.sm-fly li:hover, .sm-fly li:focus, .sm-fly li.open { background: #2f71cd; color: #fff; outline: 0; }
+.sm-fly .sm-folder > ul { display: none; position: absolute; left: 100%; bottom: -3px; color: #000; }
+.sm-fly .sm-folder:hover > ul, .sm-fly .sm-folder.open > ul { display: block; }
+@media (max-width: 640px) { .sm-fly { left: 0; right: 0; } .sm-fly > ul { max-height: 70vh; overflow: auto; } .sm-fly .sm-folder > ul { position: static; flex-basis: 100%; } .sm-fly .sm-folder.open { flex-wrap: wrap; } }
+
+/* menus fade in; default buttons carry XP's blue inner edge */
+.dropdown, .ctx { animation: screenfade .1s ease-out; }
+.xpbtn:focus-visible, .xpbtn:focus { outline: 1px dotted #000; outline-offset: -4px; box-shadow: inset 0 0 0 2px #9db8ec; }
+.xpbtn:hover { box-shadow: inset 0 0 0 2px #f8b330; }
+.xpbtn:disabled { color: #aca899; border-color: #c9c7ba; box-shadow: none; background: #f4f3ee; }
+
+/* dialogs */
+.askbox { display: flex; flex-direction: column; height: 100%; padding: 12px 14px 0; }
+.ask-fields { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.ask-fields label { display: flex; align-items: center; gap: 8px; }
+.ask-fields span { min-width: 54px; }
+.ask-fields input { flex: 1; min-width: 0; font: 12px Tahoma, sans-serif; padding: 2px 4px; border: 1px solid #7f9db9; }
+.ask-fields.one label { flex-direction: column; align-items: stretch; gap: 6px; }
+.msgbox-ico svg { width: 34px; height: 34px; display: block; }
+.balloon.tip { cursor: var(--cur); animation: balloonpop .22s ease-out; }
+.balloon.tip b { display: flex; align-items: center; gap: 5px; padding-right: 16px; }
+.balloon.tip b svg { width: 16px; height: 16px; flex-shrink: 0; }
+@keyframes balloonpop { from { transform: translateY(10px) scale(.92); opacity: 0; } }
+.snd-list div { cursor: var(--cur); }
+.snd-list div:focus { outline: 1px dotted #000; outline-offset: -1px; }
+
+/* games: splash and progress bar */
+.splash-body { overflow: hidden; }
+.splash { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #fff; text-align: center; padding: 16px; }
+.splash-art svg { width: 96px; height: 96px; display: block; filter: drop-shadow(0 3px 6px rgba(0,0,0,.5)); animation: splashin .45s ease-out; }
+@keyframes splashin { from { transform: scale(.6) rotate(-6deg); opacity: 0; } }
+.splash > b { font: italic bold 28px "Franklin Gothic Medium", "Trebuchet MS", Arial, sans-serif; text-shadow: 2px 2px 3px rgba(0,0,0,.6); }
+.splash > small { font-size: 13px; color: #dfe9ff; }
+.xp-progress { width: 190px; height: 15px; margin-top: 10px; padding: 2px; border: 1px solid #fff; border-radius: 3px; background: #fff; box-shadow: inset 0 0 2px #888; }
+.xp-progress i { display: block; height: 100%; width: 0; background: repeating-linear-gradient(90deg, #39c639 0 8px, transparent 8px 10px); animation: xpfill linear forwards; }
+@keyframes xpfill { to { width: 100%; } }
+.splash .skip-hint { margin-top: 8px; }
+
+/* games: overlays are small XP dialogs */
+.game-stage canvas { image-rendering: auto; }
+.game-msg { color: #000; font: 12px/1.5 Tahoma, sans-serif; background: rgba(0,0,0,.34); padding: 8px; }
+.game-msg b { font-size: inherit; color: inherit; }
+.game-msg.light { background: none; align-items: flex-end; padding-bottom: 14%; }
+.gm-box { max-width: min(330px, 92%); max-height: 96%; overflow: hidden; padding: 0 14px 10px; text-align: center; background: #ece9d8; border: 3px solid #0831d9; border-top: 0; border-radius: 7px 7px 0 0; box-shadow: 2px 3px 10px rgba(0,0,0,.55); animation: winopen .14s ease-out; }
+.gm-box > b:first-child, .sol-win > b:first-child { display: block; margin: 0 -14px 8px; padding: 4px 8px; color: #fff; text-align: left; font: bold 13px "Trebuchet MS", Tahoma, sans-serif; text-shadow: 1px 1px #0f1089; border-radius: 5px 5px 0 0; background: linear-gradient(#0997ff, #0053ee 12%, #0050ee 45%, #06f 88%, #003dd7); }
+.gm-box small { color: #333; line-height: 1.5; }
+.gm-box .wl { margin: 2px 0; }
+.gm-hint { padding: 3px 10px; color: #fff; background: rgba(0,0,0,.6); border: 1px solid rgba(255,255,255,.4); border-radius: 3px; font-size: 12px; }
+.sol-win { padding: 0 14px 12px; border: 3px solid #0831d9; border-top: 0; border-radius: 7px 7px 0 0; box-shadow: 2px 3px 10px rgba(0,0,0,.55); line-height: 1.6; font-size: 12px; max-height: 96%; overflow: auto; animation: winopenc .14s ease-out; }
+@keyframes winopenc { from { transform: translate(-50%,-50%) scale(.92); opacity: 0; } }
+.lvl-pick { width: min(340px, 94%); }
+.lvl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 8px; }
+.lvl-grid .xpbtn { min-width: 0; padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+.deck-grid { display: grid; grid-template-columns: repeat(3, 58px); gap: 8px; justify-content: center; margin-bottom: 10px; }
+.deck-pick { width: 58px; height: 78px; padding: 4px; border: 2px solid transparent; background: none; }
+.deck-pick.on { border-color: #316ac5; background: #c1d2ee; }
+.deck-pick .card { position: static; display: block; width: 100%; height: 100%; }
+.stat-t { margin: 0 auto 10px; border-collapse: collapse; text-align: left; }
+.stat-t td { padding: 1px 10px; } .stat-t td + td { text-align: right; font-weight: bold; }
+.diff-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; min-width: 180px; }
+.diff-list label { display: flex; gap: 6px; align-items: center; }
+.sol-win .xpbtn { display: block; margin: 0 auto; }
+.game-hud { background: linear-gradient(#f6f4ea, #ece9d8); }
+.game-hud b { color: #0a246a; }
+.game-hud .li { color: #d0362f; letter-spacing: 1px; }
+.pb-led { flex-shrink: 0; display: flex; justify-content: space-between; gap: 10px; padding: 3px 8px; background: #140800; color: #ffae00; font: bold 12px "Lucida Console", Consolas, monospace; text-shadow: 0 0 5px #ff7a00; border-top: 1px solid #000; border-bottom: 2px solid #3a2410; white-space: nowrap; overflow: hidden; }
+.pb-mis { overflow: hidden; text-overflow: ellipsis; }
+
+/* cards: real pip layouts, court cards in a frame, six backs */
+.card { font-family: Arial, sans-serif; background: linear-gradient(135deg, #fff, #fafaf5); border-color: #555; }
+.card .ci { font-size: calc(var(--cw, 71px) * .17); line-height: 1.02; }
+.card .pip { position: absolute; font-style: normal; font-weight: normal; font-size: calc(var(--cw, 71px) * .2); line-height: 1; transform: translate(-50%, -50%); }
+.card .pip.dn { transform: translate(-50%, -50%) rotate(180deg); }
+.card .cace { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: normal; font-size: calc(var(--cw, 71px) * .55); }
+.card .cfig { position: absolute; inset: 15% 19%; display: flex; align-items: center; justify-content: center; border: 1px solid currentColor; border-radius: 2px; font-weight: normal; background: linear-gradient(135deg, #fff8dc, #ffe6a0 50%, #fff8dc); }
+.card .cfig i { font-style: normal; font-size: calc(var(--cw, 71px) * .42); line-height: 1; }
+.card .cfig u { position: absolute; right: 2px; top: 1px; text-decoration: none; font-size: calc(var(--cw, 71px) * .15); }
+.card.flipin { animation: cardflip .18s ease-out; }
+@keyframes cardflip { from { transform: scaleX(.05); } }
+.card.fly { pointer-events: none; }
+.card.back { border: 2px solid #fff; outline: 1px solid #444; outline-offset: 0; background: repeating-linear-gradient(45deg, #2f5fd0 0 3px, #1d47a8 3px 6px); box-shadow: inset 0 0 0 2px #1a3d94, 1px 1px 2px rgba(0,0,0,.4); }
+[data-back="crimson"] .card.back, .card.back[data-b="crimson"] { background: repeating-linear-gradient(45deg, #b01818 0 3px, #7a0c0c 3px 6px); box-shadow: inset 0 0 0 2px #5a0808, 1px 1px 2px rgba(0,0,0,.4); }
+[data-back="fish"] .card.back, .card.back[data-b="fish"] { background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.75) 0 2px, transparent 3px) 0 0 / 16px 18px, radial-gradient(ellipse 7px 4px at 60% 62%, #ff9d2e 98%, transparent) 0 0 / 22px 24px, linear-gradient(#27a4dd, #0a4f9e); box-shadow: inset 0 0 0 2px #063a75, 1px 1px 2px rgba(0,0,0,.4); }
+[data-back="castle"] .card.back, .card.back[data-b="castle"] { background: linear-gradient(90deg, transparent 45%, #5a5a64 45% 55%, transparent 55%) 0 0 / 10px 12px, linear-gradient(transparent 80%, #5a5a64 80%) 0 0 / 10px 6px, #8d8d97; box-shadow: inset 0 0 0 2px #45454e, 1px 1px 2px rgba(0,0,0,.4); }
+[data-back="robot"] .card.back, .card.back[data-b="robot"] { background: radial-gradient(circle, #ffd640 0 2px, transparent 2.500px) 0 0 / 14px 14px, linear-gradient(#5e6b7a 1px, transparent 1px) 0 0 / 14px 7px, linear-gradient(90deg, #5e6b7a 1px, transparent 1px) 0 0 / 7px 14px, #39424f; box-shadow: inset 0 0 0 2px #232a33, 1px 1px 2px rgba(0,0,0,.4); }
+[data-back="stars"] .card.back, .card.back[data-b="stars"] { background: radial-gradient(1px 1px at 30% 25%, #fff, transparent) 0 0 / 14px 14px, radial-gradient(1.500px 1.500px at 70% 70%, #fff6a8, transparent) 0 0 / 19px 21px, linear-gradient(#0b1140, #2a1a6e); box-shadow: inset 0 0 0 2px #05082a, 1px 1px 2px rgba(0,0,0,.4); }
+
+/* minesweeper panel, flags and mines */
+.lcd { display: inline-flex; gap: 1px; min-width: 0; padding: 1px; background: #000; border: 1px solid; border-color: #808080 #fff #fff #808080; font-size: 0; letter-spacing: 0; }
+.lcd svg { width: 13px; height: 23px; display: block; }
+.smiley { width: 28px; height: 28px; padding: 2px; }
+.smiley svg { display: block; width: 100%; height: 100%; }
+.smiley:active { border-color: #808080 #fff #fff #808080; padding: 3px 1px 1px 3px; }
+.cell { font: bold 13px Arial, sans-serif; background-repeat: no-repeat; background-position: center; }
+.cell:not(.open):active { border: 1px solid #808080; border-width: 1px 0 0 1px; }
+.cell.flag { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Cpath d='M7 1v8' stroke='%23000' stroke-width='1.200'/%3E%3Cpath d='M7 1 2 3.500 7 6z' fill='%23e00'/%3E%3Cpath d='M3 12h8V10.500H9L7.500 9h-1L5 10.500H3z'/%3E%3C/svg%3E"); }
+.cell.mine, .cell.boom { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Cpath d='M7 .5v13M.5 7h13M2.500 2.500l9 9m0-9-9 9' stroke='%23000' stroke-width='1.200'/%3E%3Ccircle cx='7' cy='7' r='4.300'/%3E%3Ccircle cx='5.500' cy='5.500' r='1.200' fill='%23fff'/%3E%3C/svg%3E"); }
+.cell.xflag { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Ccircle cx='7' cy='7' r='4.300'/%3E%3Cpath d='M1.500 1.500l11 11m0-11-11 11' stroke='%23e00' stroke-width='1.700'/%3E%3C/svg%3E"); }
+.cell.blast { animation: mineBlast .3s ease-out both; }
+@keyframes mineBlast { 0% { opacity: 0; transform: scale(.4); } 50% { background-color: #ffd640; transform: scale(1.25); } 100% { opacity: 1; transform: none; } }
+.mine-end { background: rgba(236,233,216,.72); }
+
+/* games folder: career card, trophies and records */
+.pcard { display: flex; flex-direction: column; gap: 4px; }
+.pcard b { color: #0a246a; }
+.pcard small { color: #333; }
+.xpbar { display: block; height: 13px; padding: 1px; border: 1px solid #7f9db9; border-radius: 3px; background: #fff; }
+.xpbar i { display: block; height: 100%; min-width: 1px; background: repeating-linear-gradient(90deg, #39c639 0 6px, transparent 6px 8px); }
+.trophy { color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trophy.got { color: #8a6500; font-weight: bold; }
+.gstats { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 11px; }
+.gstats th { text-align: left; padding: 2px 6px; font-weight: normal; background: linear-gradient(#fff, #ece9d8); border: 1px solid #d6d3c3; border-width: 0 1px 1px 0; }
+.gstats td { padding: 2px 6px; border-bottom: 1px solid #f0efe6; }

@@ -6,8 +6,8 @@
   <title>Medhansh Khattar - Portfolio XP</title>
   <meta name="description" content="Medhansh Khattar - AI/ML Engineer and Founder &amp; CEO of Yap-less. Explore projects, experience, skills and a working resume on an interactive Windows XP desktop, complete with games, Paint and more." />
   <meta name="color-scheme" content="light" />
-  <link rel="preload" as="image" href="photo.jpg?v=27" />
-  <link rel="apple-touch-icon" href="photo.jpg?v=27" />
+  <link rel="preload" as="image" href="photo.jpg?v=28" />
+  <link rel="apple-touch-icon" href="photo.jpg?v=28" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='3' y='4' width='12' height='11' rx='2' fill='%23f25022'/><rect x='17' y='4' width='12' height='11' rx='2' fill='%237fba00'/><rect x='3' y='17' width='12' height='11' rx='2' fill='%2300a4ef'/><rect x='17' y='17' width='12' height='11' rx='2' fill='%23ffb900'/></svg>" />
   <meta name="theme-color" content="#245edb" />
   <meta property="og:title" content="Medhansh Khattar - Portfolio XP" />
@@ -15,14 +15,14 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://medhansh-xp.vercel.app/" />
   <meta property="og:site_name" content="Portfolio XP" />
-  <meta property="og:image" content="https://medhansh-xp.vercel.app/photo-full.jpg?v=27" />
+  <meta property="og:image" content="https://medhansh-xp.vercel.app/photo-full.jpg?v=28" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Medhansh Khattar - Portfolio XP" />
   <meta name="twitter:description" content="AI/ML Engineer and Founder &amp; CEO of Yap-less. Projects, experience and resume on an interactive Windows XP desktop." />
-  <meta name="twitter:image" content="https://medhansh-xp.vercel.app/photo-full.jpg?v=27" />
+  <meta name="twitter:image" content="https://medhansh-xp.vercel.app/photo-full.jpg?v=28" />
   <link rel="canonical" href="https://medhansh-xp.vercel.app/" />
   <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
-  <link rel="stylesheet" href="style.css?v=27" />
+  <link rel="stylesheet" href="style.css?v=28" />
   <noscript><style>#boot, #login, #desktop { display: none !important; } body { background: #fff; color: #000; overflow: auto; }</style></noscript>
 </head>
 <body>
@@ -34,6 +34,9 @@
       LinkedIn: <a href="https://www.linkedin.com/in/medhansh-khattar-635271366">linkedin.com/in/medhansh-khattar-635271366</a></p>
     </div>
   </noscript>
+  <!-- Power-on self test -->
+  <div id="post" class="screen post hidden"><pre id="postText"></pre><div class="skip-hint">Press SPACE to skip startup</div></div>
+
   <!-- Boot screen -->
   <div id="boot" class="screen boot">
     <div class="boot-center">
@@ -43,7 +46,14 @@
       <div class="boot-owner">Medhansh Khattar</div>
       <div class="boot-bar"><div class="boot-blocks"><i></i><i></i><i></i></div></div>
     </div>
-    <div class="boot-foot"><span>Copyright © Portfolio Corporation</span><b>Portfolio<sup>®</sup></b></div>
+    <div class="boot-foot"><span>Copyright © Portfolio Corporation</span><span class="skip-hint inline">Press SPACE to skip</span><b>Portfolio<sup>®</sup></b></div>
+  </div>
+
+  <!-- The blue screen between log-on, log-off and shutdown steps -->
+  <div id="welcome" class="screen login welcome hidden">
+    <div class="login-top"></div>
+    <div class="login-mid"><div class="welcome-box"><i id="welcomeWord">welcome</i><span id="welcomeMsg"></span></div></div>
+    <div class="login-bottom"><span></span><span class="skip-hint inline">Press SPACE to skip</span></div>
   </div>
 
   <!-- Welcome / login screen -->
@@ -117,9 +127,22 @@
     </div>
   </div>
 
+  <!-- Log-off dialog -->
+  <div id="logoffBox" class="modal-bg hidden">
+    <div class="shut-box" role="dialog" aria-modal="true" aria-label="Log off Windows">
+      <div class="shut-head">Log Off Windows <div class="xp-logo tiny"><span></span><span></span><span></span><span></span></div></div>
+      <div class="shut-body">
+        <button data-act="switch"><span class="sb sb-green">⇄</span>Switch User</button>
+        <button data-act="logoff"><span class="sb sb-yellow">🔑</span>Log Off</button>
+      </div>
+      <div class="shut-foot"><button data-act="cancel">Cancel</button></div>
+    </div>
+  </div>
+
   <div id="blackout" class="screen blackout hidden"><p id="blackoutMsg">Windows is shutting down...</p><button id="powerOn" class="hidden">Click to start Windows</button></div>
 
-  <script src="data.js?v=27" defer></script>
-  <script src="app.js?v=27" defer></script>
+  <script src="data.js?v=28" defer></script>
+  <script src="sound.js?v=28" defer></script>
+  <script src="app.js?v=28" defer></script>
 </body>
 </html>
