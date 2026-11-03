@@ -24,6 +24,19 @@ const fixture = http.createServer((req, res) => {
   if (p === "/big") return html("<p>" + "x".repeat(5 * 1024 * 1024), { "X-Frame-Options": "DENY" });
   if (p === "/cf") { res.writeHead(403, { "Content-Type": "text/html", "cf-mitigated": "challenge" }); return res.end("<title>Just a moment...</title>"); }
   if (p === "/blank") return html(`<title>Blank</title><div id="root"></div><script>/* an app that never renders here */</script>`, { "X-Frame-Options": "DENY" });
+  const deny = { "X-Frame-Options": "DENY" };
+  if (p === "/rewrite") return html(`<title>Rewrites</title><p>REWRITTEN</p><script>history.replaceState(null,"",location.href);history.replaceState(null,"",location.pathname+location.search)</script>`, deny);
+  if (p === "/robot") return html(`<title>Are you a robot?</title><p>Please confirm.</p>`, deny);
+  if (p === "/anomaly") { res.writeHead(202, { "Content-Type": "text/html", ...deny }); return res.end(`<title>Search</title><div class="anomaly-modal__title">bots</div>`); }
+  if (p === "/waf") { res.writeHead(202, { "Content-Type": "text/html", "x-amzn-waf-action": "challenge" }); return res.end(`<p>checking</p>`); }
+  if (p === "/refused") { res.writeHead(403, { "Content-Type": "text/html", ...deny }); return res.end(`<title>Forbidden</title><p>No.</p>`); }
+  if (p === "/really404") { res.writeHead(404, { "Content-Type": "text/html", ...deny }); return res.end(`<title>Page not found</title><p>A real missing page from this site, with plenty of words on it.</p>`); }
+  if (p === "/crash") return html(`<title>News</title><p>Application error: a client-side exception has occurred.</p>`, deny);
+  if (p === "/route") return html(`<title>App</title><script>document.title="Page not found / App"</script><p>Hmm, nothing here. Log in or sign up to continue with plenty of other words on this page.</p>`, deny);
+  if (p === "/selfnav") return html(`<title>Moves</title><p>moving away now</p><script>setTimeout(function(){location.replace("https://deny.test/x")},200)</script>`, deny);
+  if (p === "/reloads") return html(`<title>Reloads</title><p>about to reload itself with plenty of words on the page</p><script>addEventListener("load",function(){setTimeout(function(){location.assign(location.pathname+location.search)},300)})</script>`, deny);
+  if (p === "/skeleton") return html(`<title>Tube</title><svg width="24" height="24"></svg><div style="height:900px;background:#ccc"></div>`, deny);
+  if (p === "/full") return html(`<title>Article</title><p>${"A real page with real words. ".repeat(20)}</p>`, deny);
   if (p === "/latin") { res.writeHead(200, { "Content-Type": "text/html; charset=iso-8859-1", "X-Frame-Options": "DENY" }); return res.end(Buffer.from("<title>Latin</title><p>caf\xe9</p>", "latin1")); }
   res.writeHead(404); res.end("nope");
 }).listen(8080, "127.0.0.1");
@@ -250,7 +263,7 @@ await test("search and IE", async () => {
   const before = seen.proxy.length; await ev(`document.querySelector(".iereload").click()`); await sleep(2000);
   ok("Refresh keeps using the proxy", (await ev(`document.querySelector(".win iframe").getAttribute("src")||""`)).startsWith("/api/proxy") && seen.proxy.length > before);
   await ev(`__nav("node.js")`); await sleep(400);
-  ok("'node.js' is a search, not an address", (await ev(`document.querySelector(".ieaddr input").value`)).includes("duckduckgo"));
+  ok("'node.js' is a search, not an address", (await ev(`document.querySelector(".ieaddr input").value`)).includes("bing.com/search"));
   await ev(`__nav("example.com")`); await sleep(300);
   ok("'example.com' is an address", (await ev(`document.querySelector(".ieaddr input").value`)) === "https://example.com");
   await ev(`document.querySelector(".iehome").click()`); await sleep(200);
@@ -432,7 +445,14 @@ await test("explorer browses like a browser", async () => {
   await nav("http://deny.test:8080/redir"); await sleep(1800);
   ok("a redirect shows the final address", (await ev(`document.querySelector('${W} .ieurl').value`)) === "http://deny.test:8080/page2?from=redir");
   // pages that can't work here end in the new-tab dialog
-  for (const [path, why, wait] of [["/login", /password/, 1800], ["/jslogin", /password/, 2200], ["/cf", /person/, 1800], ["/big", /too large/, 2500], ["/blank", /didn't load properly/, 6500]]) {
+  await nav("http://deny.test:8080/rewrite?a=1"); await sleep(1500);
+  ok("a page rewriting its own address doesn't corrupt the address bar", (await ev(`document.querySelector('${W} .ieurl').value`)) === "http://deny.test:8080/rewrite?a=1", await ev(`document.querySelector('${W} .ieurl').value`));
+  await click(`${W} .iereload`); await sleep(1500);
+  ok("and Refresh reloads the real page", /REWRITTEN/.test(await text()));
+  await ev(`window.__o=window.open; window.open=(...a)=>{window.__oa=a}; document.querySelector('${W} .ienew').click(); window.open=window.__o`);
+  ok("and New tab opens the real page", (await ev(`window.__oa[0]`)) === "http://deny.test:8080/rewrite?a=1");
+  for (const path of ["/full", "/really404"]) { await nav("http://deny.test:8080" + path); await sleep(9800); ok(`${path}: a working page isn't called broken`, !(await dialog()), (await dialog()) || ""); await dismiss(); }
+  for (const [path, why, wait] of [["/login", /password/, 1800], ["/jslogin", /password/, 2200], ["/cf", /person/, 1800], ["/robot", /person/, 1800], ["/anomaly", /person/, 1800], ["/waf", /person/, 1800], ["/refused", /doesn't accept/, 1800], ["/big", /too large/, 2500], ["/selfnav", /didn't load properly/, 2500], ["/reloads", /didn't load properly/, 3500],["/crash", /didn't load properly/, 9800], ["/route", /didn't load properly/, 9800], ["/skeleton", /didn't load properly/, 9800], ["/blank", /didn't load properly/, 9800]]) {
     await nav("http://deny.test:8080" + path); await sleep(wait);
     ok(`${path}: offers a new tab, saying why`, why.test((await dialog()) || ""), (await dialog()) || "(no dialog) " + (await ev(`document.querySelector('${W} .iestat').textContent`)));
     await dismiss(); await sleep(100);
