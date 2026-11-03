@@ -589,7 +589,8 @@
     const burstAt = (x, y, c, n) => { if (parts.length > 120) return; for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, v = 0.03 + Math.random() * 0.1; parts.push({ x: (x + 0.5) * CELL, y: (y + 0.5) * CELL, vx: Math.cos(a) * v, vy: Math.sin(a) * v, l: 450, c }); } };
     const pop = (x, y, t) => pops.push({ x: (x + 0.5) * CELL, y: (y + 0.5) * CELL, t, l: 800 });
     function newGame(startAt = 1) {
-      gen++; mode = nextMode; wrap = wrapNext; lv = startAt; lives = campaign() ? 3 : 1; score = 0; left = target(); parts.length = pops.length = 0;
+      gen++; ctx.skipWait(); // settle the old banner's wait now, or it would swallow the next Space
+      mode = nextMode; wrap = wrapNext; lv = startAt; lives = campaign() ? 3 : 1; score = 0; left = target(); parts.length = pops.length = 0;
       loadLevel(); state = "ready"; say(intro());
     }
     function beginLevel() {
@@ -1246,7 +1247,7 @@
     }
     function serve(f) { B.x = LX; B.y = LY; B.vx = B.vy = 0; state = "ready"; fresh = f; pull = 0; held = false; stuckT = 0; tilted = false; tiltM = 0; holeT = 0; dirty = true; }
     function newGame() {
-      gen++; score = 0; ball = 1; maxBalls = 3; extraIdx = 0; mult = 1; rank = 0; saverT = 0; msgT = 0; dtReset = 0; spV = 0; misIdx = 0; misN = 0; bonus = 0; holeCd = 0; launchT = 0;
+      gen++; ctx.skipWait(); score = 0; ball = 1; maxBalls = 3; extraIdx = 0; mult = 1; rank = 0; saverT = 0; msgT = 0; dtReset = 0; spV = 0; misIdx = 0; misN = 0; bonus = 0; holeCd = 0; launchT = 0;
       lanes[0] = lanes[1] = lanes[2] = false; dtAlive[0] = dtAlive[1] = dtAlive[2] = 1;
       bumpF.fill(0); slingF.fill(0); slingCd.fill(0);
       serve(true); dirty = true; say(intro());
