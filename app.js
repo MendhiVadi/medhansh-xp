@@ -8,6 +8,22 @@
     lget(k) { try { return localStorage.getItem(k); } catch { return null; } },
     lset(k, v) { try { localStorage.setItem(k, v); return true; } catch { return false; } },
   };
+  const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Delays the visitor can cut short with Space. Resolves true when skipped, false when the time ran out.
+  // One tied to a window (scope = its ctx) only skips while that window is active; typing in a field never skips.
+  const waits = new Set();
+  function wait(ms, scope) {
+    return new Promise((done) => {
+      const w = { scope, finish: (skipped) => { if (!waits.delete(w)) return; clearTimeout(w.t); done(skipped); } };
+      w.t = setTimeout(() => w.finish(false), ms); waits.add(w);
+    });
+  }
+  const skipWaits = (scope) => { let hit = false; for (const w of [...waits]) if (scope ? w.scope === scope : !w.scope || w.scope.isActive()) { w.finish(true); hit = true; } return hit; };
+  addEventListener("keydown", (e) => {
+    if (e.key !== " " || e.repeat || !waits.size || e.target.closest?.("input, textarea, select, [contenteditable]")) return;
+    if (skipWaits()) { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
 
   // Profile photo with initials fallback (if photo.jpg is missing the initials stay visible)
   const avatar = (cls = "") => `<span class="avatar ${cls}">${esc(P.initials)}${P.photo ? `<img src="${esc(P.photo)}" alt="${esc(P.name)}" decoding="async" onerror="this.remove()">` : ""}</span>`;
@@ -80,11 +96,11 @@
   const playerName = () => (store.lget("xp-player-name") || "").slice(0, 20);
   // Ask once for a display name for leaderboards and shared pictures (a visitor who cancels stays "Visitor")
   let nameAsked = false;
-  function askName() {
+  async function askName() {
     let n = playerName();
     if (!n && !nameAsked && store.lget("xp-player-name-asked") !== "1") {
       nameAsked = true; store.lset("xp-player-name-asked", "1");
-      n = (prompt("Your name for the world leaderboard and shared pictures (shown to everyone):", "") || "").trim().replace(/[<>]/g, "").slice(0, 20); if (n) store.lset("xp-player-name", n);
+      n = ((await askBox("Your Name", "Your name for the world leaderboard and shared pictures (shown to everyone):")) || "").trim().replace(/[<>]/g, "").slice(0, 20); if (n) store.lset("xp-player-name", n);
     }
     return n || "Visitor";
   }
@@ -151,7 +167,7 @@
     recycle:  { title: "Recycle Bin", icon: "recycle", w: 560, h: 360, render: renderRecycle },
     computer: { title: "My Computer", icon: "computer", w: 600, h: 400, render: renderComputer },
     calendar: { title: "Calendar", icon: "calendar", w: 640, h: 470, render: (b, c) => renderCalendar(b, c) },
-    games:    { title: "Games", icon: "games", w: 560, h: 340, render: renderGames },
+    games:    { title: "Games", icon: "games", w: 640, h: 520, render: renderGames },
     pinball:  { title: "3D Pinball - Space Cadet", icon: "pinball", w: 440, h: 660, render: lazyGame("pinball") },
     spider:   { title: "Spider Solitaire", icon: "spider", w: 720, h: 540, render: lazyGame("spider") },
     calc:     { title: "Calculator", icon: "calc", w: 270, h: 320, render: lazyExtra("calculator") },
@@ -174,18 +190,29 @@
   ["solitaire", "spider", "mine", "pinball", "snake", "breakout", "wmp", "pictures", "paint"].forEach((k) => (APPS[k].full = true));
   APPS.reset = { title: "Reset Desktop", icon: "showdesk", action: () => askReset() };
   const GAME_IDS = ["solitaire", "spider", "mine", "pinball", "snake", "breakout"];
+  // Minesweeper's panel: a seven-segment clock and the little face
+  const SEG_POLY = { a: "2,.5 11,.5 9,2.5 4,2.5", f: "1,1.5 3,3.5 3,9.5 1,11", b: "12,1.5 12,11 10,9.5 10,3.5", g: "2,11.5 4,10.5 9,10.5 11,11.5 9,12.5 4,12.5", e: "1,12 3,13.5 3,19.5 1,21.5", c: "12,12 12,21.5 10,19.5 10,13.5", d: "4,20.5 9,20.5 11,22.5 2,22.5" };
+  const SEG_ON = { 0: "abcdef", 1: "bc", 2: "abged", 3: "abgcd", 4: "fgbc", 5: "afgcd", 6: "afgedc", 7: "abc", 8: "abcdefg", 9: "abcdfg", "-": "g" };
+  const lcdDigits = (s) => [...s].map((ch) => `<svg viewBox="0 0 13 23" aria-hidden="true">${Object.entries(SEG_POLY).map(([k, p]) => `<polygon points="${p}" fill="${SEG_ON[ch].includes(k) ? "#ff1a00" : "#3c0000"}"/>`).join("")}</svg>`).join("");
+  const faceBase = `<circle cx="10" cy="10" r="8.500" fill="#ffee00" stroke="#000"/>`;
+  const MINE_FACE = {
+    smile: `<svg viewBox="0 0 20 20">${faceBase}<circle cx="7" cy="8" r="1.200"/><circle cx="13" cy="8" r="1.200"/><path d="M5.500 12c1.500 3 7.500 3 9 0" fill="none" stroke="#000" stroke-width="1.200"/></svg>`,
+    ooh: `<svg viewBox="0 0 20 20">${faceBase}<circle cx="7" cy="7.500" r="1.200"/><circle cx="13" cy="7.500" r="1.200"/><ellipse cx="10" cy="13" rx="2.200" ry="2.700" fill="none" stroke="#000" stroke-width="1.200"/></svg>`,
+    dead: `<svg viewBox="0 0 20 20">${faceBase}<path d="M5.500 6.500l3 3m0-3l-3 3M11.500 6.500l3 3m0-3l-3 3" stroke="#000" stroke-width="1.200"/><path d="M5.500 15c1.500-3 7.500-3 9 0" fill="none" stroke="#000" stroke-width="1.200"/></svg>`,
+    cool: `<svg viewBox="0 0 20 20">${faceBase}<path d="M3 7h14" stroke="#000"/><path d="M4.500 7h4.500l-.5 3h-3.500zM11 7h4.500l-.5 3h-3.500z"/><path d="M6 13c1.500 2.500 6.500 2.500 8 0" fill="none" stroke="#000" stroke-width="1.200"/></svg>`,
+  };
   const DESKTOP = ["about", "projects", "resume", "ie", "contact", "msn", "cmd", "calendar", "games", "pictures", "wmp", "paint", "notepad", "stats", "board", "reset", "recycle"];
   const DESK_LABEL = { stats: "Site Stats", board: "Message Board", reset: "Reset Desktop", pinball: "3D Pinball", spider: "Spider Solitaire", calc: "Calculator", wmp: "Media Player", pictures: "My Pictures", taskmgr: "Task Manager", control: "Control Panel", run: "Run", search: "Search", help: "Help and Support", privacy: "Privacy", about: "About Me", resume: "Resume", projects: "My Projects", contact: "Contact Me", ie: "Internet Explorer", cmd: "Command Prompt", msn: "MSN Messenger", mine: "Minesweeper", paint: "Paint", notepad: "Notepad", recycle: "Recycle Bin", computer: "My Computer", games: "Games", calendar: "Calendar", solitaire: "Solitaire", snake: "Snake", breakout: "Brick Breaker", display: "Display" };
 
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=27"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=28"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=27"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=28"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyExtra(name) {
@@ -210,13 +237,13 @@
 
   function openApp(id, opts = {}) {
     const key = opts.key || id;
-    if (wins.has(key)) { const w = wins.get(key); w.el.classList.remove("min"); focus(key); if (opts.date) w.goto?.(opts.date); return w; }
+    if (wins.has(key)) { const w = wins.get(key); restore(key); if (opts.date) w.goto?.(opts.date); return w; }
     const app = opts.app || APPS[id];
     if (!app) return;
     if (app.action) return app.action();
     // a full-screen window hides everything else, so new windows and message boxes bring the desktop back
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
-    closeMenus();
+    closeMenus(); busy();
     const el = document.createElement("div");
     el.className = "win";
     el.dataset.key = key;
@@ -227,12 +254,13 @@
     el.style.left = Math.round(Math.max(6, Math.min(dw - w - 6, (dw - w) / 2 + off - 60))) + "px";
     el.style.top = Math.round(Math.max(6, Math.min(dh - h - 6, (dh - h) / 2 + off - 50))) + "px";
     if (!app.fixed) { el.style.width = w + "px"; el.style.height = h + "px"; }
+    const fixedSize = app.fixed || app.dialog;
     el.innerHTML = `
       <div class="titlebar">${I[app.icon]}<span class="ttl">${esc(app.title)}</span>
-        ${app.full ? `<button class="tbtn fsbtn" data-a="fs" title="Full screen (F11)" aria-label="Full screen">⛶</button>` : ""}<button class="tbtn" data-a="min" title="Minimize" aria-label="Minimize">_</button>
-        ${app.fixed ? "" : `<button class="tbtn" data-a="max" title="Maximize" aria-label="Maximize">□</button>`}
+        ${app.full ? `<button class="tbtn fsbtn" data-a="fs" title="Full screen (F11)" aria-label="Full screen">⛶</button>` : ""}${app.dialog ? "" : `<button class="tbtn" data-a="min" title="Minimize" aria-label="Minimize">_</button>`}
+        ${fixedSize ? "" : `<button class="tbtn" data-a="max" title="Maximize" aria-label="Maximize">□</button>`}
         <button class="tbtn close" data-a="close" title="Close" aria-label="Close">×</button>
-      </div><div class="wbody"></div>${app.fixed ? "" : `<div class="resize"></div>`}`;
+      </div><div class="wbody"></div>${fixedSize ? "" : `<div class="resize"></div>`}`;
     winLayer.appendChild(el);
     const task = document.createElement("div");
     task.className = "task";
@@ -244,18 +272,18 @@
     el.addEventListener("pointerdown", () => focus(key));
     task.addEventListener("click", () => {
       if (activeKey === key && !el.classList.contains("min")) minimize(key);
-      else { el.classList.remove("min"); focus(key); }
+      else restore(key);
     });
     el.querySelector(".titlebar").addEventListener("click", (e) => {
       const a = e.target.closest(".tbtn")?.dataset.a;
       if (a === "close") close(key);
       if (a === "min") minimize(key);
-      if (a === "max") el.classList.toggle("max");
+      if (a === "max") toggleMax(el);
       if (a === "fs") toggleFull(el);
     });
-    el.querySelector(".titlebar").addEventListener("dblclick", (e) => { if (!app.fixed && !e.target.closest(".tbtn") && document.fullscreenElement !== el) el.classList.toggle("max"); });
+    el.querySelector(".titlebar").addEventListener("dblclick", (e) => { if (!fixedSize && !e.target.closest(".tbtn") && document.fullscreenElement !== el) toggleMax(el); });
     drag(el.querySelector(".titlebar"), el, false);
-    if (!app.fixed) drag(el.querySelector(".resize"), el, true);
+    if (!fixedSize) drag(el.querySelector(".resize"), el, true);
 
     const ctx = {
       key, el, store, ...opts,
@@ -264,6 +292,9 @@
       onClose: (fn) => rec.cleanups.push(fn),
       isVisible: () => !document.hidden && !el.classList.contains("min") && wins.has(key),
       isActive: () => activeKey === key,
+      alive: () => wins.get(key)?.el === el,
+      wait: (ms) => wait(ms, ctx),
+      skipWait: () => skipWaits(ctx),
       menu: (bar, menus) => wireMenu(bar, menus),
       sys,
     };
@@ -278,15 +309,19 @@
   }
   const RUN_ALIAS = { mspaint: "paint", "notepad.exe": "notepad", "calc.exe": "calc", "cmd.exe": "cmd", taskmgr: "taskmgr", iexplore: "ie", explorer: "computer", winmine: "mine", sol: "solitaire", spider: "spider", pinball: "pinball", wmplayer: "wmp", control: "control" };
   const sys = {
-    windows: () => [...wins].filter(([k]) => !k.startsWith("msg") && k !== "askreset").map(([k, w]) => ({ key: k, title: w.el.querySelector(".ttl").textContent, minimized: w.el.classList.contains("min"), active: k === activeKey })),
-    focus: (k) => { const w = wins.get(k); if (w) { w.el.classList.remove("min"); focus(k); } },
+    windows: () => [...wins].filter(([k]) => !k.startsWith("msg") && !k.startsWith("ask")).map(([k, w]) => ({ key: k, title: w.el.querySelector(".ttl").textContent, minimized: w.el.classList.contains("min"), active: k === activeKey })),
+    focus: (k) => { if (wins.has(k)) restore(k); },
     close: (k) => close(k),
     open: (id, o) => { id = RUN_ALIAS[String(id).toLowerCase()] || id; const k = Object.keys(APPS).find((a) => a === id || APPS[a].title.toLowerCase() === String(id).toLowerCase() || (DESK_LABEL[a] || "").toLowerCase() === String(id).toLowerCase()); if (!k) return false; openApp(k, o); return true; },
-    msg: (t, h) => msgBox(t, h),
-    photos: [{ src: "photo-full.jpg?v=27", title: "Medhansh.jpg" }, { src: "photo.jpg?v=27", title: "Avatar.jpg" }],
+    msg: (t, h, icon) => msgBox(t, h, icon),
+    ask: (t, f) => askBox(t, f),
+    confirm: (t, h, ok) => confirmBox(t, h, ok),
+    notify: (t, h, o) => notify(t, h, o),
+    career: { read: () => Career.read(), record: (g, r) => Career.record(g, r), levelOf: (p) => Career.levelOf(p), rank: (l) => Career.rank(l) },
+    photos: [{ src: "photo-full.jpg?v=28", title: "Medhansh.jpg" }, { src: "photo.jpg?v=28", title: "Avatar.jpg" }],
     // Shared data everyone sees. Games: sys.scores.submit(game, score, extra) / sys.scores.top(game, n, ascending)
-    scores: { top: (g, n, asc) => Cloud.top(g, n, asc), submit: (g, s, x) => { askName(); return Cloud.submit(g, s, x); }, name: () => playerName(), askName },
-    pictures: { list: () => Cloud.pictures(), data: (id) => Cloud.pictureData(id), add: (t, d, w, h) => { askName(); return Cloud.pictureAdd(t, d, w, h); }, remove: (id) => Cloud.pictureDelete(id) },
+    scores: { top: (g, n, asc) => Cloud.top(g, n, asc), submit: async (g, s, x) => { await askName(); return Cloud.submit(g, s, x); }, name: () => playerName(), askName },
+    pictures: { list: () => Cloud.pictures(), data: (id) => Cloud.pictureData(id), add: async (t, d, w, h) => { await askName(); return Cloud.pictureAdd(t, d, w, h); }, remove: (id) => Cloud.pictureDelete(id) },
     esc,
     P,
   };
@@ -303,7 +338,23 @@
     const w = wins.get(activeKey); if (!w?.app.full) return;
     e.preventDefault(); toggleFull(w.el);
   });
-  function minimize(key) { const w = wins.get(key); if (!w) return; w.el.classList.add("min"); if (activeKey === key) activeKey = null; paintActive(); }
+  // The hourglass, briefly, whenever a program starts
+  function busy(ms = 420) { document.documentElement.classList.add("busy"); clearTimeout(busy.t); busy.t = setTimeout(() => document.documentElement.classList.remove("busy"), ms); }
+  // XP's window animation: an outline with a title bar flies between two rectangles. Purely visual, so state never waits on it.
+  function fly(a, b) {
+    if (!a?.width || !b?.width || reduced() || document.hidden || !Element.prototype.animate) return;
+    const g = document.createElement("div"); g.className = "flyrect"; (document.fullscreenElement || document.body).appendChild(g);
+    const f = (r) => ({ left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
+    const an = g.animate([f(a), f(b)], { duration: 190, easing: "cubic-bezier(.3,.1,.5,1)" });
+    an.onfinish = an.oncancel = () => g.remove(); setTimeout(() => g.remove(), 500);
+  }
+  function minimize(key) { const w = wins.get(key); if (!w) return; const from = w.el.getBoundingClientRect(); w.el.classList.add("min"); fly(from, w.task.getBoundingClientRect()); XPS.play("minimize"); if (activeKey === key) activeKey = null; paintActive(); }
+  function restore(key) {
+    const w = wins.get(key); if (!w) return;
+    if (w.el.classList.contains("min")) { const from = w.task.getBoundingClientRect(); w.el.classList.remove("min"); fly(from, w.el.getBoundingClientRect()); XPS.play("restore"); }
+    focus(key);
+  }
+  function toggleMax(el) { const from = el.getBoundingClientRect(); el.classList.toggle("max"); fly(from, el.getBoundingClientRect()); XPS.play(el.classList.contains("max") ? "maximize" : "restore"); }
   function focus(key) {
     const w = wins.get(key); if (!w) return;
     if (activeKey !== key) w.el.style.zIndex = ++z;
@@ -363,12 +414,44 @@
       handle.addEventListener("pointermove", move); handle.addEventListener("pointerup", up); handle.addEventListener("pointercancel", up);
     });
   }
+  const MB_ICON = {
+    "ℹ️": `<svg viewBox="0 0 32 32"><path d="M16 2C8 2 2 7 2 14c0 4 2 7 5 9l-1 7 7-5c1 .2 2 .3 3 .3 8 0 14-5 14-11.300S24 2 16 2z" fill="#fff" stroke="#3a6fc4" stroke-width="1.5"/><circle cx="16" cy="8.500" r="2.200" fill="#1e5fcf"/><rect x="14" y="12.500" width="4" height="9" rx="1" fill="#1e5fcf"/></svg>`,
+    "⚠️": `<svg viewBox="0 0 32 32"><path d="M16 2.500 30.500 28h-29z" fill="#ffd93b" stroke="#a87b00" stroke-width="1.500" stroke-linejoin="round"/><rect x="14.300" y="10.500" width="3.400" height="10" rx="1.200" fill="#222"/><circle cx="16" cy="24" r="2" fill="#222"/></svg>`,
+    "⛔": `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#e0301e" stroke="#7a1208" stroke-width="1.500"/><path d="M10 10l12 12M22 10 10 22" stroke="#fff" stroke-width="3.600" stroke-linecap="round"/></svg>`,
+  };
+  const mbIcon = (i) => MB_ICON[i] || i;
   function msgBox(title, text, icon = "ℹ️") {
-    if (icon === "⚠️" || icon === "⛔") xpSound("error"); else xpSound("ding");
-    openApp(null, { key: "msg" + Date.now() + "_" + cascade, app: { title, icon: "info", w: 360, h: 170, render: (b, ctx) => {
-      b.innerHTML = `<div class="msgbox"><span class="msgbox-ico">${icon}</span><div>${text}</div></div><div class="msgbox-actions"><button class="xpbtn">OK</button></div>`;
+    XPS.play(icon === "⚠️" ? "exclaim" : icon === "⛔" ? "critical" : "ding");
+    openApp(null, { key: "msg" + Date.now() + "_" + cascade, app: { title, icon: "info", w: 360, h: 170, dialog: true, render: (b, ctx) => {
+      b.innerHTML = `<div class="msgbox"><span class="msgbox-ico">${mbIcon(icon)}</span><div>${text}</div></div><div class="msgbox-actions"><button class="xpbtn">OK</button></div>`;
       const ok = b.querySelector("button"); ok.onclick = ctx.close; setTimeout(() => ok.focus(), 0);
     } } });
+  }
+  // Text entry in an XP dialog instead of the browser's own prompt. A string asks for one value; a list of fields returns a list. Cancel resolves null.
+  function askBox(title, fields) {
+    const list = Array.isArray(fields) ? fields : [{ label: fields }];
+    return new Promise((done) => {
+      let out = null;
+      openApp(null, { key: "ask" + Date.now() + "_" + cascade, app: { title, icon: "info", w: 360, h: 118 + list.length * 34 + (list.length === 1 ? 30 : 0), dialog: true, render: (b, c) => {
+        b.innerHTML = `<form class="askbox"><div class="ask-fields ${list.length === 1 ? "one" : ""}">${list.map((f, i) => `<label><span>${esc(f.label)}</span><input data-i="${i}" type="${f.type || "text"}" value="${esc(f.value ?? "")}" spellcheck="false" autocomplete="off"></label>`).join("")}</div><div class="msgbox-actions"><button class="xpbtn">OK</button><button type="button" class="xpbtn cancel">Cancel</button></div></form>`;
+        c.onClose(() => done(out));
+        b.querySelector(".cancel").onclick = c.close;
+        b.querySelector("form").addEventListener("submit", (e) => { e.preventDefault(); const v = [...b.querySelectorAll("input")].map((x) => x.value); out = Array.isArray(fields) ? v : v[0]; c.close(); });
+        setTimeout(() => { const i = b.querySelector("input"); i.focus(); i.select(); }, 0);
+      } } });
+    });
+  }
+  function confirmBox(title, text, okLabel = "OK") {
+    XPS.play("exclaim");
+    return new Promise((done) => {
+      let yes = false;
+      openApp(null, { key: "ask" + Date.now() + "_" + cascade, app: { title, icon: "info", w: 360, h: 170, dialog: true, render: (b, c) => {
+        b.innerHTML = `<div class="msgbox"><span class="msgbox-ico">${MB_ICON["⚠️"]}</span><div>${text}</div></div><div class="msgbox-actions"><button class="xpbtn yes">${esc(okLabel)}</button><button class="xpbtn no">Cancel</button></div>`;
+        c.onClose(() => done(yes));
+        b.querySelector(".yes").onclick = () => { yes = true; c.close(); }; b.querySelector(".no").onclick = c.close;
+        setTimeout(() => b.querySelector(".no").focus(), 0);
+      } } });
+    });
   }
 
   function screenSaver() {
@@ -378,7 +461,7 @@
     const logo = ov.firstChild; let x = 40, y = 40, vx = 2.2, vy = 1.7, raf;
     const step = () => { const w = logo.offsetWidth, h = logo.offsetHeight; x += vx; y += vy; if (x < 0 || x > innerWidth - w) vx *= -1; if (y < 0 || y > innerHeight - h) vy *= -1; logo.style.transform = `translate(${x}px,${y}px)`; raf = requestAnimationFrame(step); };
     raf = requestAnimationFrame(step);
-    const stop = () => { cancelAnimationFrame(raf); ov.remove(); removeEventListener("keydown", stop, true); };
+    const stop = () => { cancelAnimationFrame(raf); ov.remove(); removeEventListener("keydown", stop, true); idleAt = Date.now(); };
     setTimeout(() => { ov.addEventListener("pointermove", stop, { once: true }); ov.addEventListener("pointerdown", stop, { once: true }); addEventListener("keydown", stop, true); }, 400);
   }
 
@@ -401,7 +484,7 @@
       const r = span.getBoundingClientRect();
       dd.style.top = r.bottom + "px";
       dd.addEventListener("pointerdown", (e) => e.stopPropagation());
-      dd.addEventListener("click", (e) => { const d = e.target.closest("[data-k]"); if (!d || d.classList.contains("dis")) return; closeMenus(); items[+d.dataset.k].act?.(); });
+      dd.addEventListener("click", (e) => { const d = e.target.closest("[data-k]"); if (!d || d.classList.contains("dis")) return; closeMenus(); XPS.play("menu"); items[+d.dataset.k].act?.(); });
       dd.addEventListener("keydown", (e) => {
         e.stopPropagation();
         const opts = [...dd.querySelectorAll("[data-k]:not(.dis)")], at = opts.indexOf(document.activeElement);
@@ -424,7 +507,7 @@
   document.addEventListener("pointerdown", (e) => { if (openMenu && !e.target.closest?.(".dropdown")) closeMenus(); });
   const defaultMenus = (app, ctx) => [
     { label: "File", items: [{ label: "Close", key: "Alt+W", act: ctx.close }] },
-    { label: "View", items: [{ label: "Maximize", act: () => ctx.el.classList.toggle("max") }, { label: "Minimize", act: () => minimize(ctx.key) }] },
+    { label: "View", items: [{ label: "Maximize", act: () => toggleMax(ctx.el) }, { label: "Minimize", act: () => minimize(ctx.key) }] },
     { label: "Help", items: [{ label: `About ${app.title}`, act: () => msgBox("About", `<b>${esc(app.title)}</b><br>Part of ${esc(P.name)}'s portfolio.`) }] },
   ];
   const chrome = (body, { menu = ["File", "Edit", "View", "Favorites", "Tools", "Help"], menus, addr, addrIcon = "folder" } = {}) => {
@@ -827,27 +910,28 @@ Approximate round trip times in milli-seconds:
     const custom = (ctx.store.lget("xp-mine-custom") || "").split("x").map(Number);
     if (custom.length === 3 && custom.every((n) => n > 0)) LEVELS.Custom = custom;
     let level = ctx.store.lget("xp-mine-level") || "Beginner"; if (!LEVELS[level]) level = "Beginner";
-    let markMode = ctx.store.lget("xp-mine-marks") !== "0", marks = new Set(), hover = null;
+    let markMode = ctx.store.lget("xp-mine-marks") !== "0", sound = ctx.store.lget("xp-mine-sound") !== "0", marks = new Set(), hover = null;
     let best = {}; try { best = JSON.parse(ctx.store.lget("xp-mine-best") || "{}"); } catch {}
-    let W, H, M, grid, opened, flags, over, started, timer, secs, t0, fx = 0;
+    let W, H, M, grid, opened, flags, over, won, started, timer, secs, t0, fx = 0, endRun = 0, blasts = [];
     body.classList.add("mine-body");
     body.innerHTML = `<div class="menubar"></div>
       <div class="mine-levels" role="radiogroup" aria-label="Difficulty">${Object.keys(LEVELS).map((l) => `<button data-l="${l}" role="radio">${l}</button>`).join("")}<span class="mine-best"></span></div>
-      <div class="mine-area"><div class="mine-wrap"><div class="mine-top"><span class="lcd left">010</span><button class="smiley" aria-label="New game">🙂</button><span class="lcd time">000</span></div>
+      <div class="mine-area"><div class="mine-wrap"><div class="mine-top"><span class="lcd left"></span><button class="smiley" aria-label="New game"></button><span class="lcd time"></span></div>
         <div class="mine-board"><div class="mine-grid"></div><div class="mine-end hidden"></div><canvas class="mine-fx"></canvas></div></div></div>`;
     const g = body.querySelector(".mine-grid"), smile = body.querySelector(".smiley"), lLeft = body.querySelector(".left"), lTime = body.querySelector(".time");
     const endEl = body.querySelector(".mine-end"), fxCv = body.querySelector(".mine-fx"); let bestEl = body.querySelector(".mine-best");
+    const snd = (name) => { if (sound) XPS.play(name, true); };
     const setLevel = (l) => { level = l; ctx.store.lset("xp-mine-level", l); reset(true); };
     ctx.menu(body.querySelector(".menubar"), [
-      { label: "Game", items: () => [{ label: "New", key: "F2", act: () => reset() }, "-", ...Object.keys(LEVELS).map((l) => ({ label: l === "Custom" ? `Custom (${LEVELS.Custom.join("×")})` : l, check: l === level, act: () => setLevel(l) })), { label: "Custom...", act: askCustom }, "-", { label: "Marks (?)", check: markMode, act: () => { markMode = !markMode; ctx.store.lset("xp-mine-marks", markMode ? "1" : "0"); } }, { label: "Best Times...", act: showBest }, "-", { label: "Exit", act: ctx.close }] },
+      { label: "Game", items: () => [{ label: "New", key: "F2", act: () => reset() }, "-", ...Object.keys(LEVELS).map((l) => ({ label: l === "Custom" ? `Custom (${LEVELS.Custom.join("×")})` : l, check: l === level, act: () => setLevel(l) })), { label: "Custom...", act: askCustom }, "-", { label: "Marks (?)", check: markMode, act: () => { markMode = !markMode; ctx.store.lset("xp-mine-marks", markMode ? "1" : "0"); } }, { label: "Sound", check: sound, act: () => { sound = !sound; ctx.store.lset("xp-mine-sound", sound ? "1" : "0"); } }, { label: "Best Times...", act: showBest }, "-", { label: "Exit", act: ctx.close }] },
       { label: "Help", items: [{ label: "How to play", act: () => msgBox("Minesweeper", "Left-click to reveal a square. Right-click (or long-press, or hover + Space) to flag it; with Marks on, a second right-click adds a ?.<br>Click or middle-click a revealed number to open its neighbours once its flags are placed.<br>Pick a difficulty above the board, or set your own with Game > Custom.") }] },
     ]);
     body.querySelector(".mine-levels").addEventListener("click", (e) => { const b = e.target.closest("[data-l]"); if (b && b.dataset.l !== level) setLevel(b.dataset.l); });
-    function askCustom() {
+    async function askCustom() {
       const [w, h, m] = LEVELS.Custom || [20, 12, 40];
-      const v = prompt("Custom field: width x height x mines (e.g. 20x12x40)", `${w}x${h}x${m}`); if (!v) return;
-      let [cw, ch, cm] = v.toLowerCase().split(/[x×,\s]+/).map((n) => parseInt(n, 10));
-      if (!(cw > 0 && ch > 0 && cm > 0)) return msgBox("Minesweeper", "Use the form width x height x mines, for example 20x12x40.", "⚠️");
+      const v = await askBox("Custom Field", [{ label: "Width:", value: w, type: "number" }, { label: "Height:", value: h, type: "number" }, { label: "Mines:", value: m, type: "number" }]); if (!v || !ctx.alive()) return;
+      let [cw, ch, cm] = v.map((n) => parseInt(n, 10));
+      if (!(cw > 0 && ch > 0 && cm > 0)) return msgBox("Minesweeper", "Width, height and mines must all be numbers above zero.", "⚠️");
       cw = Math.max(5, Math.min(40, cw)); ch = Math.max(5, Math.min(24, ch)); cm = Math.max(1, Math.min(cw * ch - 10, cm));
       LEVELS.Custom = [cw, ch, cm]; ctx.store.lset("xp-mine-custom", `${cw}x${ch}x${cm}`); setLevel("Custom");
       paintLevelButtons();
@@ -861,6 +945,8 @@ Approximate round trip times in milli-seconds:
       bestEl.textContent = best[bestKey()] != null ? `Best: ${best[bestKey()]}s` : "";
     };
     const pad = (n) => { n = Math.max(-99, Math.min(999, n)); return n < 0 ? "-" + String(-n).padStart(2, "0") : String(n).padStart(3, "0"); };
+    const setLcd = (el, n) => { const s = pad(n); if (el.dataset.v !== s) { el.dataset.v = s; el.innerHTML = lcdDigits(s); el.setAttribute("aria-label", s); } };
+    const face = (f) => { if (smile.dataset.f !== f) { smile.dataset.f = f; smile.innerHTML = MINE_FACE[f]; } };
     const nb = (i) => { const x = i % W, y = (i / W) | 0, r = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = x + dx, ny = y + dy; if ((dx || dy) && nx >= 0 && ny >= 0 && nx < W && ny < H) r.push(ny * W + nx); } return r; };
     // keep the auto-sized window centred on screen whenever the board size changes
     const recenter = () => requestAnimationFrame(() => {
@@ -870,9 +956,9 @@ Approximate round trip times in milli-seconds:
       ctx.el.style.top = Math.round(Math.max(6, (innerHeight - 30 - r.height) / 2)) + "px";
     });
     function reset(resized) {
-      [W, H, M] = LEVELS[level];
-      clearInterval(timer); cancelAnimationFrame(fx); grid = Array(W * H).fill(0); opened = new Set(); flags = new Set(); marks = new Set(); over = false; started = false; secs = 0;
-      smile.textContent = "🙂"; lLeft.textContent = pad(M); lTime.textContent = "000";
+      [W, H, M] = LEVELS[level]; endRun++;
+      clearInterval(timer); cancelAnimationFrame(fx); blasts.forEach(clearTimeout); blasts = []; grid = Array(W * H).fill(0); opened = new Set(); flags = new Set(); marks = new Set(); over = false; won = false; started = false; secs = 0;
+      face("smile"); setLcd(lLeft, M); setLcd(lTime, 0);
       endEl.classList.add("hidden"); g.classList.remove("won", "lost");
       fxCv.getContext("2d").clearRect(0, 0, fxCv.width, fxCv.height);
       g.style.gridTemplateColumns = `repeat(${W}, 18px)`;
@@ -884,48 +970,63 @@ Approximate round trip times in milli-seconds:
       const avoid = new Set([safe, ...nb(safe)]); let n = 0;
       while (n < M) { const i = (Math.random() * W * H) | 0; if (grid[i] !== -1 && !avoid.has(i)) { grid[i] = -1; n++; } }
       grid.forEach((v, i) => { if (v !== -1) grid[i] = nb(i).filter((j) => grid[j] === -1).length; });
-      started = true; t0 = performance.now(); timer = setInterval(() => (lTime.textContent = pad(++secs)), 1000);
+      started = true; t0 = performance.now(); timer = setInterval(() => { setLcd(lTime, ++secs); snd("tick"); }, 1000);
     }
     function open(i) {
       // iterative flood fill (avoids deep recursion on Expert boards)
-      const stack = [i];
+      const stack = [i], before = opened.size;
       while (stack.length) {
         const k = stack.pop();
         if (opened.has(k) || flags.has(k)) continue;
-        opened.add(k); marks.delete(k); const c = g.children[k]; c.classList.add("open"); c.textContent = "";
+        opened.add(k); marks.delete(k); const c = g.children[k]; c.classList.add("open"); c.classList.remove("mark"); c.textContent = "";
         if (grid[k] === -1) { c.classList.add("boom"); lose(k); return; }
         if (grid[k]) { c.textContent = grid[k]; c.classList.add("n" + grid[k]); } else stack.push(...nb(k));
       }
+      if (opened.size - before > 1) snd("flip"); else if (opened.size > before) snd("flick");
     }
     function chord(i) {
       const around = nb(i);
       if (grid[i] > 0 && around.filter((j) => flags.has(j)).length === grid[i]) around.forEach((j) => !over && open(j));
     }
+    const dist = (a, b) => Math.hypot(a % W - b % W, ((a / W) | 0) - ((b / W) | 0));
     // ripple delay: cells light up outward from where the game ended
-    const wave = (from, cls) => {
-      const fx0 = from % W, fy0 = (from / W) | 0;
-      [...g.children].forEach((c, i) => { c.style.animationDelay = Math.hypot(i % W - fx0, ((i / W) | 0) - fy0) * 28 + "ms"; c.classList.add(cls); });
-    };
+    const wave = (from, cls) => { [...g.children].forEach((c, i) => { c.style.animationDelay = dist(i, from) * 28 + "ms"; c.classList.add(cls); }); };
     function lose(at) {
-      over = true; clearInterval(timer); smile.textContent = "😵"; g.classList.add("lost");
+      over = true; clearInterval(timer); face("dead"); g.classList.add("lost"); snd("boom");
+      sys.career.record("mine", { won: false, mode: level, pts: 2 });
+      // the other mines go off one after another, outward from the one that was hit
+      const mines = [];
       grid.forEach((v, i) => {
         const c = g.children[i];
-        if (v === -1 && !flags.has(i)) { c.textContent = "💣"; c.classList.add("open"); }
-        if (v !== -1 && flags.has(i)) { c.textContent = "❌"; c.classList.add("open"); }
+        if (v === -1 && i !== at && !flags.has(i)) mines.push(i);
+        if (v !== -1 && flags.has(i)) { c.classList.remove("flag"); c.classList.add("open", "xflag"); }
       });
-      wave(at, "shock");
+      mines.sort((a, b) => dist(a, at) - dist(b, at));
+      const span = Math.min(900, mines.length * 45);
+      mines.forEach((i, n) => {
+        const c = g.children[i], d = (n / Math.max(1, mines.length)) * span;
+        c.style.animationDelay = d + "ms"; c.classList.add("open", "mine", "blast");
+        if (n % Math.ceil(mines.length / 8) === 0) blasts.push(setTimeout(() => snd("pop"), d));
+      });
       ctx.el.classList.remove("shake"); void ctx.el.offsetWidth; ctx.el.classList.add("shake");
-      setTimeout(() => over && !g.classList.contains("won") && showEnd(false), 700);
+      const run = ++endRun;
+      ctx.wait(span + 500).then((skipped) => {
+        if (run !== endRun) return;
+        if (skipped) { blasts.forEach(clearTimeout); [...g.querySelectorAll(".blast")].forEach((c) => { c.style.animationDelay = "0ms"; }); }
+        showEnd(false);
+      });
     }
     function check(last) {
       if (over || opened.size !== W * H - M) return;
-      over = true; clearInterval(timer); smile.textContent = "😎"; lLeft.textContent = "000"; g.classList.add("won");
+      over = true; won = true; clearInterval(timer); face("cool"); setLcd(lLeft, 0); g.classList.add("won"); snd("tada");
       const time = Math.max(1, Math.round((performance.now() - t0) / 1000));
-      grid.forEach((v, i) => { if (v === -1) { flags.add(i); g.children[i].textContent = "🚩"; } });
+      grid.forEach((v, i) => { if (v === -1) { flags.add(i); g.children[i].classList.remove("mark"); g.children[i].classList.add("flag"); } });
       const record = best[bestKey()] == null || time < best[bestKey()];
       if (record) { best[bestKey()] = time; ctx.store.lset("xp-mine-best", JSON.stringify(best)); }
+      sys.career.record("mine", { won: true, mode: level, time, pts: { Beginner: 15, Intermediate: 50, Expert: 150 }[level] || 25 });
       wave(last, "glow"); confetti(); paintLevel();
-      setTimeout(() => over && g.classList.contains("won") && showEnd(true, time, record), 450);
+      const run = ++endRun;
+      ctx.wait(650).then(() => { if (run === endRun) showEnd(true, time, record); });
     }
     function worldTimes(el, time) {
       if (!LEVELS[level] || level === "Custom") return;
@@ -934,18 +1035,18 @@ Approximate round trip times in milli-seconds:
       const draw = (rows, mine) => (box.innerHTML = rows.length ? `<b>World best · ${esc(level)}</b><ol>${rows.slice(0, 5).map((r) => `<li class="${r.id === mine ? "me" : ""}">${esc(r.name)} <span>${r.score}s</span></li>`).join("")}</ol>` : "<small>No world times yet.</small>");
       (time ? sys.scores.submit(game, time) : Promise.resolve(null)).then((m) => sys.scores.top(game, 5, true).then((rows) => draw(rows, m?.id))).catch(() => (box.innerHTML = "<small>Offline – world times unavailable.</small>"));
     }
-    function showEnd(won, time, record) {
-      endEl.innerHTML = won
-        ? `<b>🎉 You win!</b><span>${level} cleared in <b>${time}s</b></span><div class="mworld"></div>${record ? `<span class="rec">🏆 New best time!</span>` : `<span>Best: ${best[bestKey()]}s</span>`}<div><button class="xpbtn again">Play again</button>${level !== "Expert" ? `<button class="xpbtn harder">Try ${level === "Beginner" ? "Intermediate" : "Expert"}</button>` : ""}</div>`
-        : `<b>💥 Boom!</b><span>You hit a mine.</span><div><button class="xpbtn again">Try again</button></div>`;
+    function showEnd(didWin, time, record) {
+      endEl.innerHTML = didWin
+        ? `<b>You win!</b><span>${level} cleared in <b>${time}s</b></span><div class="mworld"></div>${record ? `<span class="rec">New best time!</span>` : `<span>Best: ${best[bestKey()]}s</span>`}<div><button class="xpbtn again">Play again</button>${level !== "Expert" && level !== "Custom" ? `<button class="xpbtn harder">Try ${level === "Beginner" ? "Intermediate" : "Expert"}</button>` : ""}</div>`
+        : `<b>Boom!</b><span>You hit a mine.</span><div><button class="xpbtn again">Try again</button></div>`;
       endEl.classList.remove("hidden");
-      if (won) worldTimes(endEl, time);
+      if (didWin) worldTimes(endEl, time);
       endEl.querySelector(".again").onclick = () => reset();
       endEl.querySelector(".harder")?.addEventListener("click", () => setLevel(level === "Beginner" ? "Intermediate" : "Expert"));
       endEl.querySelector(".again").focus();
     }
     function confetti() {
-      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (reduced()) return;
       const board = fxCv.parentElement, w = board.clientWidth, h = board.clientHeight;
       fxCv.width = w; fxCv.height = h;
       const c = fxCv.getContext("2d"), colors = ["#e5410c", "#f2a900", "#ffd640", "#5ca50a", "#1e7ae6", "#8a4fd8", "#fff"];
@@ -960,10 +1061,10 @@ Approximate round trip times in milli-seconds:
     }
     function flag(c) {
       const i = +c.dataset.i; if (opened.has(i) || over) return;
-      if (flags.has(i)) { flags.delete(i); if (markMode) { marks.add(i); c.textContent = "?"; c.classList.add("mark"); } else c.textContent = ""; }
+      if (flags.has(i)) { flags.delete(i); c.classList.remove("flag"); if (markMode) { marks.add(i); c.textContent = "?"; c.classList.add("mark"); } }
       else if (marks.has(i)) { marks.delete(i); c.textContent = ""; c.classList.remove("mark"); }
-      else { flags.add(i); c.textContent = "🚩"; }
-      lLeft.textContent = pad(M - flags.size);
+      else { flags.add(i); c.classList.add("flag"); snd("place"); }
+      setLcd(lLeft, M - flags.size);
     }
     // middle-click chords; hovering a square and pressing Space flags it (or chords a number)
     g.addEventListener("pointerdown", (e) => { if (e.button !== 1) return; e.preventDefault(); const c = e.target.closest(".cell"); if (c && !over && opened.has(+c.dataset.i)) { chord(+c.dataset.i); check(+c.dataset.i); } });
@@ -985,23 +1086,24 @@ Approximate round trip times in milli-seconds:
     g.addEventListener("contextmenu", (e) => { e.preventDefault(); const c = e.target.closest(".cell"); if (c && !lpFired) flag(c); });
     // long-press to flag on touch screens
     g.addEventListener("pointerdown", (e) => {
-      if (!over) smile.textContent = "😮";
+      if (!over) face("ooh");
       const c = e.target.closest(".cell");
       if (c && e.pointerType === "touch") lp = setTimeout(() => { lpFired = true; flag(c); }, 400);
     });
-    const pup = () => { clearTimeout(lp); if (lpFired) setTimeout(() => (lpFired = false), 150); if (!over) smile.textContent = "🙂"; };
+    const pup = () => { clearTimeout(lp); if (lpFired) setTimeout(() => (lpFired = false), 150); if (!over) face("smile"); };
     addEventListener("pointerup", pup); addEventListener("pointercancel", pup);
     const f2 = (e) => { if (e.key === "F2" && ctx.isActive()) { e.preventDefault(); reset(); } };
     addEventListener("keydown", f2);
-    smile.onclick = () => reset();
-    ctx.onClose(() => { clearInterval(timer); clearTimeout(lp); cancelAnimationFrame(fx); removeEventListener("keydown", f2); removeEventListener("pointerup", pup); removeEventListener("pointercancel", pup); });
+    smile.onclick = () => { snd("menu"); reset(); };
+    ctx.onClose(() => { clearInterval(timer); clearTimeout(lp); cancelAnimationFrame(fx); blasts.forEach(clearTimeout); removeEventListener("keydown", f2); removeEventListener("pointerup", pup); removeEventListener("pointercancel", pup); });
+    ctx.el.__g = { grid: () => grid, W: () => W, H: () => H, M: () => M, over: () => over, won: () => won, opened: () => opened.size };
     reset(true);
   }
 
   const NOTE_DEFAULT = () => `Hi! Thanks for visiting my portfolio.\n\nThis notepad is shared: everyone who visits sees the same text.\n\nThings to try:\n - Open "Command Prompt" and type help\n - Play Solitaire, Minesweeper, Snake or Brick Breaker\n - Add tasks and reminders in the Calendar\n - Browse the web in Internet Explorer\n - Draw something in Paint\n - Right-click the desktop > Properties to change the wallpaper\n\n- ${P.name}`;
   function renderNotepad(body, ctx) {
     const inner = chrome(body, { menus: [
-      { label: "File", items: [{ label: "New", act: () => { if (!ta.value.trim() || confirm("Clear the shared note for everyone?")) { ta.value = ""; queue(); } } }, { label: "Save As...", key: "Ctrl+S", act: () => download(new Blob([ta.value], { type: "text/plain" }), "note.txt") }, { label: "Reload from server", act: () => pull(true) }, "-", { label: "Exit", act: ctx.close }] },
+      { label: "File", items: [{ label: "New", act: async () => { if (!ta.value.trim() || await confirmBox("Notepad", "Clear the shared note for everyone?", "Clear")) { ta.value = ""; queue(); } } }, { label: "Save As...", key: "Ctrl+S", act: () => download(new Blob([ta.value], { type: "text/plain" }), "note.txt") }, { label: "Reload from server", act: () => pull(true) }, "-", { label: "Exit", act: ctx.close }] },
       { label: "Edit", items: [{ label: "Select All", key: "Ctrl+A", act: () => ta.select() }, { label: "Time/Date", key: "F5", act: () => insert(new Date().toLocaleString()) }] },
       { label: "Format", items: () => [{ label: "Word Wrap", check: wrap, act: () => { wrap = !wrap; ta.style.whiteSpace = wrap ? "pre-wrap" : "pre"; } }, { label: "Bigger font", act: () => font(2) }, { label: "Smaller font", act: () => font(-2) }] },
       { label: "Help", items: [{ label: "About Notepad", act: () => msgBox("About Notepad", "This note is shared with everyone who visits and is saved to the server as you type.<br>If the server can't be reached, it's kept in this browser and synced later.") }] },
@@ -1109,7 +1211,7 @@ Approximate round trip times in milli-seconds:
     const doRedo = () => { if (!redo.length) return; undo.push(g.getImageData(0, 0, cv.width, cv.height)); g.putImageData(redo.pop(), 0, 0); };
     const save = () => cv.toBlob((b) => b && download(b, "untitled.png"));
     async function share() {
-      const title = (prompt("Name your drawing (everyone will see it in My Pictures):", "My drawing") || "").trim().slice(0, 80); if (!title) return;
+      const title = ((await askBox("Share Drawing", [{ label: "Name (everyone sees it in My Pictures):", value: "My drawing" }]))?.[0] || "").trim().slice(0, 80); if (!title) return;
       try {
         await loadExtras(); const { data, w, h } = await window.EXTRAS.compressImage(cv);
         await sys.pictures.add(title, data, w, h);
@@ -1185,7 +1287,7 @@ Approximate round trip times in milli-seconds:
     cv.addEventListener("pointerdown", (e) => {
       const [x, y] = pos(e), color = e.button === 2 ? bg : fg, alt = e.button === 2 ? fg : bg;
       if (tool === "picker") { const p = g.getImageData(x, y, 1, 1).data; const c = "#" + [p[0], p[1], p[2]].map((v) => v.toString(16).padStart(2, "0")).join(""); if (e.button === 2) bg = c; else fg = c; paintSwatch(); setTool("pencil"); return; }
-      if (tool === "text") { const t = prompt("Text:"); if (t) { snap(); g.fillStyle = color; g.font = `${10 + size * 3}px Tahoma, sans-serif`; g.fillText(t, x, y); } return; }
+      if (tool === "text") { askBox("Paint", "Text:").then((t) => { if (t) { snap(); g.fillStyle = color; g.font = `${10 + size * 3}px Tahoma, sans-serif`; g.fillText(t, x, y); } }); return; }
       if (tool === "fill") { const prev = g.getImageData(0, 0, cv.width, cv.height); if (flood(x, y, color)) { undo.push(prev); if (undo.length > 30) undo.shift(); redo = []; } return; }
       if (!["line", "rect", "ellipse"].includes(tool)) snap();
       cv.setPointerCapture(e.pointerId);
@@ -1237,12 +1339,61 @@ Approximate round trip times in milli-seconds:
       <div class="ex-main"><div class="grid-items">${items.map((id) => `<div class="fitem" data-open="${id}">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id])}</span></div>`).join("")}</div></div></div>`;
   }
 
-  function renderGames(body) {
+  function renderGames(body, ctx) {
     const inner = chrome(body, { addr: "C:\\Program Files\\Games", addrIcon: "games" });
-    const blurb = { spider: "1, 2 or 4 suits", pinball: "Space Cadet-style table", solitaire: "Classic Klondike", mine: "3 difficulty levels", snake: "Eat, grow, repeat", breakout: "Smash every brick" };
-    inner.innerHTML = `<div class="explorer">${taskPane([["Games", `<span>Double-click a game to play. Your best scores stay in this browser, and finished games go on the public world leaderboards.</span>`]])}
-      <div class="ex-main"><div class="grid-items">${GAME_IDS.map((id) => `<div class="fitem" data-open="${id}" title="${esc(blurb[id])}">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id])}</span><small>${esc(blurb[id])}</small></div>`).join("")}</div></div></div>`;
+    const blurb = { spider: "1, 2 or 4 suits", pinball: "Rank up with missions", solitaire: "Klondike, Draw 1 or 3", mine: "3 levels plus custom", snake: "10 maze levels", breakout: "12 designed levels" };
+    const paint = () => {
+      const d = Career.read(), lv = Career.levelOf(d.pts), from = Career.needFor(lv), to = Career.needFor(lv + 1), best = (id, g) => (id === "mine" ? (g.bestTime ? g.bestTime + "s" : "—") : g.bestScore ? g.bestScore.toLocaleString() : "—");
+      inner.innerHTML = `<div class="explorer">${taskPane([
+        ["Player", `<span class="pcard"><b>Level ${lv}: ${esc(Career.rank(lv))}</b><span class="xpbar" role="progressbar" aria-valuenow="${d.pts - from}" aria-valuemax="${to - from}"><i style="width:${Math.round((d.pts - from) / (to - from) * 100)}%"></i></span><small>${d.pts - from} of ${to - from} XP to level ${lv + 1}</small></span>`],
+        [`Trophies (${d.trophies.length}/${TROPHIES.length})`, TROPHIES.map(([k, t, how]) => `<span class="trophy ${d.trophies.includes(k) ? "got" : ""}" title="${esc(how)}">${d.trophies.includes(k) ? "★" : "☆"} ${esc(t)}</span>`).join("")],
+      ])}
+      <div class="ex-main"><div class="grid-items">${GAME_IDS.map((id) => `<div class="fitem" data-open="${id}" title="${esc(blurb[id])}">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id])}</span><small>${esc(blurb[id])}</small></div>`).join("")}</div>
+        <table class="gstats"><thead><tr><th>Game</th><th>Played</th><th>Won</th><th>Streak</th><th>Level</th><th>Best</th></tr></thead><tbody>${GAME_IDS.map((id) => { const g = d.games[id] || {}; return `<tr><td>${esc(DESK_LABEL[id])}</td><td>${g.played || 0}</td><td>${g.won || 0}</td><td>${g.bestStreak || 0}</td><td>${g.bestLevel || "—"}</td><td>${best(id, g)}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+      applyOrder(ctx.el, ctx.key); focusableItems(ctx.el);
+    };
+    paint(); addEventListener("xp-career", paint); ctx.onClose(() => removeEventListener("xp-career", paint));
   }
+
+  // ---------------- Player career: every game earns XP points, and points earn levels ----------------
+  const RANKS = ["Guest", "Limited User", "User", "Power User", "Help Desk", "Network Admin", "Sysadmin", "Domain Admin", "Administrator", "Root"];
+  const sumPlayed = (d) => Object.values(d.games).reduce((n, g) => n + (g.played || 0), 0);
+  const TROPHIES = [
+    ["first", "First Win", "Win any game", (d) => Object.values(d.games).some((g) => g.won > 0)],
+    ["regular", "Regular", "Finish 25 games", (d) => sumPlayed(d) >= 25],
+    ["allround", "All-Rounder", "Finish a game of all six", (d) => GAME_IDS.every((id) => d.games[id]?.played)],
+    ["streak", "On a Roll", "Win 5 in a row in one game", (d) => Object.values(d.games).some((g) => g.bestStreak >= 5)],
+    ["expert", "Mine Expert", "Clear Minesweeper on Expert", (d, g, r) => g === "mine" && r.won && r.mode === "Expert"],
+    ["quick", "Speed Dealer", "Win Solitaire in under 3 minutes", (d, g, r) => g === "solitaire" && r.won && r.time < 180],
+    ["spider4", "Arachnologist", "Win Spider with 4 suits", (d, g, r) => g === "spider" && r.won && r.mode === "4suit"],
+    ["snake5", "Nibbler", "Reach level 5 in Snake", (d) => d.games.snake?.bestLevel >= 5],
+    ["brick5", "Wrecking Ball", "Reach level 5 in Brick Breaker", (d) => d.games.breakout?.bestLevel >= 5],
+    ["admiral", "Admiral", "Reach the rank of Admiral in Pinball", (d) => d.games.pinball?.bestLevel >= 6],
+    ["lvl5", "Power Trip", "Reach career level 5", (d) => Career.levelOf(d.pts) >= 5],
+  ];
+  const Career = {
+    read() { const d = readLocal("xp-career", {}); return { pts: +d.pts > 0 ? +d.pts : 0, games: d.games && typeof d.games === "object" ? d.games : {}, trophies: Array.isArray(d.trophies) ? d.trophies : [] }; },
+    // level n+1 starts at 50*n*(n+1) points: 100, 300, 600, 1000...
+    levelOf: (pts) => Math.floor((Math.sqrt(1 + pts / 12.5) - 1) / 2) + 1,
+    needFor: (lv) => 50 * (lv - 1) * lv,
+    rank: (lv) => RANKS[Math.min(lv, RANKS.length) - 1],
+    // r: { won, score, level, time (seconds), mode, pts } from a finished game
+    record(game, r) {
+      const d = this.read(), g = d.games[game] ||= {}, before = this.levelOf(d.pts);
+      g.played = (g.played || 0) + 1;
+      if (r.won) { g.won = (g.won || 0) + 1; g.streak = (g.streak || 0) + 1; g.bestStreak = Math.max(g.bestStreak || 0, g.streak); if (r.time && (!g.bestTime || r.time < g.bestTime)) g.bestTime = r.time; } else g.streak = 0;
+      if (r.score > (g.bestScore || 0)) g.bestScore = r.score;
+      if (r.level > (g.bestLevel || 0)) g.bestLevel = r.level;
+      d.pts += Math.max(0, Math.round(r.pts || 0));
+      const fresh = TROPHIES.filter(([k, , , test]) => !d.trophies.includes(k) && test(d, game, r));
+      fresh.forEach(([k]) => { d.trophies.push(k); d.pts += 50; });
+      store.lset("xp-career", JSON.stringify(d));
+      const after = this.levelOf(d.pts);
+      fresh.forEach(([, t, how]) => notify("Trophy unlocked: " + t, how, { sound: "levelup" }));
+      if (after > before) notify(`Level ${after} reached`, `You are now a ${this.rank(after)}. See your record in the Games folder.`, { sound: "tada", onClick: () => openApp("games") });
+      dispatchEvent(new Event("xp-career"));
+    },
+  };
 
   // ---------------- Control Panel, Run, Search, Help, Privacy ----------------
   function renderControl(body) {
@@ -1260,25 +1411,17 @@ Approximate round trip times in milli-seconds:
     });
   }
   function soundsDialog() {
-    openApp(null, { key: "sounds", app: { title: "Sounds and Audio Devices", icon: "wmp", w: 380, h: 260, render: (b, c) => {
-      b.innerHTML = `<div class="disp"><div class="disp-pane"><label><input type="checkbox" class="snd-on" ${store.lget("xp-sounds") !== "0" ? "checked" : ""}> Play Windows startup, shutdown and error sounds</label>
-        <div class="snd-row"><button class="xpbtn" data-s="startup">▶ Startup</button><button class="xpbtn" data-s="shutdown">▶ Shutdown</button><button class="xpbtn" data-s="ding">▶ Ding</button><button class="xpbtn" data-s="error">▶ Error</button></div>
-        <p class="muted">Volume and mute are in the speaker icon on the taskbar.</p></div><div class="disp-actions"><button class="xpbtn ok">OK</button></div></div>`;
+    const EVENTS = [["startup", "Windows Startup"], ["logon", "Windows Logon"], ["logoff", "Windows Logoff"], ["shutdown", "Windows Shutdown"], ["ding", "Information"], ["exclaim", "Exclamation"], ["critical", "Critical Stop"], ["notify", "Notify"], ["balloon", "Balloon"], ["minimize", "Minimize"], ["restore", "Restore"], ["menu", "Menu Command"], ["start", "Start Navigation"], ["recycle", "Empty Recycle Bin"], ["tada", "Tada"]];
+    openApp(null, { key: "sounds", app: { title: "Sounds and Audio Devices Properties", icon: "wmp", w: 400, h: 400, render: (b, c) => {
+      b.innerHTML = `<div class="disp"><div class="tabs"><span class="on">Sounds</span></div><div class="disp-pane"><label><input type="checkbox" class="snd-on" ${store.lget("xp-sounds") !== "0" ? "checked" : ""}> Play the Windows sound scheme</label>
+        <label>Program events:</label><div class="wall-list snd-list">${EVENTS.map(([k, t]) => `<div data-s="${k}" tabindex="0">🔊 ${esc(t)}</div>`).join("")}</div>
+        <p class="muted">Click an event to hear it. Games have their own Sound switch in the Game menu. Volume and mute are in the speaker icon on the taskbar.</p></div><div class="disp-actions"><button class="xpbtn ok">OK</button></div></div>`;
       b.querySelector(".snd-on").onchange = (e) => store.lset("xp-sounds", e.target.checked ? "1" : "0");
-      b.querySelector(".snd-row").onclick = (e) => { const s = e.target.closest("[data-s]")?.dataset.s; if (s) xpSound(s, true); };
+      const list = b.querySelector(".snd-list"), hear = (d) => { if (!d) return; list.querySelectorAll(".sel").forEach((x) => x.classList.remove("sel")); d.classList.add("sel"); XPS.play(d.dataset.s, true); };
+      list.onclick = (e) => hear(e.target.closest("[data-s]"));
+      list.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); hear(e.target.closest("[data-s]")); } };
       b.querySelector(".ok").onclick = c.close;
     } } });
-  }
-  // Short synthesized XP-style system sounds (no audio files)
-  function xpSound(kind, force) {
-    if (!force && store.lget("xp-sounds") === "0") return;
-    if (muted || vol === 0) return;
-    try {
-      const A = window.AudioContext || window.webkitAudioContext; const ac = xpSound.ac ||= new A(); if (ac.state === "suspended") ac.resume();
-      const seq = { startup: [[311, 0, .5], [466, .18, .5], [622, .36, .6], [831, .54, .9], [698, .9, 1.2]], shutdown: [[831, 0, .5], [622, .2, .5], [466, .4, .6], [311, .6, 1]], ding: [[1047, 0, .4], [1319, .08, .5]], error: [[220, 0, .25], [196, .16, .35]] }[kind] || [];
-      const g0 = ac.createGain(); g0.gain.value = .18 * vol / 100; g0.connect(ac.destination);
-      seq.forEach(([f, t, d]) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = kind === "error" ? "square" : "triangle"; o.frequency.value = f; g.gain.setValueAtTime(0, ac.currentTime + t); g.gain.linearRampToValueAtTime(1, ac.currentTime + t + .03); g.gain.exponentialRampToValueAtTime(.001, ac.currentTime + t + d); o.connect(g).connect(g0); o.start(ac.currentTime + t); o.stop(ac.currentTime + t + d + .05); });
-    } catch {}
   }
   function renderRun(body, ctx) {
     body.innerHTML = `<form class="runbox"><div class="msgbox"><span class="msgbox-ico">🏃</span><div>Type the name of a program, folder or website, and the portfolio will open it for you.</div></div>
@@ -1318,7 +1461,8 @@ Approximate round trip times in milli-seconds:
     const inner = chrome(body, { addr: "Help and Support Center", addrIcon: "help" });
     const topics = [
       ["Getting around", "Double-click a desktop icon to open it (one tap on a phone). Drag windows by their title bar; drag icons to rearrange them. The Start button lists everything."],
-      ["Shortcuts", "Ctrl+Esc or Win: Start menu · Alt+W: close window · Alt+T: Task Manager · Alt+R: Run · F2: new game · F11: full screen (games, Paint, Pictures, Media Player) · Delete: remove a desktop shortcut."],
+      ["Shortcuts", "Ctrl+Esc or Win: Start menu · Alt+W: close window · Alt+T: Task Manager · Alt+R: Run · F2: new game · F11: full screen (games, Paint, Pictures, Media Player) · Delete: remove a desktop shortcut · Space: skip any start-up screen, loading screen or animation."],
+      ["Games and levels", "Snake has 10 maze levels and Brick Breaker has 12 designed levels. Pinball ranks you up through missions. Every finished game earns XP points toward your career level; see your level and trophies in the Games folder."],
       ["Shared Notepad and Calendar", "The Notepad and Calendar are shared by everyone who visits. Changes are saved to the server as you type."],
       ["Shared with everyone", "Message Board posts, My Pictures uploads and world leaderboard scores are public too. Your name for them is the one you choose."],
       ["Contacting me", "Open Contact Me, choose email or phone, and verify your email with the 4-digit code. Only then is the message sent."],
@@ -1452,8 +1596,9 @@ TERMS
       if (t.dataset.tab === "desk") { pane.innerHTML = deskHTML; return renderDisplay(body, ctx); }
       pane.innerHTML = t.dataset.tab === "theme"
         ? `<label>Theme:</label><div class="wall-list"><div class="sel"><i class="wp-bliss"></i>Windows XP (Luna Blue)</div></div><p class="muted">Luna is the only theme on this machine. Change the wallpaper on the Desktop tab.</p>`
-        : `<div class="monitor"><div class="mon-screen saver-mini"><span class="xp-logo tiny"><span></span><span></span><span></span><span></span></span></div><div class="mon-base"></div></div><label>Screen saver: Windows XP</label><button class="xpbtn preview" style="align-self:flex-start">Preview</button><p class="muted">Move the mouse or press a key to stop the preview.</p>`;
+        : `<div class="monitor"><div class="mon-screen saver-mini"><span class="xp-logo tiny"><span></span><span></span><span></span><span></span></span></div><div class="mon-base"></div></div><label>Screen saver: Windows XP</label><label>Wait: <select class="saver-wait">${[[0, "Never"], [1, "1 minute"], [5, "5 minutes"], [10, "10 minutes"]].map(([m, t]) => `<option value="${m}" ${String(m) === (store.lget("xp-saver-wait") ?? "5") ? "selected" : ""}>${t}</option>`).join("")}</select></label><button class="xpbtn preview" style="align-self:flex-start">Preview</button><p class="muted">Move the mouse or press a key to stop the screen saver.</p>`;
       pane.querySelector(".preview")?.addEventListener("click", screenSaver);
+      pane.querySelector(".saver-wait")?.addEventListener("change", (ev) => store.lset("xp-saver-wait", ev.target.value));
     });
     body.querySelector(".wall-list").addEventListener("click", (e) => {
       const d = e.target.closest("[data-w]"); if (!d) return; pick = d.dataset.w;
@@ -1497,7 +1642,7 @@ TERMS
   function moveToTrash(ids) {
     ids = ids.filter((id) => !FIXED.includes(id));
     if (!ids.length) return;
-    trash = [...new Set([...trash, ...ids])]; ids.forEach((id) => delete iconPos[id]);
+    trash = [...new Set([...trash, ...ids])]; ids.forEach((id) => delete iconPos[id]); XPS.play("recycle");
     saveDesk(); store.lset("xp-icons", JSON.stringify(iconPos)); buildIcons(); refreshRecycle();
   }
   let iconPos = {};
@@ -1682,20 +1827,41 @@ TERMS
   // ---------------- Start menu ----------------
   const sm = $("#startMenu"), startBtn = $("#startBtn");
   const left = [["ie", "Internet Explorer", "Browse the web"], ["contact", "Contact Me", "Send me a message"], null, ["about", "About Me"], ["resume", "Resume"], ["projects", "My Projects"], ["cmd", "Command Prompt"], ["msn", "MSN Messenger"], ["wmp", "Windows Media Player"], ["paint", "Paint"]];
-  $("#smLeft").innerHTML = left.map((x) => x ? `<li data-open="${x[0]}" tabindex="0" role="menuitem">${I[APPS[x[0]].icon]}<span>${x[2] ? `<b>${x[1]}</b><small>${x[2]}</small>` : x[1]}</span></li>` : "<hr>").join("");
+  $("#smLeft").innerHTML = left.map((x) => x ? `<li data-open="${x[0]}" tabindex="0" role="menuitem">${I[APPS[x[0]].icon]}<span>${x[2] ? `<b>${x[1]}</b><small>${x[2]}</small>` : x[1]}</span></li>` : "<hr>").join("") + `<hr><li class="sm-all" id="smAll" tabindex="0" role="menuitem" aria-haspopup="true"><b>All Programs</b><i class="sm-go">▶</i></li>`;
   $("#smRight").innerHTML = [
     `<li data-open="computer" tabindex="0" role="menuitem">${I.computer}<b>My Computer</b></li>`, `<li data-open="pictures" tabindex="0" role="menuitem">${I.pictures}My Pictures</li>`, `<li data-open="games" tabindex="0" role="menuitem">${I.games}Games</li>`, `<li data-open="calendar" tabindex="0" role="menuitem">${I.calendar}Calendar</li>`, `<li data-open="board" tabindex="0" role="menuitem">${I.board}Message Board</li>`, `<li data-open="stats" tabindex="0" role="menuitem">${I.stats}Site Statistics</li>`, "<hr>",
     `<li data-open="control" tabindex="0" role="menuitem">${I.control}Control Panel</li>`, `<li data-open="taskmgr" tabindex="0" role="menuitem">${I.taskmgr}Task Manager</li>`, `<li data-open="calc" tabindex="0" role="menuitem">${I.calc}Calculator</li>`, `<li data-open="notepad" tabindex="0" role="menuitem">${I.notepad}Notepad</li>`, "<hr>",
     `<li data-open="help" tabindex="0" role="menuitem">${I.help}Help and Support</li>`, `<li data-open="search" tabindex="0" role="menuitem">${I.search}Search</li>`, `<li data-open="run" tabindex="0" role="menuitem">${I.run}Run...</li>`,
   ].join("");
+  // All Programs fly-out, with Accessories and Games as sub-folders
+  const smFly = document.createElement("div"); smFly.id = "smProg"; smFly.className = "sm-fly hidden"; smFly.setAttribute("role", "menu"); $("#desktop").appendChild(smFly);
+  const flyItem = (id) => `<li data-open="${id}" tabindex="-1" role="menuitem">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id] || APPS[id].title)}</span></li>`;
+  const flyFolder = (name, ids) => `<li class="sm-folder" tabindex="-1" role="menuitem" aria-haspopup="true">${I.folder}<span>${name}</span><i class="sm-go">▶</i><ul role="menu">${ids.map(flyItem).join("")}</ul></li>`;
+  smFly.innerHTML = `<ul>${flyFolder("Accessories", ["calc", "cmd", "notepad", "paint", "taskmgr", "control", "display"])}${flyFolder("Games", GAME_IDS)}${["ie", "msn", "wmp", "contact", "about", "projects", "resume", "pictures", "calendar", "board", "stats", "help"].map(flyItem).join("")}</ul>`;
+  const showFly = (on, focusFirst) => { smFly.classList.toggle("hidden", !on); $("#smAll").classList.toggle("on", on); if (!on) smFly.querySelectorAll(".open").forEach((x) => x.classList.remove("open")); else if (focusFirst) smFly.querySelector("li")?.focus(); };
+  $("#smAll").addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") showFly(true); });
+  sm.addEventListener("pointerover", (e) => { const li = e.target.closest("li"); if (e.pointerType === "mouse" && li && li.id !== "smAll") showFly(false); });
+  smFly.addEventListener("click", (e) => {
+    const li = e.target.closest("li"); if (!li) return;
+    if (li.classList.contains("sm-folder")) { e.stopPropagation(); smFly.querySelectorAll(".sm-folder").forEach((x) => x.classList.toggle("open", x === li && !x.classList.contains("open"))); }
+  });
+  smFly.addEventListener("keydown", (e) => {
+    const li = e.target.closest("li"); if (!li) return;
+    const peers = [...li.parentElement.children], i = peers.indexOf(li);
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); e.stopPropagation(); peers[(i + (e.key === "ArrowDown" ? 1 : -1) + peers.length) % peers.length].focus(); }
+    else if (e.key === "ArrowRight" && li.classList.contains("sm-folder")) { e.preventDefault(); e.stopPropagation(); li.classList.add("open"); li.querySelector("li")?.focus(); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); e.stopPropagation(); const up = li.parentElement.closest(".sm-folder"); if (up) { up.classList.remove("open"); up.focus(); } else { showFly(false); $("#smAll").focus(); } }
+    else if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); li.click(); if (li.classList.contains("sm-folder")) li.querySelector("li")?.focus(); }
+  });
   sm.addEventListener("keydown", (e) => {
     const items = [...sm.querySelectorAll("li[tabindex]")], i = items.indexOf(document.activeElement);
     if (e.key === "Enter" && i >= 0) { e.preventDefault(); items[i].click(); }
+    if (e.key === "ArrowRight" && document.activeElement?.id === "smAll") { e.preventDefault(); showFly(true, true); }
     if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); items[(i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus(); }
   });
-  const toggleStart = (on) => { sm.classList.toggle("hidden", !on); startBtn.classList.toggle("on", on); if (on) { closeTray(); setTimeout(() => sm.querySelector("li[tabindex]")?.focus({ preventScroll: true }), 0); } };
+  const toggleStart = (on) => { const was = !sm.classList.contains("hidden"); sm.classList.toggle("hidden", !on); startBtn.classList.toggle("on", on); if (!on) showFly(false); if (on && !was) XPS.play("start"); if (on) { closeTray(); setTimeout(() => sm.querySelector("li[tabindex]")?.focus({ preventScroll: true }), 0); } };
   startBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleStart(sm.classList.contains("hidden")); });
-  sm.addEventListener("click", (e) => { if (e.target.closest("li")) toggleStart(false); });
+  sm.addEventListener("click", (e) => { const li = e.target.closest("li"); if (!li) return; if (li.id === "smAll") { e.stopPropagation(); showFly(true, true); } else toggleStart(false); });
   document.addEventListener("click", (e) => { if (!sm.contains(e.target) && !startBtn.contains(e.target)) toggleStart(false); hideCtx(); });
   addEventListener("keydown", (e) => {
     if (e.key === "Escape" && e.ctrlKey && !e.shiftKey) { toggleStart(sm.classList.contains("hidden")); return; }
@@ -1739,10 +1905,10 @@ TERMS
   // ---------------- Taskbar: show desktop, tray popups, clock ----------------
   $("#showDesk").addEventListener("click", () => {
     const vis = [...wins.values()].filter((w) => !w.el.classList.contains("min"));
-    if (vis.length) { vis.forEach((w) => w.el.classList.add("min")); desktopEl._restore = vis; activeKey = null; paintActive(); }
+    if (vis.length) { vis.forEach((w) => { const r = w.el.getBoundingClientRect(); w.el.classList.add("min"); fly(r, w.task.getBoundingClientRect()); }); XPS.play("minimize"); desktopEl._restore = vis; activeKey = null; paintActive(); }
     else {
       const back = (desktopEl._restore || []).filter((w) => w.el.isConnected); desktopEl._restore = null;
-      back.forEach((w) => w.el.classList.remove("min"));
+      back.forEach((w) => { w.el.classList.remove("min"); fly(w.task.getBoundingClientRect(), w.el.getBoundingClientRect()); }); if (back.length) XPS.play("restore");
       const top = back.sort((a, b) => (+a.el.style.zIndex || 0) - (+b.el.style.zIndex || 0)).pop(); if (top) focus(top.el.dataset.key);
     }
   });
@@ -2036,15 +2202,17 @@ TERMS
   function askNotify(quiet) { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().catch(() => {}); else if (!quiet) msgBox("Notifications", notifyLabel()); }
 
   // Reminder engine: checks every 15s; reminders missed while the site was closed are shown on the next visit
-  function chime() {
-    try {
-      readVol(); if (muted || vol === 0) return;
-      const A = window.AudioContext || window.webkitAudioContext; const ac = chime.ac ||= new A();
-      if (ac.state === "suspended") ac.resume().catch(() => {});
-      [659, 880, 1047].forEach((f, i) => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = f; o.type = "sine"; g.gain.setValueAtTime(0, ac.currentTime + i * .12); g.gain.linearRampToValueAtTime(.12 * vol / 100, ac.currentTime + i * .12 + .02); g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + i * .12 + .35); o.connect(g).connect(ac.destination); o.start(ac.currentTime + i * .12); o.stop(ac.currentTime + i * .12 + .4); });
-    } catch {}
-  }
+  const chime = () => XPS.play("notify", true);
   const balloons = document.createElement("div"); balloons.className = "balloons"; desktopEl.appendChild(balloons);
+  // A tray balloon that closes itself: tips, level-ups and trophies
+  function notify(title, text, { sound = "balloon", ms = 8000, onClick } = {}) {
+    const b = document.createElement("div"); b.className = "balloon tip";
+    b.innerHTML = `<button class="bx" aria-label="Dismiss">✕</button><b>${MB_ICON["ℹ️"]}${esc(title)}</b><p>${esc(text)}</p>`;
+    balloons.appendChild(b); XPS.play(sound);
+    b.addEventListener("click", (e) => { if (!e.target.closest(".bx")) onClick?.(); b.remove(); });
+    setTimeout(() => b.isConnected && b.classList.add("fade"), ms - 600);
+    setTimeout(() => b.remove(), ms);
+  }
   function balloon(t, missed, when = Tasks.due(t)) {
     const b = document.createElement("div"); b.className = "balloon"; b.dataset.id = t.id;
     b.innerHTML = `<button class="bx" aria-label="Dismiss">✕</button><b>🔔 ${missed ? "Missed reminder" : "Reminder"}</b><p>${esc(t.text)}</p><small>${new Date(when).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}</small>
@@ -2085,7 +2253,7 @@ TERMS
   countVisit();
   // Vercel Web Analytics (cookie-free): only load it when it's switched on for the project, so there's no 404
   if (/\.vercel\.app$/.test(location.hostname)) fetch("/_vercel/insights/script.js", { method: "HEAD" }).then((r) => { if (r.ok) { const sc = document.createElement("script"); sc.defer = true; sc.src = "/_vercel/insights/script.js"; document.head.appendChild(sc); } }).catch(() => {});
-  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=27"; document.head.appendChild(l); } });
+  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=28"; document.head.appendChild(l); } });
   (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => Tasks.sync().then(() => { checkReminders(true); paintBell(); }));
   setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });
@@ -2096,35 +2264,85 @@ TERMS
   document.title = P.name + " - Portfolio XP";
   $("#loginName").textContent = $("#smName").textContent = P.name;
   $("#loginRole").textContent = P.role;
-  const show = (id) => ["#boot", "#login", "#desktop", "#blackout"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
-  function boot(fast) {
+  const show = (id) => ["#post", "#boot", "#welcome", "#login", "#desktop", "#blackout"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
+  // Every step below is a skippable wait: Space (or a tap on the screen) cuts it short. A newer step cancels an older one.
+  let flow = 0;
+  const pauseStep = async (ms, run) => { const skipped = await wait(ms); return run !== flow ? null : skipped; };
+  ["#post", "#boot", "#welcome"].forEach((s) => $(s).addEventListener("pointerdown", () => skipWaits()));
+  const welcomeScreen = (word, text) => { $("#welcomeWord").textContent = word; $("#welcomeMsg").textContent = text; show("#welcome"); };
+  async function boot() {
+    const run = ++flow, out = $("#postText"), year = new Date().getFullYear();
+    const kb = Math.round((navigator.deviceMemory || 4) * 1048576), cores = navigator.hardwareConcurrency || 1;
+    const lines = [`Portfolio BIOS v2.0, An XP-Ready Ally`, `Copyright (C) 2001-${year}, ${P.name}`, "", `Main Processor : ${cores} logical core${cores > 1 ? "s" : ""}`];
+    show("#post"); out.textContent = lines.join("\n") + "\nMemory Testing :      0K";
+    for (let i = 1; i <= 10; i++) { const s = await pauseStep(55, run); if (s === null) return; if (s) return toLogin(run); out.textContent = lines.join("\n") + `\nMemory Testing : ${String(Math.round(kb * i / 10)).padStart(7)}K${i === 10 ? " OK" : ""}`; }
+    XPS.play("post");
+    lines.push(`Memory Testing : ${String(kb).padStart(7)}K OK`, "");
+    for (const l of ["Detecting Primary Master ... PORTFOLIO-XP HDD", "Detecting Primary Slave  ... None", "Detecting Keyboard ....... OK", "Detecting Mouse .......... OK"]) { const s = await pauseStep(130, run); if (s === null) return; if (s) return toLogin(run); lines.push(l); out.textContent = lines.join("\n"); }
+    const s0 = await pauseStep(350, run); if (s0 === null) return; if (s0) return toLogin(run);
     show("#boot");
-    setTimeout(() => show("#login"), fast ? 400 : 2800);
+    const s1 = await pauseStep(2800, run); if (s1 === null) return;
+    toLogin(run);
   }
-  function logon() {
-    show("#desktop"); if (store.get("xp-logged") !== "1") xpSound("startup"); store.set("xp-logged", "1");
+  function toLogin(run) { if (run === flow) show("#login"); }
+  async function logon() {
+    const first = store.get("xp-logged") !== "1", run = ++flow;
+    if (first) {
+      welcomeScreen("welcome", "Loading your personal settings..."); XPS.play("logon");
+      if (await pauseStep(1500, run) === null) return;
+    }
+    show("#desktop"); store.set("xp-logged", "1");
+    if (first) {
+      XPS.play("startup"); desktopEl.classList.add("arrive"); setTimeout(() => desktopEl.classList.remove("arrive"), 1500);
+      if (store.lget("xp-toured") !== "1") { store.lset("xp-toured", "1"); setTimeout(() => notify("Take a tour of Portfolio XP", "Click here to see what this computer can do.", { ms: 12000, onClick: () => openApp("help") }), 2600); }
+    }
     if (!store.get("xp-welcomed")) { store.set("xp-welcomed", "1"); setTimeout(() => openApp("about"), 300); }
   }
   $("#userTile").addEventListener("click", logon);
-  const shut = $("#shutdown");
-  $("#smShutdown").onclick = $("#loginOff").onclick = () => { toggleStart(false); shut.classList.remove("hidden"); };
+  const shut = $("#shutdown"), logoffBox = $("#logoffBox");
+  $("#smShutdown").onclick = $("#loginOff").onclick = () => { toggleStart(false); XPS.play("exclaim"); shut.classList.remove("hidden"); };
   $("#smReset").onclick = () => { toggleStart(false); askReset(); };
-  $("#smLogoff").onclick = () => { toggleStart(false); closeTray(); [...wins.keys()].forEach((k) => close(k)); store.set("xp-logged", ""); show("#login"); };
-  shut.addEventListener("click", (e) => {
+  $("#smLogoff").onclick = () => { toggleStart(false); XPS.play("exclaim"); logoffBox.classList.remove("hidden"); };
+  const endSession = () => { closeTray(); hideCtx(); [...wins.keys()].forEach((k) => close(k)); store.set("xp-logged", ""); };
+  logoffBox.addEventListener("click", async (e) => {
+    const a = e.target.closest("[data-act]")?.dataset.act; if (!a) return;
+    logoffBox.classList.add("hidden");
+    if (a === "cancel") return;
+    const run = ++flow;
+    if (a === "switch") { show("#login"); return; }
+    endSession(); welcomeScreen("logging off", "Saving your settings..."); XPS.play("logoff");
+    if (await pauseStep(1500, run) === null) return;
+    show("#login");
+  });
+  shut.addEventListener("click", async (e) => {
     const a = e.target.closest("[data-act]")?.dataset.act; if (!a) return;
     shut.classList.add("hidden");
     if (a === "cancel") return;
-    closeTray(); hideCtx(); [...wins.keys()].forEach((k) => close(k)); store.set("xp-logged", "");
-    show("#blackout");
-    const msg = $("#blackoutMsg"), on = $("#powerOn");
+    endSession();
+    const run = ++flow, msg = $("#blackoutMsg"), on = $("#powerOn");
     on.classList.add("hidden");
-    xpSound("shutdown");
-    msg.textContent = a === "restart" ? "Windows is restarting..." : a === "standby" ? "Computer sleeping... click or press a key to wake." : "Windows is shutting down...";
-    if (a === "restart") setTimeout(() => boot(false), 1600);
-    else if (a === "standby") { const wake = () => { $("#blackout").onclick = null; removeEventListener("keydown", wake); show("#login"); }; $("#blackout").onclick = wake; addEventListener("keydown", wake); }
-    else setTimeout(() => { msg.textContent = "It is now safe to turn off your computer."; on.classList.remove("hidden"); }, 1600);
+    if (a === "standby") {
+      XPS.play("minimize"); show("#blackout"); msg.classList.remove("safe"); msg.textContent = "Computer sleeping... click or press a key to wake.";
+      const wake = () => { $("#blackout").onclick = null; removeEventListener("keydown", wake); XPS.play("restore"); show("#login"); }; $("#blackout").onclick = wake; addEventListener("keydown", wake);
+      return;
+    }
+    welcomeScreen(a === "restart" ? "restarting" : "shutting down", "Saving your settings..."); XPS.play("shutdown");
+    if (await pauseStep(1400, run) === null) return;
+    $("#welcomeMsg").textContent = "Windows is shutting down...";
+    if (await pauseStep(1000, run) === null) return;
+    if (a === "restart") { msg.classList.remove("safe"); msg.textContent = ""; show("#blackout"); if (await pauseStep(500, run) === null) return; boot(); return; }
+    show("#blackout"); msg.classList.add("safe"); msg.textContent = "It is now safe to turn off your computer."; on.classList.remove("hidden");
   });
-  $("#powerOn").onclick = (e) => { e.stopPropagation(); boot(false); };
+  $("#powerOn").onclick = (e) => { e.stopPropagation(); boot(); };
 
-  if (store.get("xp-logged")) logon(); else boot(false);
+  // screen saver after the wait chosen in Display Properties (never over Media Player or full screen)
+  let idleAt = Date.now();
+  ["pointermove", "pointerdown", "keydown", "wheel"].forEach((t) => addEventListener(t, () => (idleAt = Date.now()), { passive: true, capture: true }));
+  setInterval(() => {
+    const mins = +(store.lget("xp-saver-wait") ?? 5);
+    if (!mins || document.hidden || document.fullscreenElement || $("#desktop").classList.contains("hidden") || $(".saver") || wins.has("wmp")) return;
+    if (Date.now() - idleAt >= mins * 60000) screenSaver();
+  }, 15000);
+
+  if (store.get("xp-logged")) logon(); else boot();
 })();

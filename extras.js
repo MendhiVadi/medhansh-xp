@@ -570,7 +570,7 @@
       const it = items[i]; if (!it) return;
       if (!canDelete(it)) return ctx.sys?.msg?.("Picture and Fax Viewer", "Built-in pictures can't be deleted.");
       if (it.shared) {
-        if (!window.confirm("Delete this picture for everyone?")) return;
+        if (!(await ctx.sys.confirm("Delete Picture", "Delete this picture for everyone?", "Delete"))) return;
         try { await API.remove(it.id); } catch (err) { setNote(`Delete failed: ${err?.message || err}`, 10000); return; }
         if (closed) return;
         remote = remote.filter((r) => r.id !== it.id); sig = remote.map((p) => p.id).join(",");
@@ -672,8 +672,8 @@
     }
     tbody.addEventListener("click", (e) => { const r = e.target.closest("tr"); if (r) { selKey = r.dataset.k; sig = ""; renderApps(); } });
     tbody.addEventListener("dblclick", (e) => { const r = e.target.closest("tr"); if (r) ctx.sys?.focus?.(r.dataset.k); });
-    const newTask = () => {
-      const v = (window.prompt("Type the name of a program, and Windows will open it for you.", "") || "").trim().toLowerCase(); if (!v) return;
+    const newTask = async () => {
+      const v = ((await ctx.sys.ask("Create New Task", "Type the name of a program, and Windows will open it for you.")) || "").trim().toLowerCase(); if (!v) return;
       const m = wins.find((w) => w.key.toLowerCase() === v || (w.title || "").toLowerCase() === v);
       if (!ctx.sys.open(m ? m.key.replace(/[#:_-]\d+$/, "") : v)) ctx.sys.msg("Windows cannot find it", "Windows cannot find '" + esc(v) + "'. Make sure you typed the name correctly, and then try again.");
       setTimeout(renderApps, 150);
