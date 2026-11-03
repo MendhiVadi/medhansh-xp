@@ -64,6 +64,8 @@
   };
   const observe = (ctx, el, fn) => { const ro = new ResizeObserver(fn); ro.observe(el); ctx.onClose(() => ro.disconnect()); };
   const listen = (ctx, type, fn) => { addEventListener(type, fn); ctx.onClose(() => removeEventListener(type, fn)); };
+  // a key belongs to the game unless it was typed into a field, or pressed somewhere outside its window (Start menu, tray...)
+  const mine = (ctx, e) => { const t = e.target; if (!t?.closest || t === document.body || t === document.documentElement) return true; return ctx.el.contains(t) && !/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) && !t.isContentEditable; };
 
   // ---- shared world leaderboard helper (ctx.sys.scores; every call may fail offline) ----
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -176,7 +178,7 @@
       if (!history.length || won || autoRun || casc) return;
       const h = JSON.parse(history.pop()); S = h.S; score = h.score; drag = null; clearHint(); snd.blip(300, 0.05, "triangle"); render(true);
     }
-    function setDraw(v) { draw3 = v; ctx.store.lset("xp-sol-draw", v ? "3" : "1"); render(); }
+    function setDraw(v) { draw3 = v; ctx.store.lset("xp-sol-draw", v ? "3" : "1"); deal(); }
     function setVegas(v) { vegas = v; ctx.store.lset("xp-sol-vegas", v ? "1" : "0"); deal(); }
     function help() {
       const o = overlay(`<b>How to play</b><div style="margin:6px 0 10px">Build the four foundations up by suit, Ace to King.<br>Stack tableau cards downward, alternating colors.<br>Drag cards or runs between piles, or click a card to auto-move it.<br>Click the deck to draw; click the empty deck to recycle the waste.<br>F2 deals a new game, Ctrl+Z undoes, H shows a hint.<br>Vegas scoring: start at -52, +5 per card on a foundation.</div><button class="xpbtn">OK</button>`, "max-width:88%;text-align:left;line-height:1.5");
@@ -302,7 +304,7 @@
       const g = c.g, cw = layout.cw, ch = layout.ch, grav = 0.0011 * (c.h / 400);
       c.t -= dt;
       if (c.t <= 0 && c.n < 52) {
-        const p = c.pool[c.n], k = c.n % 4; p.r = 13 - ((c.n / 4) | 0); p.s = k; c.n++;
+        const p = c.pool[c.n], k = c.n % 4; p.r = 13 - ((c.n / 4) | 0); p.s = S.f[k]?.[0]?.s ?? k; c.n++;
         p.on = true; p.x = xOf(3 + k); p.y = layout.gap; p.vx = (Math.random() < 0.5 ? -1 : 1) * (0.1 + Math.random() * 0.22); p.vy = -Math.random() * 0.15; c.t = 280;
       }
       let live = 0;
@@ -409,7 +411,7 @@
       pendingOff = { els: d.els, dx: d.dx, dy: d.dy }; // animate from where the cards were dropped
       const under = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-pile]");
       const to = under?.dataset.pile;
-      if (to && to !== d.id && canDrop(pile(d.id).slice(d.i), to)) move(d.id, d.i, to); else render(true);
+      if (to && to !== d.id && !(d.id[0] === "f" && to[0] === "f") && canDrop(pile(d.id).slice(d.i), to)) move(d.id, d.i, to); else render(true);
     });
     table.addEventListener("pointercancel", () => { if (drag) { const d = drag; drag = null; pendingOff = d.moved ? { els: d.els, dx: d.dx, dy: d.dy } : null; render(true); } });
 
@@ -431,7 +433,7 @@
       { label: "Help", items: [{ label: "How to play", act: help }] },
     ]);
     listen(ctx, "keydown", (e) => {
-      if (!ctx.isActive()) return;
+      if (!ctx.isActive() || !mine(ctx, e)) return;
       if (casc && !["Shift", "Control", "Alt", "Meta"].includes(e.key)) { e.preventDefault(); endCascade(); return; }
       if (e.key === "F2") { e.preventDefault(); deal(); }
       else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); }
@@ -509,7 +511,7 @@
       const rows = list.map((v, i) => i === rank ? `<b style="font-size:13px;color:#ffd700">${i + 1}. ${v} &larr;</b>` : `${i + 1}. ${v}`).join(" &nbsp; ");
       if (win) snd.seq([523, 659, 784, 1047], 0.1, 0.12, "triangle"); else snd.blip(260, 0.45, "sawtooth", 1, 50);
       say(`<div><b>${win ? "YOU WIN!" : "GAME OVER"}</b><br>Score ${s}<br><small>${rows ? "<u>Your top 5</u><br>" + rows + "<br>" : ""}</small><b style="font-size:12px;color:#fff"><u>World top 10</u></b><div class="wl"></div><small>Press Space or tap to play again</small></div>`);
-      if (s > 0) wb.post(msg.querySelector(".wl"), s); else msg.querySelector(".wl")?.remove();
+      if (s > 0) wb.post(msg.querySelector(".wl"), s, { mode: level.toLowerCase() + (wrap ? "-wrap" : "") }); else msg.querySelector(".wl")?.remove();
     }
     function showWorld() {
       if (state === "run") pause();
@@ -568,7 +570,7 @@
     listen(ctx, "blur", autoPause); listen(ctx, "visibilitychange", () => { if (document.hidden) autoPause(); });
     const keys = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0] };
     listen(ctx, "keydown", (e) => {
-      if (!ctx.isActive() || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (!ctx.isActive() || !mine(ctx, e) || e.ctrlKey || e.metaKey || e.altKey) return;
       const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
       if (keys[k]) { e.preventDefault(); turn(...keys[k]); }
       else if (k === " ") { e.preventDefault(); if (e.repeat || (state === "over" && performance.now() - overAt < 600)) return; if (state === "run" || state === "paused") pause(); else start(); }
@@ -587,11 +589,10 @@
     ctx.menu(body.querySelector(".menubar"), [{ label: "Game", items: () => [
       { label: "New", key: "F2", act: newGame },
       { label: state === "paused" ? "Resume" : "Pause", key: "Space", disabled: state !== "run" && state !== "paused", act: pause },
-      "-",
-      { label: "Speed:", disabled: true },
       { label: "World Leaderboard…", act: showWorld },
       "-",
-      ...Object.keys(SPEEDS).map((n) => ({ label: n, check: n === level, act: () => { level = n; speed = SPEEDS[n]; ctx.store.lset("xp-snake-speed", n); } })),
+      { label: "Speed (next game):", disabled: true },
+      ...Object.keys(SPEEDS).map((n) => ({ label: n, check: n === level, act: () => { level = n; if (state !== "run" && state !== "paused") speed = SPEEDS[n]; ctx.store.lset("xp-snake-speed", n); } })),
       "-",
       { label: "Wrap-around (no walls)", check: wrap, act: () => { wrap = !wrap; ctx.store.lset("xp-snake-wrap", wrap ? "1" : "0"); } },
       snd.item(),
@@ -675,6 +676,7 @@
       return any;
     }
     function launch() {
+      if (state === "board") { state = beforeBoard.state; say(beforeBoard.msg); return; }
       if (state === "paused") return pause();
       if (state === "over") { if (performance.now() - overAt > 600) newGame(); return; }
       if ((state === "ready" || state === "run") && release()) { state = "run"; say(""); }
@@ -687,11 +689,16 @@
       say(`<b>GAME OVER</b><br>Score ${score} &middot; Level ${level}<br><small>${nb ? "New best score!" : "Best: " + best}<br>Best level: ${bestLvl}</small><div class="wl"></div><small>Click or Space to play again</small>`);
       if (score > 0) wb.post(msg.querySelector(".wl"), score, { level }); else msg.querySelector(".wl")?.remove();
     }
+    // the leaderboard is its own state, so "continue" goes back to what was on screen instead of launching the ball
+    let beforeBoard = null;
     function showWorld() {
       if (state === "run") pause();
+      if (state !== "board") beforeBoard = { state, msg: msg.innerHTML };
+      state = "board";
       say(`<div><b>World top 10</b><div class="wl"></div><small>Click or Space to continue</small></div>`);
       wb.view(msg.querySelector(".wl"));
     }
+    ctx.onClose(() => { if (score > best) ctx.store.lset("xp-breakout-best", score); });
     function loseLife() {
       lives--; hud(); pups.length = 0; widenT = slowT = stickyT = 0; resetBall(); snd.blip(300, 0.4, "sawtooth", 1, 60);
       if (lives <= 0) gameOver(); else { state = "ready"; say("<small>Click to launch</small>"); }
@@ -840,7 +847,7 @@
     // moving the mouse off the play area pauses the game (touch and pen keep playing)
     cv.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse" && state === "run") pause(); });
     listen(ctx, "keydown", (e) => {
-      if (!ctx.isActive() || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (!ctx.isActive() || !mine(ctx, e) || e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === "ArrowLeft") { e.preventDefault(); kl = true; }
       else if (e.key === "ArrowRight") { e.preventDefault(); kr = true; }
       else if (e.key === " ") { e.preventDefault(); if (!e.repeat) launch(); }
@@ -1026,6 +1033,7 @@
       }
     }
     function stepBall(h) {
+      let cradled = false;
       B.vy += G * h;
       let sp2 = B.vx * B.vx + B.vy * B.vy;
       if (sp2 > MAXV * MAXV) { const k = MAXV / Math.sqrt(sp2); B.vx *= k; B.vy *= k; }
@@ -1055,7 +1063,7 @@
       }
       for (let i = 0; i < 2; i++) {
         const f = fl[i], tx = f.px + f.s * FL * Math.cos(f.a), ty = f.py + FL * Math.sin(f.a);
-        if (colSeg(f.px, f.py, tx, ty, FRP, FRT, 0.25, f.px, f.py, f.w) && hitVn < -250) snd.blip(120, 0.04, "triangle", 0.7, 0, 0, "fhit");
+        if (colSeg(f.px, f.py, tx, ty, FRP, FRT, 0.25, f.px, f.py, f.w)) { if (f.on) cradled = true; if (hitVn < -250) snd.blip(120, 0.04, "triangle", 0.7, 0, 0, "fhit"); }
       }
       // spinner: a rollover gate that spins faster the harder the ball crosses it
       const inSp = Math.abs(B.x - SPX) < 26 && Math.abs(B.y - SPY) < 10;
@@ -1073,7 +1081,7 @@
       }
       sp2 = B.vx * B.vx + B.vy * B.vy;
       if (B.x > 366 && B.y > 530 && sp2 < 3600) { toReady(); return; } // fell back into the plunger lane
-      stuckT = sp2 < 400 ? stuckT + h : 0;
+      stuckT = sp2 < 400 && !cradled ? stuckT + h : 0; // a ball held on a raised flipper is being aimed, not stuck
       if (stuckT > 2.5) { B.vy = -260; B.vx = (Math.random() < 0.5 ? -1 : 1) * 160; stuckT = 0; }
       if (B.y > H + 8) drain();
     }
@@ -1173,7 +1181,7 @@
     const bup = () => { plungeTouch = false; };
     btn.addEventListener("pointerup", bup); btn.addEventListener("pointercancel", bup);
     listen(ctx, "keydown", (e) => {
-      if (!ctx.isActive() || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (!ctx.isActive() || !mine(ctx, e) || e.ctrlKey || e.metaKey || e.altKey) return;
       if (isCode(e.code)) {
         e.preventDefault();
         if (state === "over") { if (e.code === "Space" && !e.repeat && performance.now() - overAt > 600) newGame(); return; }
@@ -1247,7 +1255,7 @@
     function setSuits(n) { nS = n; ctx.store.lset("xp-spider-suits", String(n)); deal(); }
     function help() {
       const o = overlay(`<b>How to play</b><div style="margin:6px 0 10px">Build descending runs from King to Ace in one suit; each finished run leaves the table.<br>Any card can be placed on a card one rank higher; only same-suit runs move together.<br>Click the stock to deal a card onto every column (no column may be empty).<br>Click a card to auto-move it, or drag it.<br>F2 new game, Ctrl+Z undo, H hint.<br>Score: 500, -1 per move, +100 per run.</div><button class="xpbtn">OK</button>`, "max-width:88%;text-align:left;line-height:1.5");
-      o.querySelector("button").onclick = () => o.remove();
+      o.querySelector("button").onclick = () => { if (won && !casc) showWin(false); else o.remove(); };
     }
 
     // a run = consecutive face-up cards of one suit, descending, from index i to the end of the pile
@@ -1503,7 +1511,7 @@
       { label: "Help", items: [{ label: "How to play", act: help }] },
     ]);
     listen(ctx, "keydown", (e) => {
-      if (!ctx.isActive()) return;
+      if (!ctx.isActive() || !mine(ctx, e)) return;
       if (casc && !["Shift", "Control", "Alt", "Meta"].includes(e.key)) { e.preventDefault(); endCascade(); return; }
       if (e.key === "F2") { e.preventDefault(); deal(); }
       else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); }

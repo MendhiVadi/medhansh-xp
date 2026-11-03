@@ -2,7 +2,11 @@
   "name": "medhansh-xp",
   "private": true,
   "type": "module",
-  "description": "Medhansh Khattar's Windows XP-style portfolio: static site plus two small Vercel functions for verified contact messages.",
-  "engines": { "node": ">=20" },
-  "dependencies": { "nodemailer": "^6.9.16" }
+  "description": "Medhansh Khattar's Windows XP-style portfolio: static site plus small Vercel functions for verified contact messages and the in-site browser proxy.",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "nodemailer": "^10.3.1"
+  }
 }

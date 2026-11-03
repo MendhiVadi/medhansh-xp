@@ -4,6 +4,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Clients stamp their own times, so stop one from dating a post far into the future to stay on top of a list
+    function notFuture(t) {
+      return t is int && t < request.time.toMillis() + 600000;
+    }
+
     function validTask(d) {
       return d.keys().hasOnly(['date', 'time', 'text', 'done', 'remind', 'createdAt', 'updatedAt'])
         && d.keys().hasAll(['date', 'time', 'text', 'done', 'remind', 'updatedAt'])
@@ -32,7 +37,7 @@ service cloud.firestore {
         && request.resource.data.data.matches('^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$')
         && request.resource.data.w is int && request.resource.data.h is int
         && request.resource.data.w > 0 && request.resource.data.w <= 2048 && request.resource.data.h > 0 && request.resource.data.h <= 2048
-        && request.resource.data.createdAt is int;
+        && notFuture(request.resource.data.createdAt);
       allow delete: if true;
     }
 
@@ -63,9 +68,12 @@ service cloud.firestore {
     // Visit counters: stats/site and stats/d-YYYY-MM-DD; each write can add at most 1 view and 1 visitor
     match /stats/{id} {
       allow read: if true;
-      allow create: if request.resource.data.keys().hasOnly(['views', 'visitors'])
+      allow create: if id.matches('^(site|d-[0-9]{4}-[0-9]{2}-[0-9]{2})$')
+        && request.resource.data.keys().hasOnly(['views', 'visitors'])
+        && request.resource.data.views is int && request.resource.data.visitors is int
         && request.resource.data.views in [0, 1] && request.resource.data.visitors in [0, 1];
       allow update: if request.resource.data.keys().hasOnly(['views', 'visitors'])
+        && request.resource.data.views is int && request.resource.data.visitors is int
         && request.resource.data.views - resource.data.views in [0, 1]
         && request.resource.data.visitors - resource.data.visitors in [0, 1];
     }
@@ -77,13 +85,13 @@ service cloud.firestore {
         && request.resource.data.from is string && request.resource.data.from.size() > 0 && request.resource.data.from.size() <= 30
         && request.resource.data.to is string && request.resource.data.to.size() > 0 && request.resource.data.to.size() <= 30
         && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 280
-        && request.resource.data.createdAt is int;
+        && notFuture(request.resource.data.createdAt);
     }
 
     // Shared calendar tasks
     match /tasks/{id} {
       allow read: if true;
-      allow create, update: if validTask(request.resource.data);
+      allow create, update: if id.matches('^[A-Za-z0-9_-]{1,40}$') && validTask(request.resource.data);
       allow delete: if true;
     }
 

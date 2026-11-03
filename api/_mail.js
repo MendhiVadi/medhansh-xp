@@ -3,7 +3,7 @@
 //   GMAIL_USER          the Gmail address that sends (and receives) the mail
 //   GMAIL_APP_PASSWORD  a 16-character App Password from myaccount.google.com/apppasswords
 //   CONTACT_TO          optional: where verified messages are delivered (defaults to GMAIL_USER)
-// One-time codes are stateless: the server returns an HMAC-signed token, so no database is needed.
+// One-time codes are stateless: the server returns an HMAC-signed token. Firestore only counts each code's attempts.
 import nodemailer from "nodemailer";
 import { createHash, createHmac, randomInt, timingSafeEqual } from "node:crypto";
 
@@ -18,6 +18,7 @@ export const body = (req) => (req.body && typeof req.body === "object" ? req.bod
 export const str = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 export const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 export const PHONE = /^\+?[0-9 ()-]{7,20}$/;
+const TOKEN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 const sign = (data) => createHmac("sha256", secret()).update(data).digest("base64url");
@@ -29,8 +30,8 @@ export function issue(email, h) {
   return { code, token: `${payload}.${sign(`${payload}.${code}`)}` };
 }
 export function verify(token, email, code, h) {
-  const [payload, mac] = String(token || "").split(".");
-  if (!payload || !mac || !/^\d{4}$/.test(String(code))) return "Enter the 4-digit code from the email.";
+  if (!TOKEN.test(String(token || "")) || !/^\d{4}$/.test(String(code))) return "Enter the 4-digit code from the email.";
+  const [payload, mac] = String(token).split(".");
   const good = Buffer.from(sign(`${payload}.${code}`)), got = Buffer.from(mac);
   if (good.length !== got.length || !timingSafeEqual(good, got)) return "That code isn't right.";
   let p; try { p = JSON.parse(Buffer.from(payload, "base64url").toString()); } catch { return "That code isn't right."; }
@@ -42,12 +43,12 @@ export function verify(token, email, code, h) {
 
 // Best-effort per-instance throttle (serverless instances are short-lived, so this only stops bursts)
 const hits = new Map();
-export function throttled(req, key, max, windowMs) {
-  const ip = String(req.headers["x-forwarded-for"] || "?").split(",")[0].trim();
-  const k = key + ":" + ip, now = Date.now(), h = (hits.get(k) || []).filter((t) => now - t < windowMs);
+export function limited(k, max, windowMs) {
+  const now = Date.now(), h = (hits.get(k) || []).filter((t) => now - t < windowMs);
   h.push(now); hits.set(k, h);
   return h.length > max;
 }
+export const throttled = (req, key, max, windowMs) => limited(key + ":" + String(req.headers["x-forwarded-for"] || "?").split(",")[0].trim(), max, windowMs);
 
 // Attempt counter per code, stored in Firestore (rules only allow +1 steps and false -> true for "used").
 const FS = "https://firestore.googleapis.com/v1/projects/resume-41921/databases/(default)/documents/otp/";
@@ -57,8 +58,10 @@ const fsfetch = (id, opt = {}, q = "") => fetch(`${FS}${id}?key=${KEY}${q}`, { .
 const doc = (n, used, exp) => JSON.stringify({ fields: { n: { integerValue: String(n) }, used: { booleanValue: used }, exp: { integerValue: String(exp) } } });
 // Claims one attempt for this token (max 5). Returns { id } when allowed, or { error }.
 // The updateTime precondition makes parallel guesses fail instead of sharing one attempt.
+// The counter is keyed on the signed payload alone, so a reworded token can't get a fresh set of attempts.
 export async function claimAttempt(token) {
-  const id = createHash("sha256").update(String(token)).digest("hex").slice(0, 40);
+  if (!TOKEN.test(String(token || ""))) return { error: "Enter the 4-digit code from the email." };
+  const id = createHash("sha256").update(String(token).split(".")[0]).digest("hex").slice(0, 40);
   const cur = await fsfetch(id);
   if (cur.status === 404) {
     const r = await fsfetch(id, { method: "PATCH", body: doc(1, false, Date.now() + 10 * 60 * 1000) }, "&currentDocument.exists=false");
