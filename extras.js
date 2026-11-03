@@ -127,21 +127,23 @@
       if (!isFinite(r)) { setErr("Overflow"); return null; }
       return r;
     };
-    const unary = (f) => { if (err) return; const r = f(val()); if (r == null) return; if (!isFinite(r)) return setErr("Cannot divide by zero"); disp = fmt(r); fresh = true; show(); };
+    // pend: the display holds a computed operand (sqrt, %, 1/x, MR) that the next operator must still use
+    let pend = false;
+    const unary = (f) => { if (err) return; const r = f(val()); if (r == null) return; if (!isFinite(r)) return setErr("Cannot divide by zero"); disp = fmt(r); fresh = true; pend = true; show(); };
     const A = {
       digit(d) { if (err) clr(); if (fresh) { disp = d; fresh = false; } else if (disp === "0") disp = d; else if (disp.replace(/[-.]/g, "").length < 16) disp += d; show(); },
       dot() { if (err) clr(); if (fresh) { disp = "0."; fresh = false; } else if (!disp.includes(".")) disp += "."; show(); },
       back() { if (err || fresh) return; disp = disp.length > 1 && !(disp.length === 2 && disp[0] === "-") ? disp.slice(0, -1) : "0"; show(); },
-      ce() { if (err) return clr(); disp = "0"; fresh = true; show(); },
+      ce() { if (err) return clr(); disp = "0"; fresh = true; pend = false; show(); },
       c: clr,
       bin(o) {
         if (err) return;
-        if (op && !fresh) { const r = calc(acc, op, val()); if (r == null) return; acc = r; disp = fmt(r); } else if (!op) acc = val();
-        op = o; fresh = true; lastOp = null; show();
+        if (op && (!fresh || pend)) { const r = calc(acc, op, val()); if (r == null) return; acc = r; disp = fmt(r); } else if (!op) acc = val();
+        op = o; fresh = true; pend = false; lastOp = null; show();
       },
       eq() {
         if (err) return;
-        let r;
+        let r; pend = false;
         if (op) { const b = val(); r = calc(acc, op, b); if (r == null) return; lastOp = op; lastB = b; op = null; acc = null; }
         else if (lastOp) { r = calc(val(), lastOp, lastB); if (r == null) return; }
         else { fresh = true; return; }
@@ -152,7 +154,7 @@
       inv() { if (err) return; if (val() === 0) return setErr("Cannot divide by zero"); unary((v) => 1 / v); },
       sqrt() { if (err) return; if (val() < 0) return setErr("Invalid input for function"); unary(Math.sqrt); },
       mc() { mem = 0; hasMem = false; show(); },
-      mr() { if (!hasMem) return; if (err) clr(); disp = fmt(mem); fresh = true; show(); },
+      mr() { if (!hasMem) return; if (err) clr(); disp = fmt(mem); fresh = true; pend = true; show(); },
       ms() { if (err) return; mem = val(); hasMem = true; fresh = true; show(); },
       mp() { if (err) return; mem += val(); hasMem = true; fresh = true; show(); },
     };
@@ -333,7 +335,7 @@
       tmEl.textContent = `${String(Math.floor(e / 60)).padStart(2, "0")}:${String(Math.floor(e % 60)).padStart(2, "0")} / ${mmss(T.total)}`;
       if (!dragging) seek.value = started ? Math.round(e / T.total * 1000) : 0;
       if (ctx.store.lget("xp-mute") === "1" !== muted) { muted = !muted; applyVol(); }
-      const sv = Number(ctx.store.lget("xp-vol")); if (sv >= 0 && sv <= 100 && sv !== vol) { vol = sv; volEl.value = vol; applyVol(); }
+      const rawVol = ctx.store.lget("xp-vol"), sv = rawVol == null || rawVol === "" ? NaN : Number(rawVol); if (sv >= 0 && sv <= 100 && sv !== vol) { vol = sv; volEl.value = vol; applyVol(); }
       if (started && playing && e >= T.total - 0.02) go(cur + 1, true);
     }
     every(ctx, 200, tick);
@@ -344,13 +346,13 @@
       else if (b.classList.contains("prev")) prev();
       else if (b.classList.contains("shuf")) { shuffle = !shuffle; paintBtns(); } else if (b.classList.contains("rep")) { repeat = !repeat; paintBtns(); }
       else if (b.classList.contains("plt")) { wmp.classList.toggle("showpl"); b.classList.toggle("on", wmp.classList.contains("showpl")); b.setAttribute("aria-pressed", String(wmp.classList.contains("showpl"))); }
-      else if (b === muteBtn) { muted = !muted; ctx.store.lset("xp-mute", muted ? "1" : "0"); applyVol(); }
+      else if (b === muteBtn) { muted = !muted; ctx.store.lset("xp-mute", muted ? "1" : "0"); applyVol(); dispatchEvent(new Event("xp-volume")); }
     });
     plEl.addEventListener("click", (e) => { const d = e.target.closest("[data-i]"); if (d && +d.dataset.i !== cur) { if (started) startTrack(+d.dataset.i); else { cur = +d.dataset.i; paintList(); tick(); } } });
     plEl.addEventListener("dblclick", (e) => { const d = e.target.closest("[data-i]"); if (d) startTrack(+d.dataset.i); });
     seek.addEventListener("input", () => { dragging = true; });
     seek.addEventListener("change", () => { dragging = false; if (started) startTrack(cur, seek.value / 1000 * tr().total * 0.999); });
-    volEl.addEventListener("input", () => { vol = +volEl.value; ctx.store.lset("xp-vol", vol); if (vol > 0 && muted) { muted = false; ctx.store.lset("xp-mute", "0"); } applyVol(); });
+    volEl.addEventListener("input", () => { vol = +volEl.value; ctx.store.lset("xp-vol", vol); if (vol > 0 && muted) { muted = false; ctx.store.lset("xp-mute", "0"); } applyVol(); dispatchEvent(new Event("xp-volume")); });
     cv.addEventListener("click", () => { mode = mode === "bars" ? "scope" : "bars"; });
 
     // ---- visualizer ----
@@ -506,7 +508,9 @@
           locals.push(it); lastKey = it.key;
           note = `Upload failed: ${err?.message || err}`; clearTimeout(noteTimer); noteTimer = setTimeout(() => { note = ""; paintStatus(); }, 10000);
         }
+        const kView = view === "viewer" ? keyAt(idx) : null; // the viewer keeps showing the same picture after the list shifts
         rebuild();
+        if (kView) { const at = items.findIndex((x) => x.key === kView); if (at >= 0) idx = at; }
       }
       busy = ""; if (closed) return;
       const ni = items.findIndex((x) => x.key === lastKey);
@@ -592,7 +596,8 @@
       menu = document.createElement("div");
       menu.style.cssText = `position:absolute;z-index:9;left:${Math.max(0, e.clientX - r.left)}px;top:${Math.max(0, e.clientY - r.top)}px;background:#fff;border:1px solid #888;box-shadow:2px 2px 3px rgba(0,0,0,.35);padding:2px;font:11px Tahoma,sans-serif;color:#000`;
       menu.innerHTML = `<div data-a="open" style="padding:3px 18px;cursor:default">Open</div><div data-a="del" style="padding:3px 18px;cursor:default;${can ? "" : "color:#999"}">Delete</div>`;
-      menu.addEventListener("click", (ev) => { const a = ev.target.dataset.a; closeMenu(); if (a === "open") open(i); else if (a === "del" && can) del(i); });
+      // the shared list may have refreshed while the menu was open, so look the picture up again
+      menu.addEventListener("click", (ev) => { const a = ev.target.dataset.a, at = items.findIndex((x) => x.key === it.key); closeMenu(); if (at < 0) return; if (a === "open") open(at); else if (a === "del" && can) del(at); });
       menu.addEventListener("mouseover", (ev) => { [...menu.children].forEach((c) => { c.style.background = c === ev.target && (c.dataset.a !== "del" || can) ? "#316ac5" : ""; c.style.color = c.style.background ? "#fff" : (c.dataset.a === "del" && !can ? "#999" : "#000"); }); });
       root.appendChild(menu);
     });
@@ -604,7 +609,7 @@
       else if (c === "fit") { fit = !fit; applyImg(); } else if (c === "rl") { rot = (rot + 3) % 4; applyImg(); } else if (c === "rr") { rot = (rot + 1) % 4; applyImg(); }
       else if (c === "ss") toggleShow(); else if (c === "del") del(); else if (c === "bk") back();
     });
-    main.addEventListener("click", (e) => { const t = e.target.closest(".th"); if (t) { sel = +t.dataset.i; main.querySelectorAll(".th").forEach((x) => x.classList.toggle("sel", x === t)); const g = tb.querySelector(".gdel"); if (g) g.disabled = !canDelete(items[sel]); paintStatus(); } });
+    main.addEventListener("click", (e) => { const t = e.target.closest(".th"); if (t) { sel = +t.dataset.i; main.querySelectorAll(".th").forEach((x) => x.classList.toggle("sel", x === t)); const g = tb.querySelector(".gdel"); if (g) g.disabled = !canDelete(items[sel]); paintStatus(); if (matchMedia("(pointer: coarse)").matches) open(sel); } });
     main.addEventListener("dblclick", (e) => { const t = e.target.closest(".th"); if (t) open(+t.dataset.i); });
     observe(ctx, main, () => { if (view === "viewer") applyImg(); });
     listen(ctx, window, "keydown", (e) => {
@@ -624,6 +629,7 @@
       }
     });
     listen(ctx, window, "focus", () => { if (ctx.isVisible()) refresh(); });
+    listen(ctx, window, "xp-pictures-changed", () => refresh());
     every(ctx, 60000, () => { if (ctx.isVisible() && !document.hidden) refresh(); });
     mkBar(ctx, body, [
       { label: "File", items: [{ label: "Open picture from your computer...", act: openIn }, "-", { label: "Close", act: () => ctx.close() }] },

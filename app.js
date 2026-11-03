@@ -13,17 +13,17 @@
   const avatar = (cls = "") => `<span class="avatar ${cls}">${esc(P.initials)}${P.photo ? `<img src="${esc(P.photo)}" alt="${esc(P.name)}" decoding="async" onerror="this.remove()">` : ""}</span>`;
 
   // Shared backend: Firestore, called straight from the browser over its REST API. Access is controlled by
-  // firestore.rules (shared notepad, shared tasks, write-only contact messages). When it can't be reached the
-  // apps keep working with this browser's storage and sync again later.
+  // firestore.rules (shared notepad, tasks, pictures, leaderboards, message board and visit counters). When it
+  // can't be reached the apps keep working with this browser's storage and sync again later.
   const FB = P.firebase || {};
   const FS = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents`;
   const enc = (o) => ({ fields: Object.fromEntries(Object.entries(o).map(([k, v]) => [k, typeof v === "boolean" ? { booleanValue: v } : Number.isInteger(v) ? { integerValue: String(v) } : { stringValue: String(v ?? "") }])) });
-  const dec = (doc) => { const o = { id: doc.name.split("/").pop() }; for (const [k, v] of Object.entries(doc.fields || {})) o[k] = "integerValue" in v ? Number(v.integerValue) : "booleanValue" in v ? v.booleanValue : v.stringValue ?? null; return o; };
+  const dec = (doc) => { const o = { id: doc.name.split("/").pop() }; for (const [k, v] of Object.entries(doc.fields || {})) o[k] = "integerValue" in v ? Number(v.integerValue) : "doubleValue" in v ? Number(v.doubleValue) : "booleanValue" in v ? v.booleanValue : v.stringValue ?? null; return o; };
   const Cloud = {
     ok: null,
-    async req(path, { method = "GET", body, query = "" } = {}) {
+    async req(path, { method = "GET", body, query = "", timeout = 8000 } = {}) {
       if (!FB.projectId) { this.set(false); throw new Error("Backend not configured"); }
-      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 8000);
+      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), timeout);
       try {
         const r = await fetch(`${FS}/${path}?${query}${FB.apiKey ? `${query ? "&" : ""}key=${FB.apiKey}` : ""}`, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined, signal: ctl.signal, cache: "no-store" });
         const j = await r.json().catch(() => ({}));
@@ -43,13 +43,13 @@
       return out;
     },
     async taskCreate(t) { const now = Date.now(); const d = await this.req("tasks", { method: "POST", body: enc({ ...t, createdAt: now, updatedAt: now }) }); return dec(d); },
-    async taskUpdate(id, patch) { const p = { ...patch, updatedAt: Date.now() }; await this.req("tasks/" + encodeURIComponent(id), { method: "PATCH", body: enc(p), query: Object.keys(p).map((k) => "updateMask.fieldPaths=" + k).join("&") }); },
+    async taskUpdate(id, patch) { const p = { ...patch, updatedAt: Date.now() }; await this.req("tasks/" + encodeURIComponent(id), { method: "PATCH", body: enc(p), query: [...Object.keys(p).map((k) => "updateMask.fieldPaths=" + k), "currentDocument.exists=true"].join("&") }); },
     async taskDelete(id) { await this.req("tasks/" + encodeURIComponent(id), { method: "DELETE" }); },
     // shared pictures: compressed images stored as data URLs (one document each, < 1 MB)
-    async pictures() { const j = await this.req("pictures", { query: "pageSize=100&" + ["title", "w", "h", "by", "createdAt"].map((f) => "mask.fieldPaths=" + f).join("&") }); return (j?.documents || []).map(dec).sort((a, b) => b.createdAt - a.createdAt); },
+    async pictures() { const j = await this.req("pictures", { query: "pageSize=100&orderBy=createdAt%20desc&" + ["title", "w", "h", "by", "createdAt"].map((f) => "mask.fieldPaths=" + f).join("&") }); return (j?.documents || []).map(dec).sort((a, b) => b.createdAt - a.createdAt); },
     _pic: new Map(),
-    pictureData(id) { if (!this._pic.has(id)) this._pic.set(id, this.req("pictures/" + encodeURIComponent(id), { query: "mask.fieldPaths=data" }).then((d) => dec(d).data).catch((e) => { this._pic.delete(id); throw e; })); return this._pic.get(id); },
-    async pictureAdd(title, data, w, h) { return dec(await this.req("pictures", { method: "POST", body: enc({ title, data, w, h, by: playerName() || "Visitor", createdAt: Date.now() }) })); },
+    pictureData(id) { if (!this._pic.has(id)) this._pic.set(id, this.req("pictures/" + encodeURIComponent(id), { query: "mask.fieldPaths=data", timeout: 30000 }).then((d) => dec(d).data).catch((e) => { this._pic.delete(id); throw e; })); return this._pic.get(id); },
+    async pictureAdd(title, data, w, h) { return dec(await this.req("pictures", { method: "POST", body: enc({ title, data, w, h, by: playerName() || "Visitor", createdAt: Date.now() }), timeout: 60000 })); },
     async pictureDelete(id) { await this.req("pictures/" + encodeURIComponent(id), { method: "DELETE" }); },
     // shared leaderboards: scores/{game}/entries, ordered by score (single-field index, no setup needed)
     async top(game, n = 10, asc = false) {
@@ -78,10 +78,14 @@
     async submit(game, score, extra = {}) { return dec(await this.req(`scores/${encodeURIComponent(game)}/entries`, { method: "POST", body: enc({ name: playerName() || "Visitor", score: Math.round(score), ...extra, createdAt: Date.now() }) })); },
   };
   const playerName = () => (store.lget("xp-player-name") || "").slice(0, 20);
-  // Ask once for a display name for leaderboards and shared pictures
+  // Ask once for a display name for leaderboards and shared pictures (a visitor who cancels stays "Visitor")
+  let nameAsked = false;
   function askName() {
     let n = playerName();
-    if (!n) { n = (prompt("Your name for the world leaderboard and shared pictures (shown to everyone):", "") || "").trim().replace(/[<>]/g, "").slice(0, 20); if (n) store.lset("xp-player-name", n); }
+    if (!n && !nameAsked && store.lget("xp-player-name-asked") !== "1") {
+      nameAsked = true; store.lset("xp-player-name-asked", "1");
+      n = (prompt("Your name for the world leaderboard and shared pictures (shown to everyone):", "") || "").trim().replace(/[<>]/g, "").slice(0, 20); if (n) store.lset("xp-player-name", n);
+    }
     return n || "Visitor";
   }
   const readLocal = (k, d) => { try { const v = JSON.parse(store.lget(k)); return v ?? d; } catch { return d; } };
@@ -176,12 +180,12 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=26"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=27"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=26"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=27"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyExtra(name) {
@@ -210,6 +214,8 @@
     const app = opts.app || APPS[id];
     if (!app) return;
     if (app.action) return app.action();
+    // a full-screen window hides everything else, so new windows and message boxes bring the desktop back
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     closeMenus();
     const el = document.createElement("div");
     el.className = "win";
@@ -247,7 +253,7 @@
       if (a === "max") el.classList.toggle("max");
       if (a === "fs") toggleFull(el);
     });
-    el.querySelector(".titlebar").addEventListener("dblclick", (e) => { if (!app.fixed && !e.target.closest(".tbtn")) el.classList.toggle("max"); });
+    el.querySelector(".titlebar").addEventListener("dblclick", (e) => { if (!app.fixed && !e.target.closest(".tbtn") && document.fullscreenElement !== el) el.classList.toggle("max"); });
     drag(el.querySelector(".titlebar"), el, false);
     if (!app.fixed) drag(el.querySelector(".resize"), el, true);
 
@@ -265,18 +271,19 @@
     // any menubar without its own handlers still gets working File / View / Help menus
     el.querySelectorAll(".menubar:not([data-wired])").forEach((mb) => wireMenu(mb, defaultMenus(app, ctx)));
     applyOrder(el, key);
-    setTimeout(() => { if (activeKey === key && !el.contains(document.activeElement)) el.querySelector(".wbody input:not([readonly]):not([type=radio]):not([type=hidden]), .wbody textarea:not([readonly]), .wbody button, .wbody [tabindex='0']")?.focus({ preventScroll: true }); }, 0);
+    setTimeout(() => { if (activeKey === key && !el.contains(document.activeElement)) el.querySelector(".wbody input:not([readonly]):not([type=radio]):not([type=hidden]), .wbody textarea:not([readonly]), .wbody button, .wbody [tabindex='0']:not([data-mi])")?.focus({ preventScroll: true }); }, 0);
     focusableItems(el);
     focus(key);
     return rec;
   }
+  const RUN_ALIAS = { mspaint: "paint", "notepad.exe": "notepad", "calc.exe": "calc", "cmd.exe": "cmd", taskmgr: "taskmgr", iexplore: "ie", explorer: "computer", winmine: "mine", sol: "solitaire", spider: "spider", pinball: "pinball", wmplayer: "wmp", control: "control" };
   const sys = {
     windows: () => [...wins].filter(([k]) => !k.startsWith("msg") && k !== "askreset").map(([k, w]) => ({ key: k, title: w.el.querySelector(".ttl").textContent, minimized: w.el.classList.contains("min"), active: k === activeKey })),
     focus: (k) => { const w = wins.get(k); if (w) { w.el.classList.remove("min"); focus(k); } },
     close: (k) => close(k),
-    open: (id, o) => { const k = Object.keys(APPS).find((a) => a === id || APPS[a].title.toLowerCase() === String(id).toLowerCase() || (DESK_LABEL[a] || "").toLowerCase() === String(id).toLowerCase()); if (!k) return false; openApp(k, o); return true; },
+    open: (id, o) => { id = RUN_ALIAS[String(id).toLowerCase()] || id; const k = Object.keys(APPS).find((a) => a === id || APPS[a].title.toLowerCase() === String(id).toLowerCase() || (DESK_LABEL[a] || "").toLowerCase() === String(id).toLowerCase()); if (!k) return false; openApp(k, o); return true; },
     msg: (t, h) => msgBox(t, h),
-    photos: [{ src: "photo-full.jpg?v=26", title: "Medhansh.jpg" }, { src: "photo.jpg?v=26", title: "Avatar.jpg" }],
+    photos: [{ src: "photo-full.jpg?v=27", title: "Medhansh.jpg" }, { src: "photo.jpg?v=27", title: "Avatar.jpg" }],
     // Shared data everyone sees. Games: sys.scores.submit(game, score, extra) / sys.scores.top(game, n, ascending)
     scores: { top: (g, n, asc) => Cloud.top(g, n, asc), submit: (g, s, x) => { askName(); return Cloud.submit(g, s, x); }, name: () => playerName(), askName },
     pictures: { list: () => Cloud.pictures(), data: (id) => Cloud.pictureData(id), add: (t, d, w, h) => { askName(); return Cloud.pictureAdd(t, d, w, h); }, remove: (id) => Cloud.pictureDelete(id) },
@@ -305,6 +312,14 @@
   function paintActive() {
     wins.forEach((w, k) => { const on = k === activeKey; w.el.classList.toggle("inactive", !on); w.task.classList.toggle("active", on); });
   }
+  // pressing or tabbing outside every window leaves none active, so games stop taking keys meant for something else
+  const OUTSIDE_OK = ".win, .dropdown, .taskbar";
+  document.addEventListener("pointerdown", (e) => { if (activeKey && !e.target.closest?.(OUTSIDE_OK)) { activeKey = null; paintActive(); } }, true);
+  document.addEventListener("focusin", (e) => {
+    const key = e.target.closest?.(".win")?.dataset.key;
+    if (key && wins.has(key)) { if (key !== activeKey) focus(key); }
+    else if (activeKey && !e.target.closest?.(OUTSIDE_OK)) { activeKey = null; paintActive(); }
+  });
   function close(key) {
     const w = wins.get(key); if (!w) return;
     w.cleanups.forEach((fn) => { try { fn(); } catch {} });
@@ -326,7 +341,7 @@
   // Drag / resize with pointer capture; updates are batched to one per animation frame
   function drag(handle, el, resize) {
     handle.addEventListener("pointerdown", (e) => {
-      if (e.button !== 0 || e.target.closest(".tbtn") || el.classList.contains("max") || innerWidth <= 640) return;
+      if (e.button !== 0 || e.target.closest(".tbtn") || el.classList.contains("max") || document.fullscreenElement === el || innerWidth <= 640) return;
       e.preventDefault();
       handle.setPointerCapture(e.pointerId);
       const sx = e.clientX, sy = e.clientY, r = el.getBoundingClientRect();
@@ -373,26 +388,42 @@
   function closeMenus() { openMenu?.remove(); openMenu = null; document.querySelectorAll(".menubar .on").forEach((s) => s.classList.remove("on")); }
   function wireMenu(bar, menus) {
     bar.dataset.wired = "1";
-    bar.innerHTML = menus.map((m, i) => `<span data-mi="${i}">${esc(m.label)}</span>`).join("");
+    bar.setAttribute("role", "menubar");
+    bar.innerHTML = menus.map((m, i) => `<span data-mi="${i}" role="menuitem" aria-haspopup="true" tabindex="0">${esc(m.label)}</span>`).join("");
+    const next = (span, d) => { const all = [...bar.querySelectorAll("[data-mi]")]; return all[(all.indexOf(span) + d + all.length) % all.length]; };
+    const openFirst = (span) => { show(span); openMenu?.querySelector("[data-k]:not(.dis)")?.focus(); };
     const show = (span) => {
       closeMenus();
       const m = menus[+span.dataset.mi]; span.classList.add("on");
       const items = typeof m.items === "function" ? m.items() : m.items;
       const dd = document.createElement("div"); dd.className = "dropdown";
-      dd.innerHTML = items.map((it, k) => it === "-" ? "<hr>" : `<div data-k="${k}" class="${it.disabled ? "dis" : ""}"><i>${it.check ? "✓" : ""}</i><span>${esc(it.label)}</span>${it.key ? `<kbd>${esc(it.key)}</kbd>` : ""}</div>`).join("");
+      dd.innerHTML = items.map((it, k) => it === "-" ? "<hr>" : `<div data-k="${k}" role="menuitem" tabindex="-1" class="${it.disabled ? "dis" : ""}"><i>${it.check ? "✓" : ""}</i><span>${esc(it.label)}</span>${it.key ? `<kbd>${esc(it.key)}</kbd>` : ""}</div>`).join("");
       const r = span.getBoundingClientRect();
       dd.style.top = r.bottom + "px";
       dd.addEventListener("pointerdown", (e) => e.stopPropagation());
       dd.addEventListener("click", (e) => { const d = e.target.closest("[data-k]"); if (!d || d.classList.contains("dis")) return; closeMenus(); items[+d.dataset.k].act?.(); });
-      document.body.appendChild(dd); openMenu = dd;
+      dd.addEventListener("keydown", (e) => {
+        e.stopPropagation();
+        const opts = [...dd.querySelectorAll("[data-k]:not(.dis)")], at = opts.indexOf(document.activeElement);
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); if (opts.length) opts[e.key === "ArrowDown" ? (at + 1) % opts.length : at <= 0 ? opts.length - 1 : at - 1].focus(); }
+        else if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); const n = next(span, e.key === "ArrowLeft" ? -1 : 1); n.focus(); openFirst(n); }
+        else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); const it = opts[at]; span.focus(); it?.click(); }
+        else if (e.key === "Escape") { e.preventDefault(); closeMenus(); span.focus(); }
+      });
+      (document.fullscreenElement || document.body).appendChild(dd); openMenu = dd;
       dd.style.left = Math.max(0, Math.min(r.left, innerWidth - dd.offsetWidth - 2)) + "px";
     };
     bar.addEventListener("pointerdown", (e) => { const s = e.target.closest("[data-mi]"); if (!s) return; e.stopPropagation(); const wk = bar.closest(".win")?.dataset.key; if (wk) focus(wk); s.classList.contains("on") ? closeMenus() : show(s); });
-    bar.addEventListener("pointerover", (e) => { const s = e.target.closest("[data-mi]"); if (s && openMenu && !s.classList.contains("on")) show(s); });
+    bar.addEventListener("pointerover", (e) => { if (e.pointerType !== "mouse") return; const s = e.target.closest("[data-mi]"); if (s && openMenu && !s.classList.contains("on")) show(s); });
+    bar.addEventListener("keydown", (e) => {
+      const s = e.target.closest("[data-mi]"); if (!s) return;
+      if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); openFirst(s); }
+      else if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); e.stopPropagation(); next(s, e.key === "ArrowLeft" ? -1 : 1).focus(); }
+    });
   }
   document.addEventListener("pointerdown", (e) => { if (openMenu && !e.target.closest?.(".dropdown")) closeMenus(); });
   const defaultMenus = (app, ctx) => [
-    { label: "File", items: [{ label: "Close", key: "Alt+F4", act: ctx.close }] },
+    { label: "File", items: [{ label: "Close", key: "Alt+W", act: ctx.close }] },
     { label: "View", items: [{ label: "Maximize", act: () => ctx.el.classList.toggle("max") }, { label: "Minimize", act: () => minimize(ctx.key) }] },
     { label: "Help", items: [{ label: `About ${app.title}`, act: () => msgBox("About", `<b>${esc(app.title)}</b><br>Part of ${esc(P.name)}'s portfolio.`) }] },
   ];
@@ -473,6 +504,8 @@
       <div class="toolbar">${links.resumePdf ? `<a class="xpbtn" style="text-decoration:none;color:#000" href="${esc(links.resumePdf)}" download="${esc(P.name.replace(/\s+/g, "_"))}_Resume.pdf">⬇ Download PDF</a>` : ""}<button class="rprint">🖨 Print</button></div><div class="ruler"></div>
       <div class="wordpad-bg rframe-wrap"><iframe class="rframe" src="resume.html?embed=1" title="Resume"></iframe></div>`;
     const fr = body.querySelector(".rframe"), print = () => fr.contentWindow?.print();
+    const printKey = (e) => { if (ctx.isActive() && (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "p") { e.preventDefault(); print(); } };
+    addEventListener("keydown", printKey); ctx.onClose(() => removeEventListener("keydown", printKey));
     body.querySelector(".rprint").onclick = print;
     ctx.menu(body.querySelector(".menubar"), [
       { label: "File", items: [{ label: "Print...", key: "Ctrl+P", act: print }, ...(links.resumePdf ? [{ label: "Download PDF", act: () => body.querySelector("[download]").click() }] : []), { label: "Open in new tab", act: () => window.open("resume.html", "_blank", "noopener") }, "-", { label: "Exit", act: ctx.close }] },
@@ -511,13 +544,13 @@
       <div class="cfoot"><span class="muted cnote">Your email is verified with a one-time code (valid 5 minutes).</span><button class="xpbtn csend" type="submit">Send code</button></div></form>`;
     const form = inner.querySelector("form"), err = form.querySelector(".cerr"), btn = form.querySelector(".csend"), F = form.elements;
     const steps = form.querySelectorAll(".cstep b");
-    let token = null, sentTo = "", cooldown = 0, cdTimer;
+    let token = null, sentTo = "", cooldown = 0, cdTimer, sending = false;
     const step = (n) => steps.forEach((s, i) => s.classList.toggle("on", i === n - 1));
     const mailto = () => location.href = `mailto:${links.email}?subject=${encodeURIComponent(F.subject.value)}&body=${encodeURIComponent(`${F.message.value}\n\n- ${F.name.value}${F.phone.value ? "\n" + F.phone.value : ""}`)}`;
     const fail = (msg, fields = {}) => { Object.keys(fields).forEach((k) => F[k]?.classList.add("bad")); err.innerHTML = msg; };
     const unavailable = () => fail(`Verified messages aren't available right now. <a href="#" class="cmail">Email me directly</a> instead.`);
     err.addEventListener("click", (e) => { if (e.target.closest(".cmail")) { e.preventDefault(); mailto(); } });
-    form.querySelectorAll('[name="via"]').forEach((r) => r.addEventListener("change", () => form.querySelector(".cphone").classList.toggle("hidden", F.via.value !== "phone")));
+    form.querySelectorAll('[name="via"]').forEach((r) => r.addEventListener("change", () => { form.querySelector(".cphone").classList.toggle("hidden", F.via.value !== "phone"); resetCode("You changed how to reach you, so a new code is needed."); }));
     step(1);
     api("otp").then((j) => { if (!j.enabled) { form.querySelector(".cnote").textContent = "Verified messages are not set up yet."; } }).catch(() => {});
     const validate = () => {
@@ -531,20 +564,24 @@
     };
     const tickCooldown = () => { const b = form.querySelector(".cresend"); b.disabled = cooldown > 0; b.textContent = cooldown > 0 ? `Resend (${cooldown}s)` : "Resend"; if (cooldown-- > 0) cdTimer = setTimeout(tickCooldown, 1000); };
     async function sendCode() {
+      if (sending) return;
       const [d, bad] = validate();
       if (Object.keys(bad).length) return fail(esc(Object.values(bad).join(" ")), bad);
-      btn.disabled = true; btn.textContent = "Sending code…";
+      const rb = form.querySelector(".cresend");
+      sending = true; rb.disabled = true; btn.disabled = true; btn.textContent = "Sending code…";
       try {
         token = (await api("otp", { email: d.email, via: d.via, phone: d.phone, subject: d.subject, message: d.message })).token; sentTo = d.email.toLowerCase();
         form.querySelector(".cto").textContent = d.email; form.querySelector(".ccode").classList.remove("hidden");
         btn.textContent = "Verify & send"; step(2); F.code.value = ""; F.code.focus();
         clearTimeout(cdTimer); cooldown = 30; tickCooldown();
       } catch (e) {
-        btn.textContent = "Send code";
+        btn.textContent = token ? "Verify & send" : "Send code"; // a failed resend keeps the code already in the inbox usable
         if (!e.status || e.status === 404 || e.status >= 500) unavailable(); else fail(esc(e.message), e.body?.field ? { [e.body.field]: 1 } : {});
-      } finally { btn.disabled = false; }
+      } finally { sending = false; btn.disabled = false; if (cooldown <= 0) rb.disabled = false; }
     }
-    ["subject", "message", "phone"].forEach((n) => F[n].addEventListener("input", () => { if (token) { token = null; form.querySelector(".ccode").classList.add("hidden"); btn.textContent = "Send code"; step(1); err.textContent = "You changed the message, so a new code is needed."; } }));
+    // the code is tied to the exact message and contact choice, so changing either needs a new one
+    const resetCode = (msg) => { if (token) { token = null; form.querySelector(".ccode").classList.add("hidden"); btn.textContent = "Send code"; step(1); err.textContent = msg; } };
+    ["subject", "message", "phone"].forEach((n) => F[n].addEventListener("input", () => resetCode("You changed the message, so a new code is needed.")));
     async function verifyAndSend() {
       const [d, bad] = validate();
       if (Object.keys(bad).length) return fail(esc(Object.values(bad).join(" ")), bad);
@@ -562,7 +599,7 @@
       }
     }
     form.addEventListener("submit", (e) => { e.preventDefault(); form.querySelectorAll(".bad").forEach((x) => x.classList.remove("bad")); err.textContent = ""; token ? verifyAndSend() : sendCode(); });
-    form.querySelector(".cresend").addEventListener("click", () => { token = null; F.code.disabled = true; sendCode().finally(() => (F.code.disabled = false)); });
+    form.querySelector(".cresend").addEventListener("click", () => { F.code.disabled = true; sendCode().finally(() => { F.code.disabled = false; F.code.focus(); }); });
     F.code.addEventListener("input", () => { F.code.value = F.code.value.replace(/\D/g, "").slice(0, 4); if (F.code.value.length === 4 && token) form.requestSubmit(); });
     ctx.onClose(() => clearTimeout(cdTimer));
     setTimeout(() => F.name.focus(), 0);
@@ -586,14 +623,16 @@
     const normalize = (q) => {
       q = q.trim(); if (!q || q === HOME) return HOME;
       if (/^https?:\/\//i.test(q)) return q;
-      if (/^[\w-]+(\.[\w-]+)+(:\d+)?(\/\S*)?$/.test(q)) return "https://" + q;
+      // dotted words are an address only with a real-looking ending, so "node.js" and "3.14" still search
+      const m = q.match(/^([\w-]+(?:\.[\w-]+)+)(:\d+)?(\/\S*)?$/), end = m?.[1].split(".").pop().toLowerCase();
+      if (m && (/^\d{1,3}(\.\d{1,3}){3}$/.test(m[1]) || (/^[a-z]{2,}$/.test(end) && !/^(js|ts|jsx|tsx|py|rb|java|cpp|cs|go|rs|php|html|htm|css|json|md|txt|csv|xml|yml|yaml|sh|exe|dll|pdf|png|jpg|jpeg|gif|svg|zip)$/.test(end)))) return "https://" + q;
       return "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q);
     };
     function show(url) {
       urlIn.value = url === HOME ? "" : url; urlIn.placeholder = "Type a web address or search the web";
       $b(".ieback").disabled = pos <= 0; $b(".iefwd").disabled = pos >= hist.length - 1; $b(".ienew").disabled = url === HOME;
       ctx.setTitle(url === HOME ? "Favorites - Internet Explorer" : url.replace(/^https?:\/\/(www\.)?/, "").split(/[/?#]/)[0] + " - Internet Explorer");
-      if (url === HOME) { frame.classList.add("hidden"); frame.removeAttribute("src"); home.classList.remove("hidden"); bar.classList.add("hidden"); stat.textContent = "Done"; return; }
+      if (url === HOME) { clearTimeout(show.t); show.n = (show.n || 0) + 1; frame.classList.add("hidden"); frame.removeAttribute("srcdoc"); frame.src = "about:blank"; home.classList.remove("hidden"); bar.classList.add("hidden"); stat.textContent = "Done"; return; }
       home.classList.add("hidden"); frame.classList.remove("hidden"); stat.textContent = "Opening page " + url + "…";
       bar.classList.add("hidden"); clearTimeout(show.t);
       const n = show.n = (show.n || 0) + 1;
@@ -623,7 +662,7 @@
     $b(".ieaddr").addEventListener("submit", (e) => { e.preventDefault(); go(urlIn.value); });
     $b(".ieback").onclick = () => { if (pos > 0) show(hist[--pos]); };
     $b(".iefwd").onclick = () => { if (pos < hist.length - 1) show(hist[++pos]); };
-    $b(".iereload").onclick = () => { const u = hist[pos]; if (u && u !== HOME) { frame.src = "about:blank"; setTimeout(() => (frame.src = u), 30); } };
+    $b(".iereload").onclick = () => { const u = hist[pos]; if (u && u !== HOME) show(u); };
     $b(".iehome").onclick = () => go(HOME);
     const openTab = () => { const u = hist[pos]; if (u && u !== HOME) window.open(u, "_blank", "noopener"); };
     $b(".ienew").onclick = openTab; $b(".ieopen").addEventListener("click", (e) => { e.preventDefault(); openTab(); });
@@ -634,6 +673,8 @@
       { label: "Favorites", items: () => [...demos.map((p) => ({ label: p.name, act: () => go(p.url) })), "-", { label: "Wikipedia", act: () => go("https://en.wikipedia.org") }] },
       { label: "Help", items: [{ label: "About Internet Explorer", act: () => msgBox("Internet Explorer", "A real browser inside the portfolio. Sites that block being shown inside other pages are loaded through a sandboxed proxy, so most pages open here; logins and very interactive apps work best in a New tab.") }] },
     ]);
+    const f5 = (e) => { if (e.key === "F5" && ctx.isActive()) { e.preventDefault(); $b(".iereload").click(); } };
+    addEventListener("keydown", f5); ctx.onClose(() => removeEventListener("keydown", f5));
     go(ctx.url || HOME);
   }
 
@@ -754,7 +795,7 @@ Approximate round trip times in milli-seconds:
     say(first, `Hey there :-) Welcome to my XP portfolio! Ask me about my skills, projects, education or how to reach me. Or click Nudge!`);
     const reply = (q) => {
       q = q.toLowerCase();
-      if (/yap.?less|founder|ceo|company|startup/.test(q)) return `I'm the Founder & CEO of Yap-less. The website is coming soon (Y)`;
+      if (/yap.?less|founder|ceo|company|startup/.test(q)) return links.yapless ? `I'm the Founder & CEO of Yap-less. Check it out: ${links.yapless} (Y)` : `I'm the Founder & CEO of Yap-less. The website is coming soon (Y)`;
       if (/speak|hindi|french|english|spoken|languages you/.test(q)) return P.languages?.length ? "I speak " + P.languages.join(", ") + "." : "Mostly English!";
       if (/award|honou?r|achiev|rank|chess|percentile/.test(q)) return P.achievements?.length ? "Highlights: " + P.achievements.slice(0, 3).join("; ") + "." : "Coming soon!";
       if (/certif|course/.test(q)) return P.certifications?.length ? P.certifications.join("; ") + "." : "Coming soon!";
@@ -812,10 +853,12 @@ Approximate round trip times in milli-seconds:
       paintLevelButtons();
     }
     const paintLevelButtons = () => { body.querySelector(".mine-levels").innerHTML = Object.keys(LEVELS).map((l) => `<button data-l="${l}" role="radio">${l}</button>`).join("") + `<span class="mine-best"></span>`; bestEl = body.querySelector(".mine-best"); paintLevel(); };
-    function showBest() { msgBox("Fastest Mine Sweepers", Object.keys(LEVELS).map((l) => `<b>${l}:</b> ${best[l] != null ? best[l] + " seconds" : "—"}`).join("<br>"), "🏆"); }
+    // a Custom record only counts for that exact board size
+    const bestKey = (l = level) => (l === "Custom" ? "Custom " + LEVELS.Custom.join("x") : l);
+    function showBest() { msgBox("Fastest Mine Sweepers", Object.keys(LEVELS).map((l) => `<b>${l === "Custom" ? bestKey(l) : l}:</b> ${best[bestKey(l)] != null ? best[bestKey(l)] + " seconds" : "—"}`).join("<br>"), "🏆"); }
     const paintLevel = () => {
       body.querySelectorAll("[data-l]").forEach((b) => { const on = b.dataset.l === level; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
-      bestEl.textContent = best[level] != null ? `Best: ${best[level]}s` : "";
+      bestEl.textContent = best[bestKey()] != null ? `Best: ${best[bestKey()]}s` : "";
     };
     const pad = (n) => { n = Math.max(-99, Math.min(999, n)); return n < 0 ? "-" + String(-n).padStart(2, "0") : String(n).padStart(3, "0"); };
     const nb = (i) => { const x = i % W, y = (i / W) | 0, r = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = x + dx, ny = y + dy; if ((dx || dy) && nx >= 0 && ny >= 0 && nx < W && ny < H) r.push(ny * W + nx); } return r; };
@@ -879,8 +922,8 @@ Approximate round trip times in milli-seconds:
       over = true; clearInterval(timer); smile.textContent = "😎"; lLeft.textContent = "000"; g.classList.add("won");
       const time = Math.max(1, Math.round((performance.now() - t0) / 1000));
       grid.forEach((v, i) => { if (v === -1) { flags.add(i); g.children[i].textContent = "🚩"; } });
-      const record = best[level] == null || time < best[level];
-      if (record) { best[level] = time; ctx.store.lset("xp-mine-best", JSON.stringify(best)); }
+      const record = best[bestKey()] == null || time < best[bestKey()];
+      if (record) { best[bestKey()] = time; ctx.store.lset("xp-mine-best", JSON.stringify(best)); }
       wave(last, "glow"); confetti(); paintLevel();
       setTimeout(() => over && g.classList.contains("won") && showEnd(true, time, record), 450);
     }
@@ -893,7 +936,7 @@ Approximate round trip times in milli-seconds:
     }
     function showEnd(won, time, record) {
       endEl.innerHTML = won
-        ? `<b>🎉 You win!</b><span>${level} cleared in <b>${time}s</b></span><div class="mworld"></div>${record ? `<span class="rec">🏆 New best time!</span>` : `<span>Best: ${best[level]}s</span>`}<div><button class="xpbtn again">Play again</button>${level !== "Expert" ? `<button class="xpbtn harder">Try ${level === "Beginner" ? "Intermediate" : "Expert"}</button>` : ""}</div>`
+        ? `<b>🎉 You win!</b><span>${level} cleared in <b>${time}s</b></span><div class="mworld"></div>${record ? `<span class="rec">🏆 New best time!</span>` : `<span>Best: ${best[bestKey()]}s</span>`}<div><button class="xpbtn again">Play again</button>${level !== "Expert" ? `<button class="xpbtn harder">Try ${level === "Beginner" ? "Intermediate" : "Expert"}</button>` : ""}</div>`
         : `<b>💥 Boom!</b><span>You hit a mine.</span><div><button class="xpbtn again">Try again</button></div>`;
       endEl.classList.remove("hidden");
       if (won) worldTimes(endEl, time);
@@ -967,38 +1010,48 @@ Approximate round trip times in milli-seconds:
     inner.innerHTML = `<textarea class="notepad" spellcheck="false" placeholder="Start typing... (shared with everyone)"></textarea>`;
     body.insertAdjacentHTML("beforeend", `<div class="statusbar"><span class="nstat">Connecting…</span><span class="nchars"></span></div>`);
     const ta = inner.querySelector("textarea"), stat = body.querySelector(".nstat"), chars = body.querySelector(".nchars");
-    let wrap = true, size = 14, timer, lastRemote = 0, dirty = store.lget("xp-notepad-dirty") === "1";
+    let wrap = true, size = 14, timer, lastRemote = 0, dirty = store.lget("xp-notepad-dirty") === "1", saving = false, pushes = 0;
     const status = (t) => { stat.textContent = t; chars.textContent = `${ta.value.length.toLocaleString()} / 20,000`; };
     const local = (v) => store.lset("xp-notepad", v);
     async function push() {
-      clearTimeout(timer); timer = 0; const text = ta.value; local(text);
+      clearTimeout(timer); timer = 0; const text = ta.value; local(text); saving = true; pushes++;
       try { const r = await Cloud.notePut(text); lastRemote = r.updatedAt; dirty = false; store.lset("xp-notepad-dirty", "0"); status("☁ Saved · shared with everyone"); }
-      catch (e) { dirty = true; store.lset("xp-notepad-dirty", "1"); status(e.status === 429 ? "Saving too fast, retrying…" : "💾 Offline · saved in this browser"); if (e.status === 429) timer = setTimeout(push, 3000); }
+      catch (e) {
+        // a rejected save will never succeed, so don't retry it or block other people's edits behind it
+        if (e.status >= 400 && e.status < 500 && e.status !== 429) { dirty = false; store.lset("xp-notepad-dirty", "0"); status("⚠ Not saved: " + (e.status === 403 ? "the server refused this text." : e.message)); }
+        else { dirty = true; store.lset("xp-notepad-dirty", "1"); status(e.status === 429 ? "Saving too fast, retrying…" : "💾 Offline · saved in this browser"); if (e.status === 429) timer = setTimeout(push, 3000); }
+      } finally { saving = false; }
     }
     const queue = () => { local(ta.value); status("Saving…"); clearTimeout(timer); timer = setTimeout(push, 800); };
     async function pull(force) {
+      const before = ta.value, seen = pushes;
       try {
         const r = await Cloud.noteGet();
         if (dirty && !force) return push(); // our offline edits win once we're back online
-        if (r.updatedAt > lastRemote || force) {
+        // updatedAt is just a version stamp (each writer's own clock), so any different value means someone else wrote.
+        // Text the visitor is typing or saving is never replaced.
+        const idle = !timer && !saving && pushes === seen && ta.value === before;
+        if (force || (r.updatedAt !== lastRemote && idle)) {
           lastRemote = r.updatedAt;
-          if (document.activeElement !== ta || force) { const pos = ta.selectionStart; ta.value = r.text ?? NOTE_DEFAULT(); ta.selectionStart = ta.selectionEnd = Math.min(pos, ta.value.length); local(ta.value); }
+          const pos = ta.selectionStart; ta.value = r.text ?? NOTE_DEFAULT(); ta.selectionStart = ta.selectionEnd = Math.min(pos, ta.value.length); local(ta.value);
         }
-        status("☁ Up to date · shared with everyone");
+        if (force || idle) status("☁ Up to date · shared with everyone");
       } catch { status("💾 Offline · saved in this browser"); }
     }
-    const insert = (t) => { ta.setRangeText(t, ta.selectionStart, ta.selectionEnd, "end"); queue(); ta.focus(); };
+    const insert = (t) => { const s = ta.selectionStart, e = ta.selectionEnd; t = t.slice(0, Math.max(0, ta.maxLength - ta.value.length + (e - s))); if (!t && s === e) return; ta.setRangeText(t, s, e, "end"); queue(); ta.focus(); };
     const font = (d) => { size = Math.max(10, Math.min(28, size + d)); ta.style.fontSize = size + "px"; };
     ta.value = store.lget("xp-notepad") ?? NOTE_DEFAULT();
     ta.maxLength = 20000; status("Connecting…"); pull();
     ta.addEventListener("input", queue);
-    const poll = setInterval(() => ctx.isVisible() && document.activeElement !== ta && !timer && pull(), 15000);
-    ctx.onClose(() => { clearInterval(poll); if (timer) push(); });
+    const poll = setInterval(() => ctx.isVisible() && !timer && pull(), 15000);
     ta.addEventListener("blur", () => { if (timer) push(); });
-    ta.addEventListener("keydown", (e) => {
+    const keys = (e) => {
+      if (!ctx.isActive()) return;
       if (e.key === "F5") { e.preventDefault(); insert(new Date().toLocaleString()); }
-      if (e.key === "s" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); download(new Blob([ta.value], { type: "text/plain" }), "note.txt"); }
-    });
+      if (e.key.toLowerCase() === "s" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); download(new Blob([ta.value], { type: "text/plain" }), "note.txt"); }
+    };
+    addEventListener("keydown", keys);
+    ctx.onClose(() => { clearInterval(poll); removeEventListener("keydown", keys); if (timer) push(); });
   }
   function download(blob, name) {
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click();
@@ -1061,7 +1114,7 @@ Approximate round trip times in milli-seconds:
         await loadExtras(); const { data, w, h } = await window.EXTRAS.compressImage(cv);
         await sys.pictures.add(title, data, w, h);
         msgBox("Paint", `"${esc(title)}" was added to My Pictures for everyone to see.`);
-        wins.get("pictures") && sys.focus("pictures");
+        dispatchEvent(new Event("xp-pictures-changed")); wins.get("pictures") && sys.focus("pictures");
       } catch (e) { msgBox("Paint", `Couldn't share the drawing: ${esc(e.message || "offline")}`, "⚠️"); }
     }
     function transform(sx, sy) { snap(); const img = document.createElement("canvas"); img.width = cv.width; img.height = cv.height; img.getContext("2d").drawImage(cv, 0, 0); g.save(); g.setTransform(sx, 0, 0, sy, sx < 0 ? cv.width : 0, sy < 0 ? cv.height : 0); g.drawImage(img, 0, 0); g.restore(); }
@@ -1119,6 +1172,7 @@ Approximate round trip times in milli-seconds:
       g.strokeStyle = d.color; g.fillStyle = d.alt; g.lineWidth = size; g.lineCap = "round";
       let w = x - d.x, h = y - d.y;
       if (shift && d.tool !== "line") { const m = Math.max(Math.abs(w), Math.abs(h)); w = Math.sign(w) * m; h = Math.sign(h) * m; }
+      if (shift && d.tool === "line") { const a = Math.round(Math.atan2(h, w) / (Math.PI / 4)) * (Math.PI / 4), L = Math.hypot(w, h); w = Math.round(Math.cos(a) * L); h = Math.round(Math.sin(a) * L); }
       g.beginPath();
       if (d.tool === "line") { g.moveTo(d.x, d.y); g.lineTo(d.x + w, d.y + h); }
       else if (d.tool === "rect") g.rect(d.x, d.y, w, h);
@@ -1178,7 +1232,7 @@ Approximate round trip times in milli-seconds:
 
   function renderComputer(body) {
     const inner = chrome(body, { addr: "My Computer", addrIcon: "computer" });
-    const items = ["about", "resume", "projects", "contact", "ie", "cmd", "msn", "calendar", "games", "pictures", "wmp", "paint", "notepad", "calc", "taskmgr", "control", "display", "recycle"];
+    const items = ["about", "resume", "projects", "contact", "ie", "cmd", "msn", "calendar", "games", "pictures", "wmp", "paint", "notepad", "stats", "board", "calc", "taskmgr", "control", "display", "recycle"];
     inner.innerHTML = `<div class="explorer">${taskPane([["System Tasks", `<span>Owner: <b>${esc(P.name)}</b><br>Host: ${esc(P.hostname)}</span>` + appLink("display", "Change wallpaper")], ["Other Places", appLink("about", "About Me") + appLink("projects", "My Projects")]])}
       <div class="ex-main"><div class="grid-items">${items.map((id) => `<div class="fitem" data-open="${id}">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id])}</span></div>`).join("")}</div></div></div>`;
   }
@@ -1186,7 +1240,7 @@ Approximate round trip times in milli-seconds:
   function renderGames(body) {
     const inner = chrome(body, { addr: "C:\\Program Files\\Games", addrIcon: "games" });
     const blurb = { spider: "1, 2 or 4 suits", pinball: "Space Cadet-style table", solitaire: "Classic Klondike", mine: "3 difficulty levels", snake: "Eat, grow, repeat", breakout: "Smash every brick" };
-    inner.innerHTML = `<div class="explorer">${taskPane([["Games", `<span>Double-click a game to play. High scores are saved in this browser.</span>`]])}
+    inner.innerHTML = `<div class="explorer">${taskPane([["Games", `<span>Double-click a game to play. Your best scores stay in this browser, and finished games go on the public world leaderboards.</span>`]])}
       <div class="ex-main"><div class="grid-items">${GAME_IDS.map((id) => `<div class="fitem" data-open="${id}" title="${esc(blurb[id])}">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id])}</span><small>${esc(blurb[id])}</small></div>`).join("")}</div></div></div>`;
   }
 
@@ -1200,7 +1254,7 @@ Approximate round trip times in milli-seconds:
       const k = e.target.closest("[data-k]")?.dataset.k; if (!k) return;
       if (k === "sounds") return soundsDialog();
       if (k === "datetime") return openApp("calendar");
-      if (k === "network") return toggleTray("net");
+      if (k === "network") { e.stopPropagation(); return toggleTray("net"); }
       if (k === "user") return openApp("about");
       openApp(k);
     });
@@ -1234,16 +1288,16 @@ Approximate round trip times in milli-seconds:
     body.querySelector(".rcancel").onclick = ctx.close;
     f.addEventListener("submit", (e) => {
       e.preventDefault(); const v = inp.value.trim(); if (!v) return;
-      const alias = { mspaint: "paint", "notepad.exe": "notepad", "calc.exe": "calc", "cmd.exe": "cmd", taskmgr: "taskmgr", iexplore: "ie", explorer: "computer", winmine: "mine", sol: "solitaire", spider: "spider", pinball: "pinball", wmplayer: "wmp", control: "control" }[v.toLowerCase()];
+      const alias = RUN_ALIAS[v.toLowerCase()];
       if (!alias && (/^(https?:\/\/|www\.)/i.test(v) || /\.(?!exe$)[a-z]{2,}(\/|$)/i.test(v))) { ctx.close(); const had = wins.has("ie"), w = openApp("ie", { url: v }); if (had) w?.navigate?.(v); return; }
       if (sys.open(alias || v.toLowerCase())) return ctx.close();
-      xpSound("error"); msgBox(v, `Windows cannot find '${esc(v)}'. Make sure you typed the name correctly, and then try again.`, "⛔");
+      msgBox(v, `Windows cannot find '${esc(v)}'. Make sure you typed the name correctly, and then try again.`, "⛔");
     });
     setTimeout(() => inp.focus(), 0);
   }
   function renderSearch(body, ctx) {
     const inner = chrome(body, { addr: "Search Results", addrIcon: "search" });
-    inner.innerHTML = `<div class="explorer"><div class="taskpane"><div class="tp-box"><h4>Search Companion</h4><div><label>What are you looking for?</label><input class="sq" placeholder="e.g. CARLA, Python, Yap-less" autocomplete="off"><small class="muted">Searches apps, projects, skills and the resume.</small></div></div></div><div class="ex-main"><div class="sres"></div></div></div>`;
+    inner.innerHTML = `<div class="explorer"><div class="ex-main"><div class="sbar"><label>What are you looking for?</label><input class="sq" placeholder="e.g. CARLA, Python, Yap-less" autocomplete="off"><small class="muted">Searches apps, projects, skills and the resume.</small></div><div class="sres"></div></div></div>`;
     const q = inner.querySelector(".sq"), out = inner.querySelector(".sres");
     const corpus = [
       ...Object.keys(APPS).filter((k) => !APPS[k].action).map((k) => ({ t: DESK_LABEL[k] || APPS[k].title, d: "Program", icon: APPS[k].icon, open: k })),
@@ -1264,8 +1318,9 @@ Approximate round trip times in milli-seconds:
     const inner = chrome(body, { addr: "Help and Support Center", addrIcon: "help" });
     const topics = [
       ["Getting around", "Double-click a desktop icon to open it (one tap on a phone). Drag windows by their title bar; drag icons to rearrange them. The Start button lists everything."],
-      ["Shortcuts", "Win: Start menu · Alt+F4 or Ctrl+W: close window · Ctrl+Shift+Esc: Task Manager · Win+R: Run · F2: new game · Delete: remove a desktop shortcut."],
+      ["Shortcuts", "Ctrl+Esc or Win: Start menu · Alt+W: close window · Alt+T: Task Manager · Alt+R: Run · F2: new game · F11: full screen (games, Paint, Pictures, Media Player) · Delete: remove a desktop shortcut."],
       ["Shared Notepad and Calendar", "The Notepad and Calendar are shared by everyone who visits. Changes are saved to the server as you type."],
+      ["Shared with everyone", "Message Board posts, My Pictures uploads and world leaderboard scores are public too. Your name for them is the one you choose."],
       ["Contacting me", "Open Contact Me, choose email or phone, and verify your email with the 4-digit code. Only then is the message sent."],
       ["Something looks wrong?", "Use Reset Desktop (desktop icon, Start menu or right-click) to restore icons, wallpaper and deleted shortcuts."],
       ["Privacy", "See Privacy.txt for what is stored and why."],
@@ -1286,8 +1341,14 @@ WHAT IS STORED
   Nothing from the contact form is stored in a database.
 - Shared Notepad and Calendar: anything you type there is public. Everyone who
   visits can see and change it. Please don't put personal information in them.
-- Your browser keeps small preferences (icon layout, wallpaper, volume, game
-  scores) in local storage. They never leave your device.
+- Message Board and My Pictures: posts and uploads are public, along with the
+  name you give. Anyone can delete a shared picture.
+- World leaderboards: when you finish a game, your score and the name you give
+  are saved and shown to everyone.
+- Site Statistics: this site counts page views and returning browsers. The
+  counters hold only totals, nothing about you.
+- Your browser keeps small preferences (icon layout, wallpaper, volume, your
+  name, your own best scores) in local storage. These stay on your device.
 - Hosting (Vercel) and visit analytics (Vercel Web Analytics, no cookies) see
   anonymous technical data such as pages viewed, country and browser.
 
@@ -1300,14 +1361,14 @@ YOUR CHOICES
 
 TERMS
 - The site is provided as is, for fun and to show my work.
-- Don't post abusive or illegal content in the shared Notepad or Calendar;
-  it may be removed.
+- Don't post abusive or illegal content in the shared Notepad, Calendar,
+  Message Board, My Pictures or leaderboard names; it may be removed.
 `)}</textarea>`;
     inner.style.overflow = "hidden";
   }
 
   // ---------------- Site statistics (own counters in Firestore) ----------------
-  const dayId = (d) => "d-" + dkey(d);
+  const dayId = (d) => "d-" + d.toISOString().slice(0, 10); // UTC, so every visitor counts into the same day
   function countVisit() {
     // one view per browser session; a "visitor" is a browser we haven't seen before (overall / today)
     if (store.get("xp-counted")) return; store.set("xp-counted", "1");
@@ -1317,17 +1378,18 @@ TERMS
   function renderStats(body, ctx) {
     const inner = chrome(body, { addr: "Site Statistics", addrIcon: "stats" });
     inner.innerHTML = `<div class="statwin"><div class="stat-cards"><div><b class="sv">…</b><span>Total page views</span></div><div><b class="su">…</b><span>Unique visitors</span></div><div><b class="tv">…</b><span>Views today</span></div><div><b class="tu">…</b><span>Visitors today</span></div></div>
-      <h4>Traffic, last 14 days</h4><div class="stat-chart"></div><p class="muted stat-note">Counted on this site: one view per browser session, one visitor per new browser. Refreshes every 30 seconds.</p></div>`;
-    const $s = (q) => inner.querySelector(q);
+      <h4>Traffic, last 14 days (UTC)</h4><div class="stat-chart"></div><p class="muted stat-note">Counted on this site: one view per browser session, one visitor per new browser. Refreshes every 30 seconds.</p></div>`;
+    const $s = (q) => inner.querySelector(q), note = $s(".stat-note").textContent;
     async function load() {
-      const days = Array.from({ length: 14 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - 13 + i); return d; });
+      const days = Array.from({ length: 14 }, (_, i) => new Date(Date.now() - (13 - i) * 864e5));
       try {
         const st = await Cloud.stats(["site", ...days.map(dayId)]);
         const n = (v) => (v || 0).toLocaleString();
+        $s(".stat-note").textContent = note;
         $s(".sv").textContent = n(st.site?.views); $s(".su").textContent = n(st.site?.visitors);
         const t = st[dayId(new Date())]; $s(".tv").textContent = n(t?.views); $s(".tu").textContent = n(t?.visitors);
         const max = Math.max(1, ...days.map((d) => st[dayId(d)]?.views || 0));
-        $s(".stat-chart").innerHTML = days.map((d) => { const v = st[dayId(d)]?.views || 0, u = st[dayId(d)]?.visitors || 0; return `<div class="bar" title="${d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}: ${v} views, ${u} visitors"><i style="height:${Math.round(v / max * 100)}%"></i><em style="height:${Math.round(u / max * 100)}%"></em><small>${d.getDate()}</small></div>`; }).join("");
+        $s(".stat-chart").innerHTML = days.map((d) => { const v = st[dayId(d)]?.views || 0, u = st[dayId(d)]?.visitors || 0; return `<div class="bar" title="${d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })}: ${v} views, ${u} visitors"><i style="height:${Math.round(v / max * 100)}%"></i><em style="height:${Math.round(u / max * 100)}%"></em><small>${d.getUTCDate()}</small></div>`; }).join("");
       } catch { $s(".stat-note").textContent = "Statistics are unavailable right now (offline)."; }
     }
     load(); const t = setInterval(() => ctx.isVisible() && load(), 30000); ctx.onClose(() => clearInterval(t));
@@ -1344,14 +1406,14 @@ TERMS
       <div class="mb-list" aria-live="polite"><p class="muted">Loading messages…</p></div>`;
     const form = body.querySelector("form"), list = body.querySelector(".mb-list"), F = form.elements;
     F.from.value = store.lget("xp-board-name") || playerName() || "";
-    let last = 0, sig = "";
-    const ago = (t) => { const s = (Date.now() - t) / 1000; return s < 60 ? "just now" : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : new Date(t).toLocaleDateString([], { month: "short", day: "numeric" }); };
+    let last = 0, sig = null;
+    const ago = (t) => { const s = Math.max(0, (Date.now() - t) / 1000); return s < 60 ? "just now" : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : new Date(t).toLocaleDateString([], { month: "short", day: "numeric" }); };
     const paint = (rows) => {
-      list.innerHTML = rows.length ? rows.map((m) => `<div class="mb-msg"><div class="mb-meta"><b>${esc(m.from)}</b> → <span>${esc(m.to)}</span><time title="${new Date(m.createdAt).toLocaleString()}">${ago(m.createdAt)}</time></div><p>${esc(m.text)}</p></div>`).join("") : `<p class="muted">No messages yet. Be the first!</p>`;
+      list.innerHTML = rows.length ? rows.map((m) => `<div class="mb-msg"><div class="mb-meta"><b>${esc(m.from)}</b> → <span>${esc(m.to)}</span><time data-t="${m.createdAt}" title="${new Date(m.createdAt).toLocaleString()}">${ago(m.createdAt)}</time></div><p>${esc(m.text)}</p></div>`).join("") : `<p class="muted">No messages yet. Be the first!</p>`;
     };
     async function load() {
-      try { const rows = await Cloud.board(50); const n = rows.map((r) => r.id).join(); if (n !== sig) { sig = n; paint(rows); } }
-      catch { if (!sig) list.innerHTML = `<p class="muted">Messages are unavailable right now.</p>`; }
+      try { const rows = await Cloud.board(50); const n = rows.map((r) => r.id).join(); if (n !== sig) { sig = n; paint(rows); } else list.querySelectorAll("time[data-t]").forEach((el) => (el.textContent = ago(+el.dataset.t))); }
+      catch { if (sig == null) list.innerHTML = `<p class="muted">Messages are unavailable right now.</p>`; }
     }
     F.text.addEventListener("input", () => (body.querySelector(".mb-count").textContent = `${F.text.value.length} / 280`));
     form.addEventListener("submit", async (e) => {
@@ -1360,13 +1422,14 @@ TERMS
       if (Date.now() - last < 15000) return msgBox("Message Board", "Please wait a few seconds before posting again.", "⚠️");
       const from = (F.from.value.trim() || "Anonymous").slice(0, 30), to = (F.to.value.trim() || "Everyone").slice(0, 30);
       const btn = form.querySelector("button"); btn.disabled = true;
-      try { await Cloud.post(from, to, text); last = Date.now(); store.lset("xp-board-name", F.from.value.trim()); F.text.value = ""; F.to.value = ""; body.querySelector(".mb-count").textContent = "0 / 280"; sig = ""; await load(); }
+      try { await Cloud.post(from, to, text); last = Date.now(); store.lset("xp-board-name", F.from.value.trim()); F.text.value = ""; F.to.value = ""; body.querySelector(".mb-count").textContent = "0 / 280"; sig = null; await load(); }
       catch { msgBox("Message Board", "Couldn't post right now. Please try again.", "⚠️"); }
       finally { btn.disabled = false; }
     });
     F.text.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) form.requestSubmit(); });
-    load();
-    const t = setInterval(() => !document.hidden && (docked ? !boardEl.classList.contains("hidden") : ctx.isVisible()) && load(), 30000);
+    // the docked board is hidden by CSS on small screens and before log-on; those screens use the Message Board window
+    if (!docked || innerWidth > 900) load();
+    const t = setInterval(() => !document.hidden && (docked ? boardEl.offsetWidth > 0 : ctx.isVisible()) && load(), 30000);
     if (ctx) ctx.onClose(() => clearInterval(t));
     if (docked) body.querySelector(".mb-min").onclick = () => { boardEl.classList.add("hidden"); store.lset("xp-board-hidden", "1"); boardTab.classList.remove("hidden"); layoutIcons(false); };
   }
@@ -1632,24 +1695,20 @@ TERMS
   });
   const toggleStart = (on) => { sm.classList.toggle("hidden", !on); startBtn.classList.toggle("on", on); if (on) { closeTray(); setTimeout(() => sm.querySelector("li[tabindex]")?.focus({ preventScroll: true }), 0); } };
   startBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleStart(sm.classList.contains("hidden")); });
-  sm.addEventListener("click", (e) => {
-    const li = e.target.closest("li"); if (!li) return;
-    if (li.dataset.href) window.open(li.dataset.href, "_blank", "noopener");
-    if ("reset" in li.dataset) askReset();
-    if ("help" in li.dataset) msgBox("Help and Support", "Double-click desktop icons to open apps, or drag them to rearrange. Drag windows by their title bar. Try the Command Prompt and type <b>help</b>.");
-    toggleStart(false);
-  });
+  sm.addEventListener("click", (e) => { if (e.target.closest("li")) toggleStart(false); });
   document.addEventListener("click", (e) => { if (!sm.contains(e.target) && !startBtn.contains(e.target)) toggleStart(false); hideCtx(); });
   addEventListener("keydown", (e) => {
     if (e.key === "Escape" && e.ctrlKey && !e.shiftKey) { toggleStart(sm.classList.contains("hidden")); return; }
     if (e.key === "Escape" && !e.ctrlKey) { toggleStart(false); closeTray(); closeMenus(); hideCtx(); shut.classList.add("hidden"); }
-    if (activeKey && ((e.altKey && e.key === "F4") || ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "w"))) { e.preventDefault(); close(activeKey); }
+    // browsers and the OS keep Ctrl+W, Alt+F4, Ctrl+Shift+Esc and Win+R for themselves in a normal tab, so Alt+W, Alt+T and Alt+R are the ones Help advertises
+    if (activeKey && ((e.altKey && e.key === "F4") || (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "w") || ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "w"))) { e.preventDefault(); close(activeKey); }
     metaAlone = e.key === "Meta" && !e.repeat;
   });
 
   addEventListener("keydown", (e) => {
-    if (e.ctrlKey && e.shiftKey && e.key === "Escape") { e.preventDefault(); openApp("taskmgr"); }
-    if (e.metaKey && !/Mac|iP(hone|ad)/.test(navigator.platform) && e.key.toLowerCase() === "r") { e.preventDefault(); metaAlone = false; openApp("run"); }
+    const alt = e.altKey && !e.ctrlKey && !e.metaKey;
+    if ((e.ctrlKey && e.shiftKey && e.key === "Escape") || (alt && e.key.toLowerCase() === "t")) { e.preventDefault(); openApp("taskmgr"); }
+    if ((e.metaKey && !/Mac|iP(hone|ad)/.test(navigator.platform) && e.key.toLowerCase() === "r") || (alt && e.key.toLowerCase() === "r")) { e.preventDefault(); metaAlone = false; openApp("run"); }
   });
   let metaAlone = false;
   addEventListener("keyup", (e) => { if (e.key === "Meta" && metaAlone) toggleStart(sm.classList.contains("hidden")); metaAlone = false; });
@@ -1658,7 +1717,7 @@ TERMS
   const ctxEl = $("#ctxMenu");
   const hideCtx = () => ctxEl.classList.add("hidden");
   desktopEl.addEventListener("contextmenu", (e) => {
-    if (e.target.closest(".win, .taskbar, .start-menu, .tray-pop")) return hideCtx();
+    if (e.target.closest(".win, .taskbar, .start-menu, .tray-pop, .board-dock, .board-tab, .balloons")) return hideCtx();
     e.preventDefault();
     const icon = e.target.closest(".dicon");
     ctxEl.innerHTML = icon
@@ -1710,6 +1769,9 @@ TERMS
   }
   conn?.addEventListener?.("change", () => { paintTray(); if (trayOpen === "net") renderPop(); });
   let vol = parseInt(store.lget("xp-vol"), 10), muted = store.lget("xp-mute") === "1"; if (!(vol >= 0 && vol <= 100)) vol = 70;
+  // Media Player changes the same stored volume, so read it again whenever it matters
+  function readVol() { const v = parseInt(store.lget("xp-vol"), 10), m = store.lget("xp-mute"); if (v >= 0 && v <= 100) vol = v; if (m != null) muted = m === "1"; }
+  addEventListener("xp-volume", () => paintTray());
   const bars = (n) => `<span class="sig">${[1, 2, 3, 4].map((k) => `<i class="${k <= n ? "on" : ""}" style="height:${k * 3}px"></i>`).join("")}</span>`;
   const POPS = {
     vol: () => `<h4>Volume</h4><div class="vol"><input type="range" min="0" max="100" value="${vol}" class="vslider" aria-label="Volume"><b class="vval">${vol}</b></div><label><input type="checkbox" class="mute" ${muted ? "checked" : ""}> Mute</label>`,
@@ -1748,6 +1810,7 @@ TERMS
     upd(); b.addEventListener("levelchange", upd); b.addEventListener("chargingchange", upd);
   }).catch(() => {});
   function paintTray() {
+    readVol();
     $("#tVol").textContent = muted || vol === 0 ? "🔇" : vol < 40 ? "🔈" : "🔊";
     $("#tNet").classList.toggle("off", !navigator.onLine);
     $("#tNet").querySelectorAll(".wifi-ico i").forEach((b, i) => b.classList.toggle("dim", i >= Math.max(1, strength() - 1)));
@@ -1756,6 +1819,7 @@ TERMS
     $("#tBat").title = `${bat.level}% ${bat.charging ? "(charging)" : "remaining"}`;
   }
   function renderPop() {
+    readVol();
     trayPop.innerHTML = POPS[trayOpen]();
     const btn = $("#t" + { vol: "Vol", net: "Net", bat: "Bat", clock: "Clock" }[trayOpen]).getBoundingClientRect();
     trayPop.style.right = Math.max(4, innerWidth - btn.right - 30) + "px";
@@ -1811,13 +1875,53 @@ TERMS
     save() { store.lset("xp-tasks", JSON.stringify(this.list)); paintBell(); wins.forEach((w, k) => k === "calendar" && w.refresh?.()); },
     on(date) { return this.list.filter((t) => t.date === date).sort((a, b) => (a.time || "99").localeCompare(b.time || "99")); },
     due(t) { return t.snooze || (t.time ? new Date(`${t.date}T${t.time}`).getTime() : null); },
-    async sync() {
+    // _busy and _m tell a running sync that the snapshot it fetched may already be out of date
+    _c: new Map(), _busy: 0, _m: 0,
+    async _write(p) { this._busy++; try { return await p; } finally { this._busy--; this._m++; } },
+    // one POST per task, however many callers ask; an edit or delete made meanwhile is replayed once the id is known
+    create(t) {
+      if (!this._c.has(t)) {
+        const sent = JSON.stringify(pick(t));
+        this._c.set(t, this._write(Cloud.taskCreate(pick(t))).then(async (r) => {
+          Object.assign(t, { id: r.id, createdAt: r.createdAt, updatedAt: r.updatedAt, pending: false });
+          if (t.removed) await this._write(Cloud.taskDelete(r.id)).catch(() => {});
+          else if (JSON.stringify(pick(t)) !== sent) await this.push(t);
+        }).finally(() => this._c.delete(t)));
+      }
+      return this._c.get(t);
+    },
+    // sends a task's shared fields; a network failure leaves it marked dirty for the next sync
+    async push(t) {
+      t.dirty = true;
+      try { await this._write(Cloud.taskUpdate(t.id, pick(t))); delete t.dirty; }
+      catch (e) {
+        if (e.status === 404) { delete t.dirty; this.list = this.list.filter((x) => x !== t); }
+        else if (e.status && e.status < 500) { delete t.dirty; msgBox("Calendar", esc(e.message), "⚠️"); this._sig = null; this.sync(); }
+      }
+      this.save();
+    },
+    // deletes on the server; a network failure keeps the id so the next sync can finish the job
+    async forget(t) {
+      if (t.pending) { t.removed = true; return; }
+      try { await this._write(Cloud.taskDelete(t.id)); }
+      catch (e) { if (!e.status || e.status >= 500) store.lset("xp-task-gone", JSON.stringify([...readLocal("xp-task-gone", []), t.id])); }
+    },
+    sync() { return this._run ||= this._sync().finally(() => (this._run = null)); },
+    async _sync() {
       try {
-        // push anything created while offline, then take the server's list
+        // send anything changed while offline, then take the server's list
         for (const t of this.list.filter((x) => x.pending)) {
-          Object.assign(t, await Cloud.taskCreate(pick(t)), { pending: false });
+          try { await this.create(t); }
+          catch (e) { if (e.status >= 400 && e.status < 500) { this.list = this.list.filter((x) => x !== t); this.save(); } else throw e; }
         }
+        for (const t of this.list.filter((x) => x.dirty)) await this.push(t);
+        if (this.list.some((t) => t.dirty)) return;
+        const gone = readLocal("xp-task-gone", []);
+        for (const id of gone) await this._write(Cloud.taskDelete(id));
+        if (gone.length) store.lset("xp-task-gone", JSON.stringify(readLocal("xp-task-gone", []).filter((id) => !gone.includes(id))));
+        const m = this._m;
         const tasks = (await Cloud.tasks()).sort((a, b) => a.date.localeCompare(b.date));
+        if (this._m !== m || this._busy) return;
         const mine = new Map(this.list.map((t) => [t.id, t]));
         const sig = JSON.stringify(tasks.map((t) => [t.id, t.updatedAt]));
         if (sig === this._sig && !this.list.some((t) => t.pending)) return;
@@ -1829,7 +1933,7 @@ TERMS
     async add(t) {
       const task = { id: "tmp-" + Date.now().toString(36), done: false, notified: false, ...t, pending: true };
       this.list.push(task); this.save();
-      try { Object.assign(task, await Cloud.taskCreate(pick(task)), { pending: false }); this.save(); }
+      try { await this.create(task); this.save(); }
       catch (e) { if (e.status === 400 || e.status === 403 || e.status === 429) { this.list = this.list.filter((x) => x !== task); this.save(); msgBox("Calendar", esc(e.message), "⚠️"); } }
     },
     async update(id, patch) {
@@ -1837,17 +1941,17 @@ TERMS
       Object.assign(t, patch); this.save();
       const shared = Object.fromEntries(Object.entries(patch).filter(([k]) => SHARED.includes(k)));
       if (!Object.keys(shared).length || t.pending) return;
-      try { await Cloud.taskUpdate(id, pick(t)); } catch (e) { if (e.status === 404) { this.list = this.list.filter((x) => x.id !== id); this.save(); } }
+      await this.push(t);
     },
     async remove(id) {
       const t = this.list.find((x) => x.id === id);
       this.list = this.list.filter((x) => x.id !== id); this.save();
-      if (t && !t.pending) try { await Cloud.taskDelete(id); } catch {}
+      if (t) await this.forget(t);
     },
     async clearDone() {
-      const done = this.list.filter((t) => t.done && !t.pending);
+      const done = this.list.filter((t) => t.done);
       this.list = this.list.filter((t) => !t.done); this.save();
-      for (const t of done) try { await Cloud.taskDelete(t.id); } catch {}
+      for (const t of done) await this.forget(t);
     },
   };
   const pick = (t) => Object.fromEntries(SHARED.map((k) => [k, t[k]]).filter(([, v]) => v !== undefined));
@@ -1859,7 +1963,7 @@ TERMS
     if (ctx.date) { const d = new Date(ctx.date + "T00:00"); view = new Date(d.getFullYear(), d.getMonth(), 1); }
     body.classList.add("calapp");
     const inner = chrome(body, { menus: [
-      { label: "File", items: [{ label: "New Task", key: "Ctrl+N", act: () => input.focus() }, { label: "Export tasks (.json)", act: () => download(new Blob([JSON.stringify(Tasks.list, null, 2)], { type: "application/json" }), "tasks.json") }, "-", { label: "Exit", act: ctx.close }] },
+      { label: "File", items: [{ label: "New Task", key: "Alt+N", act: () => input.focus() }, { label: "Export tasks (.json)", act: () => download(new Blob([JSON.stringify(Tasks.list, null, 2)], { type: "application/json" }), "tasks.json") }, "-", { label: "Exit", act: ctx.close }] },
       { label: "View", items: [{ label: "Today", act: () => { const n = new Date(); view = new Date(n.getFullYear(), n.getMonth(), 1); sel = dkey(n); paint(); } }, { label: "Previous Month", act: () => move(-1) }, { label: "Next Month", act: () => move(1) }] },
       { label: "Tools", items: () => [{ label: "Clear completed tasks", act: () => Tasks.clearDone() },
         { label: notifyLabel(), disabled: !("Notification" in window) || Notification.permission !== "default", act: askNotify }] },
@@ -1885,8 +1989,8 @@ TERMS
       $c(".cday").textContent = sd.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric", year: "numeric" });
       const items = Tasks.on(sel);
       $c(".task-list").innerHTML = items.map((t) => editing === t.id
-        ? `<li data-id="${t.id}" class="editing"><input class="etext" value="${esc(t.text)}" maxlength="140"><input type="time" class="etime" value="${t.time || ""}"><button class="xpbtn esave">Save</button></li>`
-        : `<li data-id="${t.id}" class="${t.done ? "done" : ""}"><input type="checkbox" class="tdone" ${t.done ? "checked" : ""} aria-label="Done"><span class="ttext">${esc(t.text)}</span>
+        ? `<li data-id="${esc(t.id)}" class="editing"><input class="etext" value="${esc(t.text)}" maxlength="140"><input type="time" class="etime" value="${t.time || ""}"><button class="xpbtn esave">Save</button></li>`
+        : `<li data-id="${esc(t.id)}" class="${t.done ? "done" : ""}"><input type="checkbox" class="tdone" ${t.done ? "checked" : ""} aria-label="Done"><span class="ttext">${esc(t.text)}</span>
            ${t.time ? `<small class="ttime">${fmtTime(t.time)}</small>` : ""}<button class="tbell ${t.remind && t.time ? "on" : ""}" title="${t.time ? "Toggle reminder" : "Set a time to enable reminders"}" ${t.time ? "" : "disabled"}>🔔</button>
            <button class="tedit" title="Edit" aria-label="Edit">✏️</button><button class="tdel" title="Delete" aria-label="Delete">✕</button></li>`).join("");
       $c(".cempty").hidden = items.length > 0;
@@ -1908,7 +2012,7 @@ TERMS
       const li = e.target.closest("li"); if (!li) return; const id = li.dataset.id, t = Tasks.list.find((x) => x.id === id); if (!t) return;
       if (e.target.closest(".tdel")) Tasks.remove(id);
       else if (e.target.closest(".tbell")) { const on = !t.remind; Tasks.update(id, { remind: on, notified: false, snooze: null }); if (on) askNotify(true); }
-      else if (e.target.closest(".tedit")) { editing = id; paint(); li.parentElement.querySelector(".etext")?.focus(); }
+      else if (e.target.closest(".tedit")) { editing = id; paint(); $c(".task-list .editing .etext")?.focus(); }
       else if (e.target.closest(".esave")) saveEdit(li);
     });
     $c(".task-list").addEventListener("change", (e) => { if (e.target.classList.contains("tdone")) Tasks.update(e.target.closest("li").dataset.id, { done: e.target.checked }); });
@@ -1917,7 +2021,7 @@ TERMS
       const text = li.querySelector(".etext").value.trim(), time = li.querySelector(".etime").value; editing = null;
       if (text) Tasks.update(li.dataset.id, { text, time, notified: false, snooze: null, remind: Tasks.list.find((x) => x.id === li.dataset.id).remind && !!time }); else paint();
     }
-    const keys = (e) => { if (ctx.isActive() && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") { e.preventDefault(); input.focus(); } };
+    const keys = (e) => { if (ctx.isActive() && e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "n") { e.preventDefault(); input.focus(); } };
     addEventListener("keydown", keys); ctx.onClose(() => removeEventListener("keydown", keys));
     wins.get(ctx.key).refresh = () => { if (!editing) paint(); };
     const syncLabel = () => { const el = $c(".cal-sync"); if (el) { el.textContent = (Cloud.ok ? "☁ " : "💾 ") + Cloud.label(); el.classList.toggle("off", Cloud.ok === false); } };
@@ -1934,8 +2038,9 @@ TERMS
   // Reminder engine: checks every 15s; reminders missed while the site was closed are shown on the next visit
   function chime() {
     try {
-      if (muted || vol === 0) return;
+      readVol(); if (muted || vol === 0) return;
       const A = window.AudioContext || window.webkitAudioContext; const ac = chime.ac ||= new A();
+      if (ac.state === "suspended") ac.resume().catch(() => {});
       [659, 880, 1047].forEach((f, i) => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = f; o.type = "sine"; g.gain.setValueAtTime(0, ac.currentTime + i * .12); g.gain.linearRampToValueAtTime(.12 * vol / 100, ac.currentTime + i * .12 + .02); g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + i * .12 + .35); o.connect(g).connect(ac.destination); o.start(ac.currentTime + i * .12); o.stop(ac.currentTime + i * .12 + .4); });
     } catch {}
   }
@@ -1980,7 +2085,7 @@ TERMS
   countVisit();
   // Vercel Web Analytics (cookie-free): only load it when it's switched on for the project, so there's no 404
   if (/\.vercel\.app$/.test(location.hostname)) fetch("/_vercel/insights/script.js", { method: "HEAD" }).then((r) => { if (r.ok) { const sc = document.createElement("script"); sc.defer = true; sc.src = "/_vercel/insights/script.js"; document.head.appendChild(sc); } }).catch(() => {});
-  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=26"; document.head.appendChild(l); } });
+  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=27"; document.head.appendChild(l); } });
   (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => Tasks.sync().then(() => { checkReminders(true); paintBell(); }));
   setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });
@@ -2014,9 +2119,9 @@ TERMS
     const msg = $("#blackoutMsg"), on = $("#powerOn");
     on.classList.add("hidden");
     xpSound("shutdown");
-    msg.textContent = a === "restart" ? "Windows is restarting..." : a === "standby" ? "Computer sleeping... click to wake." : "Windows is shutting down...";
+    msg.textContent = a === "restart" ? "Windows is restarting..." : a === "standby" ? "Computer sleeping... click or press a key to wake." : "Windows is shutting down...";
     if (a === "restart") setTimeout(() => boot(false), 1600);
-    else if (a === "standby") $("#blackout").onclick = () => { $("#blackout").onclick = null; show("#login"); };
+    else if (a === "standby") { const wake = () => { $("#blackout").onclick = null; removeEventListener("keydown", wake); show("#login"); }; $("#blackout").onclick = wake; addEventListener("keydown", wake); }
     else setTimeout(() => { msg.textContent = "It is now safe to turn off your computer."; on.classList.remove("hidden"); }, 1600);
   });
   $("#powerOn").onclick = (e) => { e.stopPropagation(); boot(false); };

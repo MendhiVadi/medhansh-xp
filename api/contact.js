@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     await mailer().sendMail({
       from: `"Portfolio contact" <${process.env.GMAIL_USER}>`,
       to: process.env.CONTACT_TO || process.env.GMAIL_USER,
-      replyTo: `"${m.name.replace(/"/g, "")}" <${m.email}>`,
+      replyTo: { name: m.name, address: m.email },
       subject: `[Portfolio] ${m.subject}`,
       text: `${m.message}\n\n— ${m.name}\n${reach}\nPrefers: ${m.via}`,
       html: `<div style="font:14px Tahoma,Arial,sans-serif;color:#222"><p style="white-space:pre-wrap">${esc(m.message)}</p><hr><p><b>${esc(m.name)}</b><br>${esc(reach).replace(/\n/g, "<br>")}<br>Prefers to be contacted by <b>${m.via}</b></p></div>`,
