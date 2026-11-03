@@ -684,6 +684,18 @@ await test("full screen", async () => {
   await key("Escape"); await click(`.win[data-key="solitaire"] .fsbtn`); await until(`!document.fullscreenElement`, 2000); await sleep(100);
   ok("leaving puts the balloons back on the desktop", await ev(`document.querySelector(".balloons").parentElement.id==="desktop"`));
   await closeAll();
+  // closing a full-screen window with a dialog open inside it closes the dialog too, and nothing waits on it forever
+  await ev(`sessionStorage.removeItem("xp-player-name"); sessionStorage.removeItem("xp-name-asked")`);
+  await openApp("solitaire"); await sleep(200); await key(" "); await sleep(100);
+  await click(`.win[data-key="solitaire"] .fsbtn`); await until(`document.fullscreenElement===${W("solitaire")}`, 2000);
+  await ev(`(()=>{ const G=${G("solitaire")}, mk=(s,r)=>({id:s*13+r,s,r,up:true}); G.S={s:[],w:[],f:[0,1,2,3].map(s=>Array.from({length:13},(_,i)=>mk(s,i+1))),t:[[],[],[],[],[],[],[]]}; G.secs=100; G.checkWin(); })()`); await sleep(300); await key("Escape"); await sleep(300);
+  ok("the name prompt opens inside the full-screen window", await until(`!!document.fullscreenElement?.querySelector(".win .askbox")`, 3000));
+  { const b = await center(`.win[data-key="solitaire"] > .titlebar .close`); await mouse(b.x, b.y); }
+  await until(`!document.fullscreenElement`, 2000); await sleep(200);
+  ok("closing the window closes the prompt, with no dead taskbar button", await ev(`!document.querySelector(".askbox") && !document.querySelector("#tasks .task")`), await ev(`document.querySelector("#tasks").textContent`));
+  await ev(`(()=>{const f=document.querySelector(".board-dock form"); f.elements.text.value="after a closed prompt"; f.requestSubmit();})()`); await sleep(800);
+  ok("and the message board isn't left stuck", await ev(`!document.querySelector(".board-dock form button").disabled`));
+  await closeAll();
 });
 await test("reduced motion", async () => {
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });

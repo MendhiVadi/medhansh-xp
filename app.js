@@ -233,12 +233,12 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=38"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=39"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=38"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=39"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyExtra(name) {
@@ -296,7 +296,7 @@
     const rec = { el, task, app, cleanups: [] };
     wins.set(key, rec);
 
-    el.addEventListener("pointerdown", () => focus(key));
+    el.addEventListener("pointerdown", (e) => { if (e.target.closest(".win") === el) focus(key); }); // not for a dialog nested inside it
     task.addEventListener("click", () => {
       if (activeKey === key && !el.classList.contains("min")) minimize(key);
       else restore(key);
@@ -345,7 +345,7 @@
     confirm: (t, h, ok) => confirmBox(t, h, ok),
     notify: (t, h, o) => notify(t, h, o),
     career: { read: () => Career.read(), record: (g, r) => Career.record(g, r), levelOf: (p) => Career.levelOf(p), rank: (l) => Career.rank(l) },
-    photos: [{ src: "photo-full.jpg?v=38", title: "Medhansh.jpg" }, { src: "photo.jpg?v=38", title: "Avatar.jpg" }],
+    photos: [{ src: "photo-full.jpg?v=39", title: "Medhansh.jpg" }, { src: "photo.jpg?v=39", title: "Avatar.jpg" }],
     // Shared data everyone sees. Games: sys.scores.submit(game, score, extra) / sys.scores.top(game, n, ascending)
     scores: { top: (g, n, asc) => Cloud.top(g, n, asc), submit: async (g, s, x) => { await askName(); return Cloud.submit(g, s, x); }, name: () => playerName(), askName },
     pictures: { list: () => Cloud.pictures(), data: (id) => Cloud.pictureData(id), add: async (t, d, w, h) => { await askName(); return Cloud.pictureAdd(t, d, w, h); }, remove: (id) => Cloud.pictureDelete(id) },
@@ -418,6 +418,7 @@
   });
   function close(key) {
     const w = wins.get(key); if (!w) return;
+    w.el.querySelectorAll(":scope > .win").forEach((d) => close(d.dataset.key)); // dialogs that opened inside it in full screen
     w.cleanups.forEach((fn) => { try { fn(); } catch {} });
     w.el.remove(); w.task.remove(); wins.delete(key);
     closeMenus();
@@ -755,11 +756,11 @@
       // dotted words are an address only with a real-looking ending, so "node.js" and "3.14" still search
       const m = q.match(/^([\w-]+(?:\.[\w-]+)+)(:\d+)?(\/\S*)?$/), end = m?.[1].split(".").pop().toLowerCase();
       if (m && (/^\d{1,3}(\.\d{1,3}){3}$/.test(m[1]) || (/^[a-z]{2,}$/.test(end) && !/^(js|ts|jsx|tsx|py|rb|java|cpp|cs|go|rs|php|html|htm|css|json|md|txt|csv|xml|yml|yaml|sh|exe|dll|pdf|png|jpg|jpeg|gif|svg|zip)$/.test(end)))) return "https://" + q;
-      return "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q);
+      return "https://www.bing.com/search?q=" + encodeURIComponent(q);
     };
     // ---- loading, stopping and failing like a normal browser ----
     const SANDBOX = frame.getAttribute("sandbox"), PROXY_SANDBOX = "allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox";
-    let ctl = null, loadT = 0, loading = 0, failed = 0;
+    let ctl = null, loadT = 0, loading = 0, failed = 0, viaProxy = false, loads = 0;
     const busy = (on, text) => {
       loading = on ? show.n : 0; $b(".iethrob").classList.toggle("on", !!on); $b(".ieprog").classList.toggle("hidden", !on);
       $b(".iestop").disabled = !on; if (text) stat.textContent = text;
@@ -769,6 +770,7 @@
       login: "This page asks for a password. Logins never go through the portfolio's browser, so your details stay between you and the site.",
       post: "This form sends information to the site, which only works on the site's own page.",
       challenge: "The site wants to check that you're a person, which only works on its own page.",
+      refused: "This site doesn't accept visits through the portfolio's browser, but its own page should work.",
       toolarge: "This page is too large to show here.",
       timeout: "The page took too long to load here.",
       empty: "This page didn't load properly inside this window.",
@@ -777,7 +779,7 @@
     };
     // a page that can't work here ends in the same choice as Vision Assist: open it in a new tab, or stay
     function fail(kind, n = show.n) {
-      if (n !== show.n || failed === n) return; failed = n;
+      if (n !== show.n || failed === n) return; failed = n; viaProxy = false;
       clearTimeout(loadT); ctl?.abort(); busy(false, "Couldn't show the page here");
       const why = esc(WHY[kind] || WHY.error);
       frame.setAttribute("sandbox", SANDBOX); frame.removeAttribute("src"); frame.srcdoc = page("This page can't be shown here", why);
@@ -785,14 +787,14 @@
     }
     function stop() {
       if (!loading) return;
-      show.n++; clearTimeout(loadT); ctl?.abort(); busy(false, "Stopped");
+      show.n++; viaProxy = false; clearTimeout(loadT); ctl?.abort(); busy(false, "Stopped");
       frame.setAttribute("sandbox", SANDBOX); frame.removeAttribute("src"); frame.srcdoc = page("Navigation to the webpage was canceled", "Press Refresh to try again.");
     }
     function show(url) {
       urlIn.value = url === HOME ? "" : url; urlIn.placeholder = "Type a web address or search the web";
       $b(".ieback").disabled = pos <= 0; $b(".iefwd").disabled = pos >= hist.length - 1; $b(".ienew").disabled = url === HOME;
       ctx.setTitle(url === HOME ? "Favorites - Internet Explorer" : url.replace(/^https?:\/\/(www\.)?/, "").split(/[/?#]/)[0] + " - Internet Explorer");
-      clearTimeout(show.t); clearTimeout(loadT); ctl?.abort();
+      clearTimeout(show.t); clearTimeout(loadT); ctl?.abort(); viaProxy = false;
       const n = show.n = (show.n || 0) + 1;
       if (url === HOME) { busy(false, "Done"); frame.classList.add("hidden"); frame.removeAttribute("srcdoc"); frame.src = "about:blank"; home.classList.remove("hidden"); bar.classList.add("hidden"); return; }
       home.classList.add("hidden"); frame.classList.remove("hidden"); bar.classList.add("hidden");
@@ -805,29 +807,39 @@
         if (n !== show.n) return;
         if (j?.blocked) { clearTimeout(loadT); busy(false, "Cannot find server"); frame.setAttribute("sandbox", SANDBOX); frame.removeAttribute("src"); frame.srcdoc = page("Internet Explorer cannot display the webpage", "The address can't be reached. Check that it's typed correctly."); return; }
         if (j?.timeout) return fail("timeout", n); // the page itself would only time out too
+        if (j?.challenge) return fail("challenge", n);
         if (!j && /^http:/i.test(url) && location.protocol === "https:") return fail("mixed", n);
         const proxied = !!j && (j.frameable === false || /^http:/i.test(url));
         frame.setAttribute("sandbox", proxied ? PROXY_SANDBOX : SANDBOX);
         bar.firstChild.textContent = proxied ? "Shown through the portfolio's proxy, so logins and some interactive sites may not work. You can also " : "Some sites refuse to be shown inside other pages. If this stays blank, use ";
-        if (proxied || !j) show.t = setTimeout(() => n === show.n && bar.classList.remove("hidden"), proxied ? 600 : 2500);
+        // a site can still refuse a direct frame, and this window can't see that, so the way out is always on offer
+        show.t = setTimeout(() => n === show.n && bar.classList.remove("hidden"), proxied ? 600 : 2500);
         frame.removeAttribute("srcdoc");
-        frame.src = proxied ? `/api/proxy?url=${encodeURIComponent(url)}` : url;
+        viaProxy = proxied; loads = 0;
+        // n tells this page's messages from those of the page it replaces
+        frame.src = proxied ? `/api/proxy?url=${encodeURIComponent(url)}&n=${n}` : url;
       });
     }
+    // Bing's result links are script-driven redirects with the real address inside, base64 after "a1"
+    const unwrapLink = (u) => { try { const a = new URL(u), v = a.searchParams.get("u"); if (/(^|\.)bing\.com$/i.test(a.hostname) && a.pathname === "/ck/a" && v?.startsWith("a1")) return atob(v.slice(2).replace(/-/g, "+").replace(/_/g, "/")); } catch {} return u; };
     // pages shown through the proxy report their address, title, link clicks and failures back here
     const onMsg = (e) => {
-      if (e.source !== frame.contentWindow || !e.data || typeof e.data !== "object" || pos < 0 || hist[pos] === HOME) return;
+      // the current page unloading when this window didn't ask: it navigated itself, usually onto an error page with no load event.
+      // Checked first: by the time this arrives the page is gone, so e.source can't be matched
+      if (viaProxy && typeof e.data?.xpLeft === "string" && e.data.xpLeft && frame.getAttribute("src")?.endsWith(e.data.xpLeft)) { const n = show.n; setTimeout(() => fail("empty", n), 1500); return; }
+      if (!viaProxy || e.source !== frame.contentWindow || !e.data || typeof e.data !== "object" || pos < 0 || hist[pos] === HOME) return;
       const d = e.data;
       if (typeof d.xpFail === "string") return fail(d.xpFail);
-      if (typeof d.xpNav === "string" && /^https?:/i.test(d.xpNav)) return go(d.xpNav);
+      if (typeof d.xpNav === "string") { const to = unwrapLink(d.xpNav); return /^https?:/i.test(to) ? go(to) : undefined; }
       // redirects and in-page navigation: the address bar follows, without a new history entry
-      if (typeof d.xpUrl === "string" && /^https?:/i.test(d.xpUrl) && d.xpUrl !== hist[pos]) { hist[pos] = d.xpUrl; if (document.activeElement !== urlIn) urlIn.value = d.xpUrl; }
+      if (typeof d.xpUrl === "string" && /^https?:/i.test(d.xpUrl) && !d.xpUrl.includes("/api/proxy?url=") && d.xpUrl !== hist[pos]) { hist[pos] = d.xpUrl; if (document.activeElement !== urlIn) urlIn.value = d.xpUrl; }
       if (typeof d.xpTitle === "string" && d.xpTitle) ctx.setTitle(d.xpTitle.slice(0, 80) + " - Internet Explorer");
       if (d.xpLoaded && loading) { clearTimeout(loadT); busy(false, "Done"); }
     };
     addEventListener("message", onMsg); ctx.onClose(() => { removeEventListener("message", onMsg); clearTimeout(loadT); ctl?.abort(); });
     // a real page finished (not the blank one a new navigation starts from)
-    frame.addEventListener("load", () => { if (loading && (frame.hasAttribute("srcdoc") || frame.getAttribute("src") !== "about:blank")) { clearTimeout(loadT); busy(false, "Done"); } });
+    // a proxied copy that navigates itself lands on an error page: the proxy refuses it, and most sites refuse the frame
+    frame.addEventListener("load", () => { if (viaProxy && ++loads > 1) return fail("empty"); if (loading && (frame.hasAttribute("srcdoc") || frame.getAttribute("src") !== "about:blank")) { clearTimeout(loadT); busy(false, "Done"); } });
     // pages that can't work inside this window (data.js projects marked newTab) are offered in a new tab instead
     const origin = (u) => { try { return new URL(u).origin; } catch { return ""; } };
     const offerTab = (url, why) => confirmBox("Internet Explorer", `${why}<br><br>Open <b>${esc(origin(url).replace(/^https?:\/\//, ""))}</b> in a new tab?`, "Open in new tab", () => window.open(url, "_blank", "noopener"));
@@ -2367,7 +2379,7 @@ TERMS
   countVisit();
   // Vercel Web Analytics (cookie-free): only load it when it's switched on for the project, so there's no 404
   if (/\.vercel\.app$/.test(location.hostname)) fetch("/_vercel/insights/script.js", { method: "HEAD" }).then((r) => { if (r.ok) { const sc = document.createElement("script"); sc.defer = true; sc.src = "/_vercel/insights/script.js"; document.head.appendChild(sc); } }).catch(() => {});
-  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=38"; document.head.appendChild(l); } });
+  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=39"; document.head.appendChild(l); } });
   (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => Tasks.sync().then(() => { checkReminders(true); paintBell(); }));
   setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });
