@@ -28,15 +28,22 @@ ws.onmessage = (m) => {
 };
 const send = (method, params = {}) => new Promise((ok, fail) => { const i = ++id; pend.set(i, { ok, fail }); ws.send(JSON.stringify({ id: i, method, params })); });
 const ev = async (expr) => { const r = await send("Runtime.evaluate", { expression: expr, awaitPromise: true, returnByValue: true, userGesture: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text); return r.result.value; };
-const KC = { Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowLeft: 37, ArrowRight: 39, F2: 113, " ": 32, Tab: 9 };
+const KC = { Enter: 13, Escape: 27, ArrowDown: 40, ArrowUp: 38, ArrowLeft: 37, ArrowRight: 39, F2: 113, " ": 32, Tab: 9, "/": 191, ".": 190 }, CODE = { " ": "Space", "/": "Slash", ".": "Period" };
 const key = async (k, mods = 0, down = true, up = true) => {
-  const u = k.length === 1 ? k.toUpperCase() : k, vk = KC[k] ?? u.charCodeAt(0), code = k === " " ? "Space" : k.length === 1 ? "Key" + u : k;
+  const u = k.length === 1 ? k.toUpperCase() : k, vk = KC[k] ?? u.charCodeAt(0), code = CODE[k] ?? (k.length === 1 ? "Key" + u : k);
   const text = k.length === 1 && !(mods & 3) ? k : k === "Enter" ? "\r" : undefined;
   if (down) await send("Input.dispatchKeyEvent", { type: text ? "keyDown" : "rawKeyDown", key: k, code, windowsVirtualKeyCode: vk, modifiers: mods, text, unmodifiedText: text });
   if (up) await send("Input.dispatchKeyEvent", { type: "keyUp", key: k, code, windowsVirtualKeyCode: vk, modifiers: mods });
 };
 const mouse = async (x, y, btn = "left") => { for (const type of ["mouseMoved", "mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x, y, button: type === "mouseMoved" ? "none" : btn, buttons: type === "mousePressed" ? (btn === "left" ? 1 : 2) : 0, clickCount: 1 }); };
 const center = (sel) => ev(`(()=>{const e=document.querySelector(${JSON.stringify(sel)}); if(!e) return null; e.scrollIntoView({block:"nearest"}); const b=e.getBoundingClientRect(); return {x:b.left+b.width/2,y:b.top+b.height/2}})()`);
+// a real press, move and release, in steps, from one point to another
+const dragTo = async (a, b, steps = 8) => {
+  const m = (type, x, y, buttons) => send("Input.dispatchMouseEvent", { type, x, y, button: type === "mouseMoved" && !buttons ? "none" : "left", buttons, clickCount: 1 });
+  await m("mouseMoved", a.x, a.y, 0); await m("mousePressed", a.x, a.y, 1);
+  for (let i = 1; i <= steps; i++) { await m("mouseMoved", a.x + (b.x - a.x) * i / steps, a.y + (b.y - a.y) * i / steps, 1); await sleep(10); }
+  await m("mouseReleased", b.x, b.y, 0);
+};
 const click = async (sel, btn) => { const r = await center(sel); if (!r) throw new Error("no element " + sel); await mouse(r.x, r.y, btn); };
 const hover = async (sel) => { const r = await center(sel); await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: r.x, y: r.y, button: "none", buttons: 0 }); };
 const until = async (expr, ms = 5000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (await ev(expr)) return true; await sleep(40); } return false; };
@@ -446,6 +453,192 @@ await test("phone layout of a game", async () => {
   await closeAll(); await openApp("pinball"); await sleep(50); await key(" "); await sleep(300); await shot("42-phone-pin"); await closeAll();
   await click("#startBtn"); await sleep(100); await click("#smAll"); await sleep(100); await shot("43-phone-start");
   await send("Emulation.clearDeviceMetricsOverride");
+});
+// ---------------- robustness: real input, interrupted waits, every menu item, random input ----------------
+const cardAt = (pile, i) => center(`.card[data-pile="${pile}"][data-i="${i}"]`);
+// the strip of a fanned card that stays visible above the cards on top of it
+const grip = (pile, i) => ev(`(()=>{const b=document.querySelector('.card[data-pile="${pile}"][data-i="${i}"]')?.getBoundingClientRect(); return b&&{x:b.left+b.width/2,y:b.top+5}})()`);
+const rectOf = (sel) => ev(`(()=>{const b=document.querySelector(${JSON.stringify(sel)})?.getBoundingClientRect(); return b&&{x:Math.round(b.left),y:Math.round(b.top)}})()`);
+await test("solitaire: real mouse drags", async () => {
+  await load(); await openApp("solitaire"); await sleep(150); await key(" "); await sleep(150);
+  const g = G("solitaire");
+  // t0: 8♥ | t1: 7♠ | t2: 7♥ | t3: 9♠ | t4: 2♣ (down), K♦ | t5: empty | t6: A♠ ; stock: two cards
+  await ev(`(()=>{ const G=${g}, c=(id,s,r,up=true)=>({id,s,r,up}); G.S={s:[c(201,3,5,false),c(202,3,6,false)],w:[],f:[[],[],[],[]],t:[[c(101,1,8)],[c(102,0,7)],[c(103,1,7)],[c(104,0,9)],[c(105,3,2,false),c(106,2,13)],[],[c(107,0,1)]]}; })()`);
+  await sleep(60);
+  await dragTo(await cardAt("t1", 0), await cardAt("t0", 0)); await sleep(250);
+  ok("dragging 7♠ onto 8♥ moves it", await ev(`${g}.S.t[0].length===2 && ${g}.S.t[1].length===0 && ${g}.S.t[0][1].id===102`));
+  const home = await rectOf(`.card[data-pile="t2"][data-i="0"]`);
+  await dragTo(await cardAt("t2", 0), await cardAt("t3", 0)); await sleep(300);
+  const back = await rectOf(`.card[data-pile="t2"][data-i="0"]`);
+  ok("an illegal drop (7♥ on 9♠) snaps back", (await ev(`${g}.S.t[2].length===1 && ${g}.S.t[3].length===1`)) && back && Math.abs(back.x - home.x) < 2 && Math.abs(back.y - home.y) < 2, JSON.stringify([home, back]));
+  const sc0 = await ev(`${g}.score`);
+  await dragTo(await cardAt("t4", 1), await center(`.slot[data-pile="t5"]`)); await sleep(250);
+  ok("a King drops onto an empty column and the card under it turns over (+5)", (await ev(`${g}.S.t[5].length===1 && ${g}.S.t[5][0].r===13 && ${g}.S.t[4][0].up`)) && (await ev(`${g}.score`)) === sc0 + 5);
+  const sc1 = await ev(`${g}.score`), r = await cardAt("t6", 0); await mouse(r.x, r.y); await sleep(250);
+  ok("clicking an Ace sends it to a foundation (+10)", (await ev(`${g}.S.f.some(f=>f.length===1&&f[0].r===1) && ${g}.S.t[6].length===0`)) && (await ev(`${g}.score`)) === sc1 + 10);
+  const d = await center(`.slot[data-pile="s"]`); await mouse(d.x, d.y); await sleep(200);
+  ok("clicking the deck draws a card", await ev(`${g}.S.w.length===1 && ${g}.S.s.length===1 && ${g}.S.w[0].up`));
+  await closeAll();
+});
+await test("spider: real mouse drags and deals", async () => {
+  await load(); await ev(`localStorage.setItem("xp-spider-suits","2")`); await openApp("spider"); await sleep(150); await key(" "); await sleep(150);
+  const g = G("spider");
+  const setup = (empty) => ev(`(()=>{ const G=${g}, c=(id,s,r,up=true)=>({id,s,r,up}); const t=Array.from({length:10},(_,k)=>[c(300+k,1,2+((k*3)%9),true)]); t[0]=[c(400,1,12,false),c(401,0,9),c(402,0,8),c(403,0,7)]; t[1]=[c(404,1,10)]; ${empty ? "t[5]=[];" : ""} G.S={t,k:Array.from({length:10},(_,i)=>c(500+i,i%2,1+i,false)),d:[]}; })()`);
+  await setup(true); await sleep(60);
+  await dragTo(await grip("t0", 1), await cardAt("t1", 0)); await sleep(250);
+  ok("a same-suit run 9-8-7 drags as one group", await ev(`${g}.S.t[1].length===4 && ${g}.S.t[1].slice(1).map(c=>c.r).join()==="9,8,7" && ${g}.S.t[0].length===1 && ${g}.S.t[0][0].up`));
+  const mixed = await ev(`(()=>{ const G=${g}; G.S.t[2]=[{id:600,s:0,r:6,up:true},{id:601,s:1,r:5,up:true}]; G.render(); return 1; })()`);
+  await dragTo(await grip("t2", 0), await cardAt("t1", 3)); await sleep(250);
+  ok("a mixed-suit pair won't drag together", mixed && (await ev(`${g}.S.t[2].length===2 && ${g}.S.t[1].length===4`)));
+  const st = await center(`.card[data-pile="s"]`); await mouse(st.x, st.y); await sleep(120);
+  ok("refuses to deal with an empty column", (await ev(`${g}.S.k.length===10 && !${g}.dealing`)) && /Fill all empty/.test(await ev(`document.querySelector(".sol-toast")?.textContent||""`)));
+  await setup(false); await sleep(60);
+  const st2 = await center(`.card[data-pile="s"]`); await mouse(st2.x, st2.y); await sleep(30);
+  const was = await ev(`${g}.dealing`); await key(" "); await sleep(40);
+  ok("Space cuts a row deal short", was && !(await ev(`${g}.dealing`)) && (await ev(`${g}.S.k.length===0 && ${g}.S.t.every(p=>p.length>=2)`)));
+  await sleep(300); ok("no deal animation left running", await ev(`document.getAnimations().filter(a=>a.playState==="running"&&a.effect?.target?.classList?.contains("card")).length===0`));
+  await closeAll();
+});
+await test("career: abandoning a game", async () => {
+  await load(true, true); await openApp("solitaire"); await sleep(150); await key(" "); await sleep(100);
+  await closeAll();
+  ok("closing an untouched deal records nothing", !(await ev(`JSON.parse(localStorage.getItem("xp-career")||"{}").games?.solitaire`)));
+  await openApp("solitaire"); await sleep(150); await key(" "); await sleep(100);
+  const d = await center(`.slot[data-pile="s"]`); await mouse(d.x, d.y); await sleep(100);
+  await closeAll();
+  ok("closing after a move counts as a loss", await ev(`(()=>{const g=JSON.parse(localStorage.getItem("xp-career")).games.solitaire; return g.played===1 && !g.won})()`));
+  await openApp("spider"); await sleep(150); await click(".sol-win .xpbtn"); await sleep(100); await key(" "); await sleep(100);
+  const st = await center(`.card[data-pile="s"]`); await mouse(st.x, st.y); await sleep(60); await key(" "); await sleep(60);
+  await key("F2"); await sleep(100);
+  ok("dealing again after a move counts as a loss", await ev(`(()=>{const g=JSON.parse(localStorage.getItem("xp-career")).games.spider; return g?.played===1 && !g.won})()`));
+  await key("F2"); await sleep(100);
+  ok("dealing again straight away doesn't", await ev(`JSON.parse(localStorage.getItem("xp-career")).games.spider.played===1`));
+  await closeAll();
+});
+await test("interrupted waits", async () => {
+  await load(); const e0 = errors.length;
+  await openApp("snake"); await sleep(100); await closeAll(); await sleep(1600);
+  ok("closing during a splash is clean", !(await ev(`document.querySelector('.win[data-key="snake"]')`)) && errors.length === e0, errors.slice(e0).join(" | "));
+  await openApp("snake"); await sleep(80);
+  await click(".board-dock textarea"); await sleep(50); await key(" "); await sleep(60);
+  ok("Space typed into the Message Board doesn't skip the splash", (await ev(`!!document.querySelector(".splash")`)) && / /.test(await ev(`document.querySelector(".board-dock textarea").value`)));
+  await ev(`document.querySelector(".board-dock textarea").value=""`);
+  await click('.win[data-key="snake"] .titlebar'); await sleep(50); await key(" "); await sleep(100);
+  const g = G("snake");
+  await key("ArrowUp"); await sleep(80);
+  ok("an arrow key shows the level banner", (await ev(`${g}.state`)) === "banner");
+  await key("F2"); await sleep(60);
+  ok("F2 during the banner goes back to the title", (await ev(`${g}.state`)) === "ready");
+  await key(" "); await sleep(80);
+  ok("and Space then starts the game (not eaten by the old banner)", (await ev(`${g}.state`)) === "banner", await ev(`${g}.state`));
+  await sleep(1700); ok("the old banner never starts play early", ["run", "paused"].includes(await ev(`${g}.state`)));
+  await key("F2"); await sleep(60); await key("ArrowUp"); await sleep(80);
+  await click(`.win[data-key="snake"] .tbtn[data-a="min"]`); await sleep(1800);
+  await click(".task"); await sleep(250);
+  ok("minimized during the banner, it comes back paused", (await ev(`${g}.state`)) === "paused", await ev(`${g}.state`));
+  await closeAll();
+  await openApp("mine"); await sleep(100);
+  await click(`.cell[data-i="0"]`); await sleep(60);
+  const grid = await ev(`${G("mine")}.grid()`), m = grid.indexOf(-1);
+  await click(`.cell[data-i="${m}"]`); await sleep(30); const n0 = await ev(`__sounds.length`), e1 = errors.length;
+  await closeAll(); await sleep(1500);
+  ok("closing during the mine blasts stops them cleanly", (await ev(`__sounds.slice(${n0}).filter(s=>s==="pop").length`)) === 0 && errors.length === e1, errors.slice(e1).join(" | "));
+  await openApp("pinball"); await sleep(80); await key(" "); await sleep(150);
+  const pb = G("pinball");
+  await key(" ", 0, true, false); await sleep(300); await key(" ", 0, false, true); await sleep(100);
+  await ev(`${pb}.B.y=640`); await until(`${pb}.state==="ready"`, 1500); // the ball saver serves the first one again
+  await ev(`${pb}.launch()`); await sleep(100); await ev(`${pb}.B.y=640`); ok("a drained ball shows the bonus screen", await until(`${pb}.state==="bonus"`, 1500));
+  await key("F2"); await sleep(60);
+  await key(" ", 0, true, false); await sleep(250);
+  ok("F2 during the bonus, then Space pulls the plunger", (await ev(`${pb}.state`)) === "ready" && (await ev(`${pb}.B.y`)) > 556 + 2, await ev(`${pb}.state+" "+${pb}.B.y`));
+  await key(" ", 0, false, true); await sleep(1700);
+  ok("and the old bonus screen never ends the new ball", (await ev(`${pb}.ball`)) === 1 && (await ev(`${pb}.state`)) !== "bonus");
+  await closeAll();
+  await openApp("solitaire"); await sleep(100);
+  const s = G("solitaire");
+  await key("F2"); await sleep(30); await key("F2"); await sleep(30);
+  ok("a double re-deal finishes", await until(`!${s}.dealing`, 3000));
+  ok("with a full, clean table", (await ev(`${s}.S.t.map(c=>c.length).join()+"|"+${s}.S.s.length`)) === "1,2,3,4,5,6,7|24" && (await ev(`document.querySelectorAll('.sol-table .card').length`)) === 28 + 3);
+  await closeAll();
+});
+const GAMES6 = ["solitaire", "spider", "mine", "snake", "breakout", "pinball"];
+// closes message boxes and dialogs a game opened, leaving the game itself
+const closeOthers = (k) => ev(`(()=>{ let n=0; for (const w of document.querySelectorAll('.win')) if (w.dataset.key!=="${k}") { w.querySelector('.tbtn[data-a=close]')?.click(); n++; } return n; })()`);
+await test("every menu item in every game", async () => {
+  await load();
+  for (const k of GAMES6) {
+    const e0 = errors.length, done = [], off = [];
+    await openApp(k); await sleep(120); await key(" "); await sleep(150);
+    // make a move before each item, so Undo and Pause are live too
+    const warm = async () => {
+      await ev(`document.querySelector('.win[data-key="${k}"] .sol-win:not(.lvl-pick) .xpbtn')?.click(); document.querySelector('.win[data-key="${k}"] .lvl-x')?.click()`);
+      const st = await ev(`${G(k)}?.state`);
+      if ((k === "solitaire" || k === "spider") && (await ev(`${G(k)}.dealing`))) { await key(" "); await sleep(40); }
+      if (k === "solitaire") await click(`.slot[data-pile="s"]`);
+      if (k === "spider" && (await ev(`${G(k)}.S.k.length>0 && ${G(k)}.S.t.every(p=>p.length)`))) { await click(`.card[data-pile="s"]`); await sleep(40); await key(" "); }
+      if (k === "snake" && st !== "run") { if (st === "paused") await key(" "); else { await key("ArrowUp"); await sleep(40); await key(" "); } }
+      if (k === "breakout" && st !== "run") { await key(" "); await sleep(40); if ((await ev(`${G(k)}.state`)) !== "run") await key(" "); }
+      await sleep(80);
+    };
+    const menus = await ev(`document.querySelectorAll('.win[data-key="${k}"] .menubar [data-mi]').length`);
+    for (let mi = 0; mi < menus; mi++) {
+      for (let it = 0; it < 40; it++) {
+        await closeOthers(k); await sleep(30); await warm();
+        await click(`.win[data-key="${k}"] .menubar [data-mi="${mi}"]`); await sleep(60);
+        const info = await ev(`(()=>{const d=document.querySelectorAll(".dropdown [data-k]")[${it}]; if(!d) return null; d.dataset.t="1"; return {dis:d.classList.contains("dis"),label:d.textContent}})()`);
+        if (info?.dis) off.push(info.label.trim());
+        if (!info || info.dis || /Exit/.test(info.label)) { await click(`.win[data-key="${k}"] .menubar [data-mi="${mi}"]`); await sleep(30); if (!info) break; continue; }
+        await click(`.dropdown [data-t="1"]`); await sleep(220); done.push(info.label.trim());
+        if (await ev(`!!document.querySelector('.win[data-key="${k}"] .splash')`)) await key(" ");
+      }
+    }
+    await closeOthers(k); await sleep(60);
+    ok(`${k}: ${done.length} menu items work`, done.length >= 3 && errors.length === e0 && (await ev(`!!document.querySelector('.win[data-key="${k}"]')`)), errors.slice(e0).join(" | ") || done.join(", ") + (off.length ? "  (greyed out: " + off.join(", ") + ")" : ""));
+    await closeAll();
+  }
+});
+await test("random input in every game", async () => {
+  await load();
+  let seed = +process.env.SEED || 7; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const KEYS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", " ", "F2", "z", "/", "x", ".", "p", "h", "m", "Enter", "Escape", "a", "d"];
+  for (const k of GAMES6) {
+    const e0 = errors.length;
+    await openApp(k); await sleep(120); await key(" "); await sleep(150);
+    const box = await ev(`(()=>{const b=document.querySelector('.win[data-key="${k}"] .wbody').getBoundingClientRect(); return {x:b.left,y:b.top+24,w:b.width,h:b.height-30}})()`);
+    for (let i = 0; i < 90; i++) {
+      if (rnd() < 0.6) { const kk = KEYS[(rnd() * KEYS.length) | 0]; if (rnd() < 0.05) await key("z", 2); else if (rnd() < 0.15) { await key(kk, 0, true, false); await sleep(60); await key(kk, 0, false, true); } else await key(kk); }
+      else {
+        const x = box.x + rnd() * box.w, y = box.y + rnd() * box.h;
+        // stay off an open menu, so the run never picks Exit
+        if (await ev(`!!document.elementFromPoint(${x},${y})?.closest(".dropdown, .titlebar")`)) continue;
+        if (rnd() < 0.3) await dragTo({ x, y }, { x: x + (rnd() - 0.5) * 200, y: y + (rnd() - 0.5) * 200 }, 4); else await mouse(x, y, rnd() < 0.15 ? "right" : "left");
+      }
+      await sleep(15 + rnd() * 40);
+      if (i % 30 === 29) await closeOthers(k);
+    }
+    await closeOthers(k); await sleep(150);
+    ok(`${k}: 90 random keys and clicks, no runtime errors`, errors.length === e0 && (await ev(`!!document.querySelector('.win[data-key="${k}"]')`)), errors.slice(e0).join(" | "));
+    await shot(`50-random-${k}`);
+    await closeAll();
+  }
+});
+await test("reduced motion", async () => {
+  await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+  await load(); await openApp("solitaire"); await sleep(60);
+  ok("no deal wait", !(await ev(`${G("solitaire")}.dealing`)));
+  await closeAll(); await openApp("notepad"); await sleep(60);
+  await click(`.win .tbtn[data-a="min"]`); await sleep(20);
+  ok("no flying outline", await ev(`document.querySelector(".win").classList.contains("min") && !document.querySelector(".flyrect")`));
+  await closeAll();
+  await send("Emulation.setEmulatedMedia", { features: [] });
+});
+await test("first-time visitor", async () => {
+  await load(false, true); await ev(`sessionStorage.clear()`); await send("Page.reload"); await sleep(700); // a new tab: earlier tests logged this one in
+  await key(" "); await sleep(100);
+  await click("#userTile"); await sleep(100); await key(" ");
+  ok("About Me opens on the desktop", await until(`!!document.querySelector('.win[data-key="about"]')`, 2000));
+  await sleep(300); await shot("51-first-visit");
+  await closeAll();
 });
 const fails = res.filter(([, c]) => !c).length;
 console.log(`\n${res.length - fails}/${res.length} passed`);
