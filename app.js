@@ -233,12 +233,12 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=35"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=36"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=35"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=36"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyExtra(name) {
@@ -345,7 +345,7 @@
     confirm: (t, h, ok) => confirmBox(t, h, ok),
     notify: (t, h, o) => notify(t, h, o),
     career: { read: () => Career.read(), record: (g, r) => Career.record(g, r), levelOf: (p) => Career.levelOf(p), rank: (l) => Career.rank(l) },
-    photos: [{ src: "photo-full.jpg?v=35", title: "Medhansh.jpg" }, { src: "photo.jpg?v=35", title: "Avatar.jpg" }],
+    photos: [{ src: "photo-full.jpg?v=36", title: "Medhansh.jpg" }, { src: "photo.jpg?v=36", title: "Avatar.jpg" }],
     // Shared data everyone sees. Games: sys.scores.submit(game, score, extra) / sys.scores.top(game, n, ascending)
     scores: { top: (g, n, asc) => Cloud.top(g, n, asc), submit: async (g, s, x) => { await askName(); return Cloud.submit(g, s, x); }, name: () => playerName(), askName },
     pictures: { list: () => Cloud.pictures(), data: (id) => Cloud.pictureData(id), add: async (t, d, w, h) => { await askName(); return Cloud.pictureAdd(t, d, w, h); }, remove: (id) => Cloud.pictureDelete(id) },
@@ -486,14 +486,15 @@
       } } });
     });
   }
-  function confirmBox(title, text, okLabel = "OK") {
+  // onYes runs inside the click itself, so a window.open there counts as a user action and isn't blocked
+  function confirmBox(title, text, okLabel = "OK", onYes) {
     XPS.play("exclaim");
     return new Promise((done) => {
       let yes = false;
       openApp(null, { key: "ask" + Date.now() + "_" + cascade, app: { title, icon: "info", w: 360, h: 170, dialog: true, render: (b, c) => {
         b.innerHTML = `<div class="msgbox"><span class="msgbox-ico">${MB_ICON["⚠️"]}</span><div>${text}</div></div><div class="msgbox-actions"><button class="xpbtn yes">${esc(okLabel)}</button><button class="xpbtn no">Cancel</button></div>`;
         c.onClose(() => done(yes));
-        b.querySelector(".yes").onclick = () => { yes = true; c.close(); }; b.querySelector(".no").onclick = c.close;
+        b.querySelector(".yes").onclick = () => { yes = true; onYes?.(); c.close(); }; b.querySelector(".no").onclick = c.close;
         setTimeout(() => b.querySelector(".no").focus(), 0);
       } } });
     });
@@ -785,7 +786,14 @@
     };
     addEventListener("message", onMsg); ctx.onClose(() => removeEventListener("message", onMsg));
     frame.addEventListener("load", () => { stat.textContent = "Done"; });
-    const go = (q) => { const url = normalize(q); hist.splice(pos + 1); hist.push(url); pos = hist.length - 1; show(url); };
+    // pages that can't work inside this window (data.js projects marked newTab) are offered in a new tab instead
+    const origin = (u) => { try { return new URL(u).origin; } catch { return ""; } };
+    const offerTab = (url, why) => confirmBox("Internet Explorer", `${why}<br><br>Open <b>${esc(origin(url).replace(/^https?:\/\//, ""))}</b> in a new tab?`, "Open in new tab", () => window.open(url, "_blank", "noopener"));
+    const go = (q) => {
+      const url = normalize(q), own = url !== HOME && P.projects.find((p) => p.newTab && p.url && origin(p.url) === origin(url));
+      if (own) { offerTab(url, esc(own.newTab)); if (pos < 0) go(HOME); else urlIn.value = hist[pos] === HOME ? "" : hist[pos]; return; } // Cancel stays put, history unchanged
+      hist.splice(pos + 1); hist.push(url); pos = hist.length - 1; show(url);
+    };
     ctx.navigate = go; wins.get(ctx.key).navigate = go;
     $b(".ieaddr").addEventListener("submit", (e) => { e.preventDefault(); go(urlIn.value); });
     $b(".ieback").onclick = () => { if (pos > 0) show(hist[--pos]); };
@@ -2311,7 +2319,7 @@ TERMS
   countVisit();
   // Vercel Web Analytics (cookie-free): only load it when it's switched on for the project, so there's no 404
   if (/\.vercel\.app$/.test(location.hostname)) fetch("/_vercel/insights/script.js", { method: "HEAD" }).then((r) => { if (r.ok) { const sc = document.createElement("script"); sc.defer = true; sc.src = "/_vercel/insights/script.js"; document.head.appendChild(sc); } }).catch(() => {});
-  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=35"; document.head.appendChild(l); } });
+  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=36"; document.head.appendChild(l); } });
   (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => Tasks.sync().then(() => { checkReminders(true); paintBell(); }));
   setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });
