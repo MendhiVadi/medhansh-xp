@@ -56,7 +56,7 @@ const FAKE = (logged) => `(() => {
   const J = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { "Content-Type": "application/json" } });
   window.fetch = async (u, opt = {}) => {
     const s = String(u); if (!s.includes("firestore.googleapis.com")) return real(u, opt);
-    if (s.includes("/entries")) { const b = JSON.parse(opt.body); window.__scores.push(b.fields); return J({ name: "x/entries/E" + window.__scores.length, fields: b.fields }); }
+    if (s.includes("/entries")) { const b = JSON.parse(opt.body); window.__scores.push(b.fields); (window.__scoreUrls ||= []).push(s); return J({ name: "x/entries/E" + window.__scores.length, fields: b.fields }); }
     if (s.includes(":runQuery")) return J([]); if (s.includes(":commit") || s.includes(":batchGet")) return J(s.includes(":batchGet") ? [] : {});
     if (s.includes("/tasks")) return J({ documents: [] }); if (s.includes("/pictures")) return J({ documents: [] });
     return J({}, 404);
@@ -218,6 +218,7 @@ await test("minesweeper", async () => {
   ok("clearing the board wins", await ev(`${g}.won() && document.querySelector(".smiley").dataset.f==="cool" && __sounds.includes("tada")`));
   await sleep(800);
   ok("win dialog and a world time", await ev(`/You win/.test(document.querySelector(".mine-end").textContent)`) && (await until(`__scores.length>0`, 1500)));
+  ok("Minesweeper times post through the same idempotent path", await ev(`__scoreUrls.every(u=>u.includes("scores/mine-Beginner/entries?documentId=") && new URL(u).searchParams.get("documentId").length>=16)`), await ev(`__scoreUrls.join(" ")`));
   const c = await ev(`JSON.parse(localStorage.getItem("xp-career"))`);
   ok("career recorded a loss and a win", c.games.mine.played === 2 && c.games.mine.won === 1 && c.pts > 0, JSON.stringify(c.games.mine));
   await closeAll();
