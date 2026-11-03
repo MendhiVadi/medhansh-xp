@@ -43,6 +43,10 @@
 .x-wmp .pl{flex:0 0 38%;min-width:0;background:linear-gradient(#17356b,#0a1f44);border-left:1px solid #3a63a8;overflow-x:hidden;overflow-y:auto}
 .x-wmp .pl div{padding:4px 6px;display:flex;gap:6px;cursor:default;border-bottom:1px solid #1d3f7a;white-space:nowrap;min-width:0}
 .x-wmp .pl div span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.x-wmp .pl .rm{margin-left:auto;padding:0 5px;min-width:0;border:0;background:none;color:#cfe0ff;font-size:13px;line-height:1;cursor:pointer}.x-wmp .pl .rm:hover{color:#fff;background:#c4351f}
+.x-wmp .pl .note{margin:6px;font-size:10px;color:#9fb7e6;white-space:normal}
+.x-wmp.drop{outline:3px dashed #8ec5ff;outline-offset:-6px}
+.x-wmp .addm{padding:0 8px}
 .x-wmp .pl div:hover{background:#244a8f}.x-wmp .pl div.on{background:#3b78d8;color:#fff;font-weight:bold}
 .x-wmp .np{flex:0 0 auto;padding:3px 8px;background:linear-gradient(#0f2b5c,#0a1f44);border-top:1px solid #1d3f7a;color:#8fd0ff;font:bold 12px Tahoma,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .x-wmp .ctl{flex:0 0 auto;min-width:0;padding:4px 8px 6px;background:linear-gradient(#5d8fd8,#2b5aa8 45%,#1a3f86);border-top:1px solid #9dc1f5}
@@ -228,7 +232,7 @@
       <div class="ctl"><div class="srow"><input class="seek" type="range" min="0" max="1000" value="0" aria-label="Seek"><span class="tm">00:00 / 0:00</span></div><div class="btns">
       <button class="prev" title="Previous" aria-label="Previous">&#9198;</button><button class="stop" title="Stop" aria-label="Stop">&#9632;</button><button class="play big" title="Play" aria-label="Play">&#9654;</button><button class="next" title="Next" aria-label="Next">&#9197;</button>
       <button class="shuf" title="Shuffle" aria-label="Shuffle" aria-pressed="false">&#8644;</button><button class="rep" title="Repeat" aria-label="Repeat" aria-pressed="false">&#8635;</button>
-      <button class="plt" title="Playlist" aria-label="Toggle playlist" aria-pressed="false">Playlist</button>
+      <button class="plt" title="Playlist" aria-label="Toggle playlist" aria-pressed="false">Playlist</button><button class="addm" title="Add your own music (it stays in this browser)">+ Add music</button><input class="mfile" type="file" accept="audio/*,.mp3,.m4a,.aac,.ogg,.oga,.opus,.wav,.flac,.webm" multiple hidden>
       <span class="vg"><button class="mute" title="Mute" aria-label="Mute" aria-pressed="false">&#128266;</button><input class="vol" aria-label="Volume" type="range" min="0" max="100"></span></div></div></div></div>`;
     const $ = (s) => body.querySelector(s);
     const cv = $("canvas"), g2 = cv.getContext("2d"), npEl = $(".np"), plEl = $(".pl"), seek = $(".seek"), tmEl = $(".tm"), volEl = $(".vol");
@@ -242,20 +246,27 @@
       if (cw && ch) { const bw = Math.round(cw * dpr), bh = Math.round(ch * dpr); if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; } }
     };
     observe(ctx, wmp, fitLayout); observe(ctx, visEl, fitLayout); listen(ctx, window, "resize", fitLayout); fitLayout();
-    let AC = null, master = null, analyser = null, trackGain = null, noiseBuf = null, timer = 0;
+    let AC = null, master = null, analyser = null, trackGain = null, noiseBuf = null, timer = 0, au = null;
     let cur = 0, playing = false, started = false, t0 = 0, nextI = 0, shuffle = false, repeat = false, mode = "bars", dragging = false;
     let vol = parseInt(ctx.store.lget("xp-vol"), 10); if (!(vol >= 0 && vol <= 100)) vol = 70;
     let muted = ctx.store.lget("xp-mute") === "1";
     volEl.value = vol;
-    const tr = () => TRACKS[cur];
-    const sd = () => 60 / tr().bpm / 4;
-
-    plEl.innerHTML = TRACKS.map((t, i) => `<div data-i="${i}"><span>${i + 1}.</span><span title="${esc(t.artist)}">${esc(t.name)}</span><span>${mmss(t.total)}</span></div>`).join("");
+    // the playlist: the built-in synth tracks, then the visitor's own songs ({ file, url, key }), which never leave this browser
+    const items = TRACKS.map((t) => ({ name: t.name, artist: t.artist, total: t.total, synth: t }));
+    const tr = () => items[cur];
+    const sd = () => 60 / tr().synth.bpm / 4;
+    const isFile = () => !!tr().file;
+    const urlOf = (it) => (it.url ||= URL.createObjectURL(it.file));
+    const PRIVACY = "Your music stays in this browser: it's never uploaded or shared with other visitors.";
+    const renderList = () => {
+      plEl.innerHTML = items.map((t, i) => `<div data-i="${i}" class="${i === cur ? "on" : ""}"><span>${i + 1}.</span><span title="${esc(t.artist || "")}">${esc(t.name)}</span><span>${t.total ? mmss(t.total) : "--:--"}</span>${t.file ? `<button class="rm" data-rm="${i}" title="Remove from playlist" aria-label="Remove ${esc(t.name)}">×</button>` : ""}</div>`).join("") + `<p class="note">${items.some((t) => t.file) ? esc(PRIVACY) : "Drop songs here, or use + Add music. " + esc(PRIVACY)}</p>`;
+    };
     const paintList = () => {
-      plEl.querySelectorAll("div").forEach((d, i) => d.classList.toggle("on", i === cur));
-      npEl.textContent = `${tr().name} - ${tr().artist}`;
+      plEl.querySelectorAll("[data-i]").forEach((d) => d.classList.toggle("on", +d.dataset.i === cur));
+      npEl.textContent = tr().artist ? `${tr().name} - ${tr().artist}` : tr().name;
       ctx.setTitle?.(`${tr().name} - Windows Media Player`);
     };
+    renderList();
     const gainVal = () => (muted ? 0 : vol / 100) * 0.9;
     const applyVol = () => { if (master) master.gain.setTargetAtTime(gainVal(), AC.currentTime, 0.02); muteBtn.classList.toggle("on", muted); muteBtn.setAttribute("aria-pressed", String(muted)); muteBtn.innerHTML = muted ? "&#128263;" : "&#128266;"; };
     const ensureAC = () => {
@@ -264,6 +275,11 @@
         try { AC = new C(); } catch { return false; }
         master = AC.createGain(); analyser = AC.createAnalyser(); analyser.fftSize = 256; analyser.smoothingTimeConstant = 0.78;
         master.connect(analyser); analyser.connect(AC.destination);
+        // one <audio> element for the visitor's songs, through the same volume, mute and visualizer
+        au = new Audio(); au.preload = "auto";
+        try { AC.createMediaElementSource(au).connect(master); } catch {}
+        au.addEventListener("ended", () => { if (isFile() && started) go(cur + 1, true); });
+        au.addEventListener("error", () => { if (isFile() && started && au.getAttribute("src")) { const n = tr().name; stop(); ctx.sys?.msg?.("Windows Media Player", `Windows Media Player cannot play <b>${esc(n)}</b>. The file may be damaged, or its format isn't supported by this browser.`, "⚠️"); } });
         noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
         const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
         applyVol();
@@ -283,7 +299,7 @@
       g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       s.connect(f); f.connect(g); g.connect(dest); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
     };
-    const stepTime = (i) => { const T = tr(); return t0 + i * sd() + (T.swing && (i & 1) ? sd() * T.swing : 0); };
+    const stepTime = (i) => { const T = tr().synth; return t0 + i * sd() + (T.swing && (i & 1) ? sd() * T.swing : 0); };
     function playStep(T, i, t, dest) {
       const bar = i >> 4, s = i & 15, ch = T.prog[bar % T.prog.length], step = 60 / T.bpm / 4;
       const deg = (d) => T.root + T.scale[((d % 7) + 7) % 7] + 12 * Math.floor(d / 7);
@@ -302,25 +318,40 @@
       if (T.chirp && s === 0 && bar % 4 === 3) { noise(dest, t, 0.6, 0.1, "bandpass", 1200); note(dest, t, 600, 0.5, "square", 0.04, { slide: 2400 }); }
     }
     const sched = () => {
-      const T = tr(), total = T.bars * 16, end = AC.currentTime + (document.hidden ? 1.6 : 0.2);
+      const T = tr().synth; if (!T) return; const total = T.bars * 16, end = AC.currentTime + (document.hidden ? 1.6 : 0.2);
       while (nextI < total && stepTime(nextI) < end) {
         const t = stepTime(nextI); if (t >= AC.currentTime - 0.05) playStep(T, nextI, t, trackGain); nextI++;
       }
     };
-    const elapsed = () => (started && AC ? clamp(AC.currentTime - t0, 0, tr().total) : 0);
-    const killTrack = () => { clearInterval(timer); timer = 0; if (trackGain) { try { trackGain.disconnect(); } catch {} trackGain = null; } };
+    const elapsed = () => (!started || !AC ? 0 : isFile() ? au.currentTime || 0 : clamp(AC.currentTime - t0, 0, tr().total));
+    const killTrack = () => { clearInterval(timer); timer = 0; if (trackGain) { try { trackGain.disconnect(); } catch {} trackGain = null; } if (au) au.pause(); };
     function startTrack(idx, pos = 0) {
       if (!ensureAC()) return ctx.sys?.msg?.("Windows Media Player", "Audio is not available in this browser.");
-      killTrack(); cur = idx; AC.resume().catch(() => {});
-      trackGain = AC.createGain(); trackGain.connect(master);
-      t0 = AC.currentTime + 0.06 - pos; nextI = Math.floor(pos / sd()); started = true; playing = true;
-      timer = setInterval(sched, 25); sched(); paintList(); paintBtns();
+      killTrack(); cur = idx; AC.resume().catch(() => {}); started = true; playing = true;
+      if (isFile()) {
+        if (au.getAttribute("src") !== urlOf(tr())) au.src = urlOf(tr());
+        const at = () => { try { au.currentTime = pos; } catch {} };
+        au.readyState >= 1 ? at() : au.addEventListener("loadedmetadata", at, { once: true });
+        au.play().catch(() => {});
+      } else {
+        trackGain = AC.createGain(); trackGain.connect(master);
+        t0 = AC.currentTime + 0.06 - pos; nextI = Math.floor(pos / sd());
+        timer = setInterval(sched, 25); sched();
+      }
+      paintList(); paintBtns();
     }
-    const play = () => { if (!ensureAC()) return; if (!started) startTrack(cur); else if (!playing) { AC.resume().catch(() => {}); playing = true; paintBtns(); } else { AC.suspend().catch(() => {}); playing = false; paintBtns(); } };
-    const stop = () => { killTrack(); started = false; playing = false; if (AC) AC.suspend().catch(() => {}); paintBtns(); tick(); };
+    const play = () => {
+      if (!ensureAC()) return;
+      if (!started) return startTrack(cur);
+      playing = !playing;
+      if (isFile()) { if (playing) { AC.resume().catch(() => {}); au.play().catch(() => {}); } else au.pause(); }
+      else (playing ? AC.resume() : AC.suspend()).catch(() => {});
+      paintBtns();
+    };
+    const stop = () => { killTrack(); if (au) { try { au.currentTime = 0; } catch {} } started = false; playing = false; if (AC) AC.suspend().catch(() => {}); paintBtns(); tick(); };
     const go = (idx, auto) => {
-      if (shuffle && TRACKS.length > 1) { do { idx = Math.floor(Math.random() * TRACKS.length); } while (idx === cur); }
-      idx = (idx + TRACKS.length) % TRACKS.length;
+      if (shuffle && items.length > 1) { do { idx = Math.floor(Math.random() * items.length); } while (idx === cur); }
+      idx = (idx + items.length) % items.length;
       if (auto && !repeat && !shuffle && idx === 0) { stop(); cur = 0; paintList(); return; }
       if (started || auto) startTrack(idx); else { cur = idx; paintList(); tick(); }
     };
@@ -332,11 +363,12 @@
     }
     function tick() {
       const e = elapsed(), T = tr();
+      if (isFile() && au && isFinite(au.duration) && au.duration > 0 && T.total !== au.duration) { T.total = au.duration; renderList(); }
       tmEl.textContent = `${String(Math.floor(e / 60)).padStart(2, "0")}:${String(Math.floor(e % 60)).padStart(2, "0")} / ${mmss(T.total)}`;
-      if (!dragging) seek.value = started ? Math.round(e / T.total * 1000) : 0;
+      if (!dragging) seek.value = started && T.total ? Math.round(e / T.total * 1000) : 0;
       if (ctx.store.lget("xp-mute") === "1" !== muted) { muted = !muted; applyVol(); }
       const rawVol = ctx.store.lget("xp-vol"), sv = rawVol == null || rawVol === "" ? NaN : Number(rawVol); if (sv >= 0 && sv <= 100 && sv !== vol) { vol = sv; volEl.value = vol; applyVol(); }
-      if (started && playing && e >= T.total - 0.02) go(cur + 1, true);
+      if (started && playing && !isFile() && e >= T.total - 0.02) go(cur + 1, true); // songs end on the audio element's ended event
     }
     every(ctx, 200, tick);
 
@@ -348,12 +380,89 @@
       else if (b.classList.contains("plt")) { wmp.classList.toggle("showpl"); b.classList.toggle("on", wmp.classList.contains("showpl")); b.setAttribute("aria-pressed", String(wmp.classList.contains("showpl"))); }
       else if (b === muteBtn) { muted = !muted; ctx.store.lset("xp-mute", muted ? "1" : "0"); applyVol(); dispatchEvent(new Event("xp-volume")); }
     });
-    plEl.addEventListener("click", (e) => { const d = e.target.closest("[data-i]"); if (d && +d.dataset.i !== cur) { if (started) startTrack(+d.dataset.i); else { cur = +d.dataset.i; paintList(); tick(); } } });
+    plEl.addEventListener("click", (e) => { const rm = e.target.closest("[data-rm]"); if (rm) { e.stopPropagation(); return removeSong(+rm.dataset.rm); } const d = e.target.closest("[data-i]"); if (d && +d.dataset.i !== cur) { if (started) startTrack(+d.dataset.i); else { cur = +d.dataset.i; paintList(); tick(); } } });
     plEl.addEventListener("dblclick", (e) => { const d = e.target.closest("[data-i]"); if (d) startTrack(+d.dataset.i); });
     seek.addEventListener("input", () => { dragging = true; });
-    seek.addEventListener("change", () => { dragging = false; if (started) startTrack(cur, seek.value / 1000 * tr().total * 0.999); });
+    seek.addEventListener("change", () => {
+      dragging = false; if (!started || !tr().total) return;
+      const pos = seek.value / 1000 * tr().total * 0.999;
+      if (isFile()) { try { au.currentTime = pos; } catch {} } else startTrack(cur, pos);
+    });
     volEl.addEventListener("input", () => { vol = +volEl.value; ctx.store.lset("xp-vol", vol); if (vol > 0 && muted) { muted = false; ctx.store.lset("xp-mute", "0"); } applyVol(); dispatchEvent(new Event("xp-volume")); });
     cv.addEventListener("click", () => { mode = mode === "bars" ? "scope" : "bars"; });
+
+    // ---- the visitor's own songs: File > Open, + Add music, or drop files on the window ----
+    const AUDIO_EXT = /\.(mp3|m4a|aac|ogg|oga|opus|wav|flac|webm)$/i;
+    const isAudio = (f) => /^audio\//.test(f.type) || AUDIO_EXT.test(f.name);
+    // title and artist from an ID3v2.3/2.4 tag when there is one; otherwise the file name
+    const id3 = async (file) => {
+      try {
+        const h = new Uint8Array(await file.slice(0, 10).arrayBuffer());
+        if (h[0] !== 73 || h[1] !== 68 || h[2] !== 51 || (h[3] !== 3 && h[3] !== 4)) return {};
+        const size = (h[6] << 21) | (h[7] << 14) | (h[8] << 7) | h[9], b = new Uint8Array(await file.slice(10, 10 + Math.min(size, 256 * 1024)).arrayBuffer()), out = {};
+        for (let i = 0; i + 10 <= b.length;) {
+          const id = String.fromCharCode(b[i], b[i + 1], b[i + 2], b[i + 3]); if (!/^[A-Z0-9]{4}$/.test(id)) break;
+          const n = h[3] === 4 ? (b[i + 4] << 21) | (b[i + 5] << 14) | (b[i + 6] << 7) | b[i + 7] : (b[i + 4] << 24) | (b[i + 5] << 16) | (b[i + 6] << 8) | b[i + 7];
+          if (n <= 0 || i + 10 + n > b.length) break;
+          if (id === "TIT2" || id === "TPE1") {
+            const enc = b[i + 10], raw = b.subarray(i + 11, i + 10 + n);
+            const txt = new TextDecoder(enc === 1 ? "utf-16" : enc === 2 ? "utf-16be" : enc === 3 ? "utf-8" : "latin1").decode(raw).replace(/\0+$/, "").trim();
+            if (txt) out[id === "TIT2" ? "name" : "artist"] = txt.slice(0, 120);
+          }
+          i += 10 + n;
+        }
+        return out;
+      } catch { return {}; }
+    };
+    // a song is only added if this browser can decode it: its length comes from a throwaway <audio>
+    const probe = (file) => new Promise((ok) => {
+      const a = new Audio(), u = URL.createObjectURL(file), done = (d) => { a.removeAttribute("src"); a.load(); URL.revokeObjectURL(u); ok(d); };
+      a.preload = "metadata"; a.onloadedmetadata = () => done(isFinite(a.duration) ? a.duration : 0); a.onerror = () => done(null); setTimeout(() => done(null), 8000); a.src = u;
+    });
+    // kept across reloads in IndexedDB when this browser has room; otherwise just for this visit
+    const DB = (() => {
+      let p = null;
+      const open = () => (p ||= new Promise((ok, no) => { try { const r = indexedDB.open("xp-music", 1); r.onupgradeneeded = () => r.result.createObjectStore("songs", { keyPath: "key" }); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); } catch (e) { no(e); } }));
+      const run = (mode, fn) => open().then((db) => new Promise((ok, no) => { const t = db.transaction("songs", mode), r = fn(t.objectStore("songs")); t.oncomplete = () => ok(r?.result); t.onerror = t.onabort = () => no(t.error); }));
+      return { all: () => run("readonly", (s) => s.getAll()), put: (v) => run("readwrite", (s) => s.put(v)), del: (k) => run("readwrite", (s) => s.delete(k)) };
+    })();
+    let saveNote = "";
+    async function addFiles(list) {
+      const files = [...list]; if (!files.length) return;
+      const bad = [], first = items.length;
+      for (const f of files) {
+        if (!isAudio(f)) { bad.push(f.name); continue; }
+        const total = await probe(f); if (!ctx.alive()) return;
+        if (total === null) { bad.push(f.name); continue; }
+        const tag = await id3(f), it = { name: tag.name || f.name.replace(/\.[^.]+$/, ""), artist: tag.artist || "", total, file: f, key: Date.now().toString(36) + Math.random().toString(36).slice(2, 8) };
+        items.push(it);
+        DB.put({ key: it.key, name: it.name, artist: it.artist, total, blob: f, type: f.type }).catch(() => { saveNote = " (not kept after you leave: this browser has no room to store it)"; });
+      }
+      renderList(); wmp.classList.add("showpl"); $(".plt").classList.add("on");
+      if (items.length > first) { npEl.textContent = `Added ${items.length - first} song${items.length - first > 1 ? "s" : ""}. ${PRIVACY}`; if (!started) { cur = first; paintList(); tick(); } }
+      if (bad.length) ctx.sys?.msg?.("Windows Media Player", `Windows Media Player cannot play ${bad.map((n) => `<b>${esc(n)}</b>`).join(", ")}. ${bad.length > 1 ? "These files aren't" : "This file isn't"} audio this browser can decode.`, "⚠️");
+    }
+    function removeSong(i) {
+      const it = items[i]; if (!it?.file) return;
+      if (i === cur && started) stop();
+      if (it.url) URL.revokeObjectURL(it.url);
+      items.splice(i, 1); DB.del(it.key).catch(() => {});
+      if (cur > i || cur >= items.length) cur = Math.max(0, cur - 1);
+      renderList(); paintList(); tick();
+    }
+    const fileIn = $(".mfile");
+    const openFiles = () => fileIn.click();
+    fileIn.addEventListener("change", () => { addFiles(fileIn.files); fileIn.value = ""; });
+    $(".addm").addEventListener("click", (e) => { e.stopPropagation(); openFiles(); });
+    body.addEventListener("dragover", (e) => { if ([...(e.dataTransfer?.types || [])].includes("Files")) { e.preventDefault(); wmp.classList.add("drop"); } });
+    body.addEventListener("dragleave", (e) => { if (!body.contains(e.relatedTarget)) wmp.classList.remove("drop"); });
+    body.addEventListener("drop", (e) => { if (!e.dataTransfer?.files?.length) return; e.preventDefault(); wmp.classList.remove("drop"); addFiles(e.dataTransfer.files); });
+    // songs saved on an earlier visit
+    if (window.indexedDB) DB.all().then((rows) => {
+      if (!rows?.length || !ctx.alive?.()) return;
+      rows.forEach((r) => items.push({ name: r.name, artist: r.artist, total: r.total, file: r.blob instanceof Blob ? r.blob : new Blob([r.blob], { type: r.type }), key: r.key }));
+      renderList(); paintList();
+    }).catch(() => {});
 
     // ---- visualizer ----
     const fb = new Uint8Array(128), tb = new Uint8Array(256);
@@ -381,13 +490,20 @@
     });
 
     mkBar(ctx, body, [
-      { label: "File", items: [{ label: "Close", act: () => ctx.close() }] },
+      { label: "File", items: [{ label: "Open...", key: "Ctrl+O", act: openFiles }, "-", { label: "Close", act: () => ctx.close() }] },
       { label: "View", items: () => [{ label: "Bars and Waves: Bars", check: mode === "bars", act: () => (mode = "bars") }, { label: "Bars and Waves: Scope", check: mode === "scope", act: () => (mode = "scope") }] },
       { label: "Play", items: () => [{ label: playing ? "Pause" : "Play", act: play }, { label: "Stop", act: stop }, "-", { label: "Previous", act: prev }, { label: "Next", act: () => go(cur + 1) }, "-",
         { label: "Shuffle", check: shuffle, act: () => { shuffle = !shuffle; paintBtns(); } }, { label: "Repeat", check: repeat, act: () => { repeat = !repeat; paintBtns(); } }] },
-      { label: "Help", items: [{ label: "About Windows Media Player", act: () => ctx.sys?.msg?.("Windows Media Player", "All music is generated live in your browser with WebAudio.<br>No audio files are used.") }] },
+      { label: "Help", items: [{ label: "About Windows Media Player", act: () => ctx.sys?.msg?.("Windows Media Player", "The built-in music is generated live in your browser with WebAudio.<br>Add your own songs with File > Open, + Add music, or by dropping them on the window. " + PRIVACY + saveNote) }] },
     ]);
-    ctx.onClose(() => { killTrack(); started = false; playing = false; if (AC) { try { AC.close(); } catch {} AC = null; } });
+    listen(ctx, window, "keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "o" && ctx.isActive?.()) { e.preventDefault(); openFiles(); } });
+    ctx.onClose(() => {
+      killTrack(); started = false; playing = false;
+      if (au) { au.removeAttribute("src"); au.load(); }
+      items.forEach((it) => { if (it.url) { URL.revokeObjectURL(it.url); it.url = null; } });
+      if (AC) { try { AC.close(); } catch {} AC = null; }
+    });
+    ctx.el.__g = { items, get cur() { return cur; }, get au() { return au; }, get analyser() { return analyser; }, get playing() { return playing; }, get started() { return started; }, elapsed, addFiles };
     paintList(); paintBtns(); applyVol(); tick();
   }
 

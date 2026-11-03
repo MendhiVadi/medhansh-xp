@@ -444,6 +444,64 @@ await test("explorer browses like a browser", async () => {
   ok("a page that never answers ends in the new-tab dialog", /too long/.test((await dialog()) || ""), (await dialog()) || "(none)"); await dismiss();
   await closeAll();
 });
+await test("media player plays your own songs", async () => {
+  await load(); await ev(`indexedDB.deleteDatabase("xp-music")`); await sleep(200);
+  await openApp("wmp"); await sleep(500);
+  const g = `document.querySelector('.win[data-key="wmp"]').__g`;
+  // a 1.5 s, 440 Hz WAV made here, a text file and a broken "mp3", dropped on the window together
+  await ev(`(()=>{ const rate=8000, n=rate*1.5, b=new DataView(new ArrayBuffer(44+n*2)); const w=(o,s)=>[...s].forEach((c,i)=>b.setUint8(o+i,c.charCodeAt(0)));
+    w(0,"RIFF"); b.setUint32(4,36+n*2,true); w(8,"WAVEfmt "); b.setUint32(16,16,true); b.setUint16(20,1,true); b.setUint16(22,1,true); b.setUint32(24,rate,true); b.setUint32(28,rate*2,true); b.setUint16(32,2,true); b.setUint16(34,16,true); w(36,"data"); b.setUint32(40,n*2,true);
+    for(let i=0;i<n;i++) b.setInt16(44+i*2, Math.sin(i/rate*2*Math.PI*440)*12000, true);
+    const dt=new DataTransfer(); dt.items.add(new File([b.buffer],"My Song.wav",{type:"audio/wav"})); dt.items.add(new File(["hello"],"notes.txt",{type:"text/plain"})); dt.items.add(new File([new Uint8Array(4000).fill(7)],"broken.mp3",{type:"audio/mpeg"}));
+    document.querySelector('.win[data-key="wmp"] .wbody').dispatchEvent(new DragEvent("drop",{dataTransfer:dt,bubbles:true,cancelable:true})); })()`);
+  await until(`${g}.items.length===6`, 6000); await sleep(400);
+  ok("a dropped song joins the playlist, titled from its file name, with its length", await ev(`${g}.items[5].name==="My Song" && /0:01/.test(document.querySelector('.win[data-key="wmp"] .pl [data-i="5"]').textContent)`));
+  ok("files it can't play get an XP dialog", /broken\.mp3/.test(await ev(`document.body.textContent`)) && /notes\.txt/.test(await ev(`[...document.querySelectorAll(".win .msgbox")].map(m=>m.textContent).join()`)));
+  ok("the visitor is told it stays in this browser", /never uploaded or shared/.test(await ev(`document.querySelector('.win[data-key="wmp"]').textContent`)));
+  await ev(`[...document.querySelectorAll(".win")].filter(w=>w.querySelector(".msgbox")).forEach(w=>w.querySelector(".xpbtn").click())`);
+  await ev(`document.querySelector('.win[data-key="wmp"] .pl [data-i="5"]').dispatchEvent(new MouseEvent("dblclick",{bubbles:true}))`); await sleep(700);
+  ok("it plays: time moves", (await ev(`${g}.au.currentTime`)) > 0.2 && (await ev(`${g}.playing`)), await ev(`${g}.au.currentTime`));
+  const peak = () => ev(`(()=>{const a=${g}.analyser, d=new Uint8Array(a.fftSize); a.getByteTimeDomainData(d); return Math.max(...d.map(v=>Math.abs(v-128)))})()`);
+  ok("through the visualizer's analyser", (await peak()) > 5, await peak());
+  await click(`.win[data-key="wmp"] .mute`); await sleep(250);
+  ok("mute silences it", (await peak()) <= 1, await peak());
+  await click(`.win[data-key="wmp"] .mute`); await sleep(150);
+  await ev(`(()=>{const s=document.querySelector('.win[data-key="wmp"] .seek'); s.value=100; s.dispatchEvent(new Event("change"))})()`); await sleep(100);
+  ok("seeking moves the song", Math.abs((await ev(`${g}.au.currentTime`)) - 0.15) < 0.12, await ev(`${g}.au.currentTime`));
+  ok("the time readout uses its length", /\/ 0:01/.test(await ev(`document.querySelector('.win[data-key="wmp"] .tm').textContent`)));
+  await sleep(1800);
+  ok("at the end of the last song, with Repeat off, it stops at the top", !(await ev(`${g}.started`)) && (await ev(`${g}.cur`)) === 0);
+  await click(`.win[data-key="wmp"] .rep`); await click(`.win[data-key="wmp"] .prev`); await sleep(200);
+  await click(`.win[data-key="wmp"] .play`); await sleep(300);
+  ok("Previous from the first track wraps to the song", (await ev(`${g}.cur`)) === 5 && (await ev(`${g}.playing`)) && (await ev(`!${g}.au.paused`)));
+  await click(`.win[data-key="wmp"] .next`); await sleep(300);
+  ok("Next goes on to a built-in track, and the song stops", (await ev(`${g}.cur`)) === 0 && (await ev(`${g}.au.paused`)) && (await peak()) > 1);
+  await click(`.win[data-key="wmp"] .prev`); await sleep(200); await ev(`(()=>{const s=document.querySelector('.win[data-key="wmp"] .seek'); s.value=950; s.dispatchEvent(new Event("change"))})()`); await sleep(700);
+  ok("with Repeat on, the end of the last song goes round to the first track", (await ev(`${g}.cur`)) === 0 && (await ev(`${g}.started`)));
+  await click(`.win[data-key="wmp"] .rep`); await click(`.win[data-key="wmp"] .shuf`); await click(`.win[data-key="wmp"] .next`); await sleep(200);
+  ok("shuffle picks another track", (await ev(`${g}.cur`)) !== 0); await click(`.win[data-key="wmp"] .shuf`);
+  // closing releases the song's object URL
+  await ev(`window.__revoked=[]; const r=URL.revokeObjectURL; URL.revokeObjectURL=(u)=>{__revoked.push(u); return r.call(URL,u)}`);
+  await closeAll();
+  ok("closing revokes the object URL", (await ev(`__revoked.some(u=>u.startsWith("blob:"))`)));
+  // kept for the next visit, and removable
+  await load(); await openApp("wmp"); await sleep(600);
+  ok("the song is still there after a reload (IndexedDB)", await until(`${g}.items.length===6 && ${g}.items[5].name==="My Song"`, 3000));
+  // File > Open's input, with an ID3v2.3 tag on the file: the tag's title and artist win over the file name
+  await ev(`(()=>{ const rate=8000, n=rate/2, b=new DataView(new ArrayBuffer(44+n*2)); const w=(o,s)=>[...s].forEach((c,i)=>b.setUint8(o+i,c.charCodeAt(0)));
+    w(0,"RIFF"); b.setUint32(4,36+n*2,true); w(8,"WAVEfmt "); b.setUint32(16,16,true); b.setUint16(20,1,true); b.setUint16(22,1,true); b.setUint32(24,rate,true); b.setUint32(28,rate*2,true); b.setUint16(32,2,true); b.setUint16(34,16,true); w(36,"data"); b.setUint32(40,n*2,true);
+    const fr=(id,t)=>{ const tx=new TextEncoder().encode(t), h=new Uint8Array(11+tx.length); h.set([...id].map(c=>c.charCodeAt(0))); new DataView(h.buffer).setUint32(4,tx.length+1); h[10]=3; h.set(tx,11); return h; };
+    const frames=[fr("TIT2","Tagged Title"),fr("TPE1","Some Band")], len=frames.reduce((a,f)=>a+f.length,0), tag=new Uint8Array(10+len); tag.set([73,68,51,3,0,0,0,0,(len>>7)&127,len&127]); let o=10; for(const f of frames){tag.set(f,o);o+=f.length;}
+    const dt=new DataTransfer(); dt.items.add(new File([tag,b.buffer],"untitled.wav",{type:"audio/wav"}));
+    const i=document.querySelector('.win[data-key="wmp"] .mfile'); i.files=dt.files; i.dispatchEvent(new Event("change")); })()`);
+  ok("File > Open adds songs too, and reads ID3 title and artist", await until(`${g}.items.length===7 && ${g}.items[6].name==="Tagged Title" && ${g}.items[6].artist==="Some Band"`, 5000), await ev(`JSON.stringify(${g}.items.slice(5).map(i=>[i.name,i.artist]))+" "+document.body.textContent.includes("cannot play")`));
+  await ev(`[...document.querySelectorAll(".win")].filter(w=>w.querySelector(".msgbox")).forEach(w=>w.querySelector(".xpbtn").click())`);
+  await click(`.win[data-key="wmp"] .pl [data-rm="6"]`); await sleep(150);
+  await click(`.win[data-key="wmp"] .pl [data-rm="5"]`); await sleep(200);
+  await closeAll(); await load(); await openApp("wmp"); await sleep(700);
+  ok("removing it forgets it", (await ev(`${g}.items.length`)) === 5);
+  await closeAll();
+});
 if (process.env.SHOT) { label = "shot"; await send("Page.addScriptToEvaluateOnNewDocument", { source: `try{sessionStorage.setItem("xp-logged","1")}catch{}` }); await load(); await openApp("paint"); await sleep(500); const s = await send("Page.captureScreenshot", { format: "png" }); fs.writeFileSync(SHOTS + "/paint.png", Buffer.from(s.data, "base64")); }
 const fails = res.filter(([, c]) => !c).length;
 console.log(`\n${res.length - fails}/${res.length} passed; dialogs seen: ${dialogs.length}`);
