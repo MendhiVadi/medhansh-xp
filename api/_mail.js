@@ -50,6 +50,29 @@ export function limited(k, max, windowMs) {
 }
 export const throttled = (req, key, max, windowMs) => limited(key + ":" + String(req.headers["x-forwarded-for"] || "?").split(",")[0].trim(), max, windowMs);
 
+// A limit that survives restarts and spans instances: one counter per key and time window in Firestore, under a keyed
+// hash so no address is stored. If Firestore can't answer, the request goes ahead: the burst throttle above still applies.
+export const visitor = (req) => String(req.headers["x-forwarded-for"] || "?").split(",")[0].trim();
+export async function overLimit(key, max, windowMs) {
+  const LIMITS = "https://firestore.googleapis.com/v1/projects/resume-41921/databases/(default)/documents/limits/";
+  const bucket = Math.floor(Date.now() / windowMs);
+  const id = createHmac("sha256", process.env.GMAIL_APP_PASSWORD || "xp-limits").update(`${key}|${bucket}`).digest("hex").slice(0, 40);
+  const call = (opt = {}, q = "") => fetch(`${LIMITS}${id}?key=${KEY}${q}`, { ...opt, headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(2000) });
+  const save = (n, exp, q) => call({ method: "PATCH", body: JSON.stringify({ fields: { n: { integerValue: String(n) }, exp: { integerValue: String(exp) } } }) }, q);
+  try {
+    // two tries: a request that loses a race to the same counter reads it again
+    for (let i = 0; i < 2; i++) {
+      const cur = await call();
+      if (cur.status === 404) { if ((await save(1, (bucket + 1) * windowMs, "&currentDocument.exists=false")).ok) return false; continue; }
+      if (!cur.ok) return false;
+      const j = await cur.json(), n = Number(j.fields.n.integerValue);
+      if (n >= max) return true;
+      if ((await save(n + 1, Number(j.fields.exp.integerValue), `&currentDocument.updateTime=${encodeURIComponent(j.updateTime)}`)).ok) return false;
+    }
+  } catch {}
+  return false;
+}
+
 // Attempt counter per code, stored in Firestore (rules only allow +1 steps and false -> true for "used").
 const FS = "https://firestore.googleapis.com/v1/projects/resume-41921/databases/(default)/documents/otp/";
 const KEY = "AIzaSyAHb5rOYR0knifNMFUfh6RQZpvj4kkJu5M";

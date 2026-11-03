@@ -65,6 +65,14 @@ service cloud.firestore {
           || (request.resource.data.n == resource.data.n && resource.data.used == false && request.resource.data.used == true));
     }
 
+    // Rate-limit counters, written by the serverless functions (keyed hashes, so no address is stored): +1 at a time, nothing else
+    match /limits/{id} {
+      allow get: if true;
+      allow create: if request.resource.data.keys().hasOnly(['n', 'exp']) && request.resource.data.n == 1 && request.resource.data.exp is int;
+      allow update: if request.resource.data.keys().hasOnly(['n', 'exp']) && request.resource.data.exp == resource.data.exp
+        && request.resource.data.n == resource.data.n + 1;
+    }
+
     // Visit counters: stats/site and stats/d-YYYY-MM-DD; each write can add at most 1 view and 1 visitor
     match /stats/{id} {
       allow read: if true;

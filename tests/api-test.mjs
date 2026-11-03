@@ -33,10 +33,24 @@ const nasty = { name: 'x\\" <evil@attacker.com>, y', address: "me@x.com" };
 const out = JSON.parse((await tr.sendMail({ from: '"P" <a@example.com>', to: "o@example.com", replyTo: nasty, subject: "s", text: "t" })).message);
 ok("replyTo address stays the verified one: " + JSON.stringify(out.replyTo), out.replyTo.length === 1 && out.replyTo[0].address === "me@x.com");
 ok("gmail transport still builds", !!nm.createTransport({ service: "gmail", auth: { user: "a", pass: "b" } }));
+// the limit that survives restarts: a fake Firestore, then one that's down
+{
+  const docs = new Map();
+  globalThis.fetch = async (u, opt = {}) => {
+    const id = String(u).split("/limits/")[1].split("?")[0];
+    if (!opt.method) return docs.has(id) ? { status: 200, ok: true, json: async () => ({ fields: docs.get(id), updateTime: "t" }) } : { status: 404, ok: false };
+    docs.set(id, JSON.parse(opt.body).fields); return { status: 200, ok: true };
+  };
+  const seq = []; for (let i = 0; i < 4; i++) seq.push(await M.overLimit("t", 3, 3600000));
+  ok("overLimit allows 3 then refuses: " + seq, seq.join() === "false,false,false,true");
+  ok("no address is stored in the counter id", ![...docs.keys()].some((k) => k.includes("t|")));
+  globalThis.fetch = async () => { throw new Error("down"); };
+  ok("overLimit lets requests through when Firestore is down", (await M.overLimit("t", 3, 3600000)) === false);
+}
 // proxy
 globalThis.fetch = realFetch;
 const online = await (await import("node:dns")).promises.lookup("example.com").then(() => true, () => false);
-const P = (await import(url("api/proxy.js"))).default;
+const P = (await import(url("api/proxy.js"))).makeProxy({ over: async () => false }); // never counts against the live limits
 const call = (query, headers = {}) => new Promise((done) => {
   const res = { h: {}, code: 0, setHeader(k, v) { this.h[k.toLowerCase()] = v; }, status(c) { this.code = c; return this; }, send(b) { done({ code: this.code, body: b, h: this.h }); return this; }, json(b) { done({ code: this.code, json: b, h: this.h }); return this; }, end() { done({ code: this.code, h: this.h }); return this; } };
   P({ method: "GET", query, headers: { "x-forwarded-for": "1.1.1." + Math.random(), ...headers } }, res);

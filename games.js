@@ -808,7 +808,7 @@
       ["Fortress", ["SSSSSSSSSSSS", "S..........S", "S.aabbccdd.S", "S.AABBCCDD.S", "S.aabbccdd.S", "S....??....S", "SSS......SSS"]],
       ["Hourglass", ["UUffffffffUU", ".UUeeeeeeUU.", "..UUddddUU..", "....????....", "..CCccccCC..", ".BBbbbbbbBB.", "AAaaaaaaaaAA"]],
       ["Heart", ["..aaa..aaa..", ".aAAAaaAAAa.", "aAAAAAAAAAAa", "aAAAA??AAAAa", ".aAAAAAAAAa.", "..aAAAAAAa..", "...aAAAAa...", "....aAAa....", ".....aa....."]],
-      ["Zigzag", ["UUUUUUUU....", "dddddddddddd", "dddddddddddd", "....UUUUUUUU", "eeeeeeeeeeee", "eeeeeeeeeeee", "UUUUUUUU....", "f*ffff*ffff*"]],
+      ["Zigzag", ["UUUU........", "dddddddddddd", "dddddddddddd", "........UUUU", "eeeeeeeeeeee", "eeeeeeeeeeee", "UUUU........", "f*ffff*ffff*"]],
       ["The Cross", ["....SSSS....", "....BBBB....", "....BBBB....", "SBBBBBBBBBBS", "SBBBB**BBBBS", "SBBBBBBBBBBS", "....BBBB....", "....BBBB....", "....SSSS...."]],
       ["The Wall", ["FFFFFFFFFFFF", "SSSSSSSSSSSS", "EEEEEEEEEEEE", "S*SS*SS*SS*S", "DDDDDDDDDDDD", "CCCC????CCCC", "BBBBBBBBBBBB", "AAAAAAAAAAAA"]],
     ];

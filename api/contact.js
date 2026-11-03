@@ -1,6 +1,6 @@
 // POST { token, code, name, email, phone, via, subject, message, website }
 // Checks the 4-digit code, then emails the message to the site owner. "website" is a hidden honeypot field.
-import { configured, mailer, send, body, str, esc, EMAIL, PHONE, verify, digest, throttled, claimAttempt, markUsed } from "./_mail.js";
+import { configured, mailer, send, body, str, esc, EMAIL, PHONE, verify, digest, throttled, overLimit, visitor, claimAttempt, markUsed } from "./_mail.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") { res.setHeader("Allow", "POST"); return send(res, 405, { error: "Method not allowed" }); }
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   if (!m.subject) errors.subject = "Please add a subject.";
   if (m.message.length < 5) errors.message = "Please write a message.";
   if (Object.keys(errors).length) return send(res, 400, { error: "Please fix the highlighted fields.", errors });
-  if (throttled(req, "contact-verify", 8, 15 * 60 * 1000)) return send(res, 429, { error: "Too many attempts. Try again in a few minutes." });
+  if (throttled(req, "contact-verify", 8, 15 * 60 * 1000) || (await overLimit("contact-ip:" + visitor(req), 20, 3600000))) return send(res, 429, { error: "Too many attempts. Try again later." });
   // every check costs one of the code's 5 attempts, and a code works only once
   const claim = await claimAttempt(b.token).catch(() => ({ error: "Verification is busy. Please try again." }));
   if (claim.error) return send(res, 400, { error: claim.error, errors: { code: claim.error } });

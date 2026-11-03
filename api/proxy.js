@@ -12,7 +12,7 @@ import { BlockList, isIP } from "node:net";
 import http from "node:http";
 import https from "node:https";
 import zlib from "node:zlib";
-import { throttled } from "./_mail.js";
+import { throttled, overLimit, visitor } from "./_mail.js";
 
 const MAX = 4 * 1024 * 1024;
 const DEADLINE_MS = 8000;
@@ -34,7 +34,7 @@ const BOT_PAGE = /anomaly-modal|px-captcha|<title[^>]*>\s*(just a moment|captcha
 const ALWAYS_PROXY = /(^|\.)bing\.com$/i;
 
 // resolve and isPrivate can be swapped only by tests (fake hostnames for local fixture sites); the default export uses DNS
-export function makeProxy({ resolve = (h) => lookup(h, { all: true }), isPrivate = privateIP } = {}) {
+export function makeProxy({ resolve = (h) => lookup(h, { all: true }), isPrivate = privateIP, over = overLimit } = {}) {
   // used for the real connection, so the address that gets connected to is the one that was checked
   const guardedLookup = (host, opts, cb) => resolve(host).then((list) => {
     if (!list.length || list.some((a) => isPrivate(a.address))) return cb(Object.assign(new Error("That address can't be opened."), { code: "EBLOCKED" }));
@@ -101,6 +101,8 @@ const frameable = (h) => {
     if (throttled(req, "proxy", 60, 60 * 1000)) return res.status(429).send("Too many pages. Wait a moment.");
     const raw = String(req.query?.url || ""), check = !!req.query?.check, until = Date.now() + DEADLINE_MS;
     const page = (kind, text, code = 200) => { res.setHeader("Content-Type", "text/html; charset=utf-8"); res.setHeader("Content-Security-Policy", "sandbox allow-scripts; frame-ancestors 'self'"); return res.status(code).send(failPage(kind, text)); };
+    // a cap per visitor and for the whole site, counted per page: the header check above can't stop scripts, and this bounds what they can use
+    if (!check && ((await over("proxy:" + visitor(req), 200, 3600000)) || (await over("proxy-all", 3000, 86400000)))) return page("error", "Too many pages have been opened through this browser. Try again later.", 429);
     try {
       const got = await get(raw, until);
       if (!got) return check ? res.status(200).json({ frameable: false, blocked: true }) : res.status(400).send("That address can't be opened.");
