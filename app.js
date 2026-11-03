@@ -35,8 +35,28 @@
   const FS = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents`;
   const enc = (o) => ({ fields: Object.fromEntries(Object.entries(o).map(([k, v]) => [k, typeof v === "boolean" ? { booleanValue: v } : Number.isInteger(v) ? { integerValue: String(v) } : { stringValue: String(v ?? "") }])) });
   const dec = (doc) => { const o = { id: doc.name.split("/").pop() }; for (const [k, v] of Object.entries(doc.fields || {})) o[k] = "integerValue" in v ? Number(v.integerValue) : "doubleValue" in v ? Number(v.doubleValue) : "booleanValue" in v ? v.booleanValue : v.stringValue ?? null; return o; };
+  // New shared documents get an id made here and kept until the write succeeds, so a retry (after a timeout that
+  // may have landed, or a second click) can never add the same thing twice.
+  const uid = () => (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, "") : Date.now().toString(36) + Math.random().toString(36).slice(2, 12));
+  const pendingIds = new Map(); // what is being written (a key) -> { id, body, tries }
+  const hashKey = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return s.length + ":" + (h >>> 0).toString(36); };
   const Cloud = {
     ok: null,
+    // create path/<id> once: a retry first checks whether the earlier try already landed, and "already exists" counts as done
+    async create(path, key, fields, timeout) {
+      let p = pendingIds.get(key);
+      if (!p) pendingIds.set(key, (p = { id: uid(), body: enc(fields), tries: 0 }));
+      const done = () => { pendingIds.delete(key); return { id: p.id, ...fields }; };
+      const landed = () => this.req(`${path}/${p.id}`, { query: "mask.fieldPaths=createdAt" }).catch(() => null);
+      try {
+        if (p.tries++ && (await landed())) return done();
+        const r = dec(await this.req(path, { method: "POST", body: p.body, query: "documentId=" + p.id, timeout }));
+        pendingIds.delete(key); return r;
+      } catch (e) {
+        if (e.status === 409 || (!e.status && (await landed()))) return done();
+        throw e;
+      }
+    },
     async req(path, { method = "GET", body, query = "", timeout = 8000 } = {}) {
       if (!FB.projectId) { this.set(false); throw new Error("Backend not configured"); }
       const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), timeout);
@@ -65,7 +85,7 @@
     async pictures() { const j = await this.req("pictures", { query: "pageSize=100&orderBy=createdAt%20desc&" + ["title", "w", "h", "by", "createdAt"].map((f) => "mask.fieldPaths=" + f).join("&") }); return (j?.documents || []).map(dec).sort((a, b) => b.createdAt - a.createdAt); },
     _pic: new Map(),
     pictureData(id) { if (!this._pic.has(id)) this._pic.set(id, this.req("pictures/" + encodeURIComponent(id), { query: "mask.fieldPaths=data", timeout: 30000 }).then((d) => dec(d).data).catch((e) => { this._pic.delete(id); throw e; })); return this._pic.get(id); },
-    async pictureAdd(title, data, w, h) { return dec(await this.req("pictures", { method: "POST", body: enc({ title, data, w, h, by: playerName() || "Visitor", createdAt: Date.now() }), timeout: 60000 })); },
+    pictureAdd(title, data, w, h) { return this.create("pictures", "pic|" + hashKey(title + "|" + data), { title, data, w, h, by: playerName() || "Visitor", createdAt: Date.now() }, 60000); },
     async pictureDelete(id) { await this.req("pictures/" + encodeURIComponent(id), { method: "DELETE" }); },
     // shared leaderboards: scores/{game}/entries, ordered by score (single-field index, no setup needed)
     async top(game, n = 10, asc = false) {
@@ -90,8 +110,8 @@
       const j = await fetch(`${FS}:runQuery${FB.apiKey ? `?key=${FB.apiKey}` : ""}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ structuredQuery: { from: [{ collectionId: "board" }], orderBy: [{ field: { fieldPath: "createdAt" }, direction: "DESCENDING" }], limit: n } }) }).then((r) => (r.ok ? r.json() : Promise.reject(r)));
       this.set(true); return j.filter((x) => x.document).map((x) => dec(x.document));
     },
-    async post(from, to, text) { return dec(await this.req("board", { method: "POST", body: enc({ from, to, text, createdAt: Date.now() }) })); },
-    async submit(game, score, extra = {}) { return dec(await this.req(`scores/${encodeURIComponent(game)}/entries`, { method: "POST", body: enc({ name: playerName() || "Visitor", score: Math.round(score), ...extra, createdAt: Date.now() }) })); },
+    post(from, to, text) { return this.create("board", "board|" + hashKey([from, to, text].join("\n")), { from, to, text, createdAt: Date.now() }); },
+    submit(game, score, extra = {}) { const name = playerName() || "Visitor"; return this.create(`scores/${encodeURIComponent(game)}/entries`, "score|" + hashKey([game, name, Math.round(score), JSON.stringify(extra)].join("|")), { name, score: Math.round(score), ...extra, createdAt: Date.now() }); },
   };
   const playerName = () => (store.lget("xp-player-name") || "").slice(0, 20);
   // Ask once for a display name for leaderboards and shared pictures (a visitor who cancels stays "Visitor")
@@ -208,12 +228,12 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=31"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=32"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=31"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=32"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyExtra(name) {
@@ -319,7 +339,7 @@
     confirm: (t, h, ok) => confirmBox(t, h, ok),
     notify: (t, h, o) => notify(t, h, o),
     career: { read: () => Career.read(), record: (g, r) => Career.record(g, r), levelOf: (p) => Career.levelOf(p), rank: (l) => Career.rank(l) },
-    photos: [{ src: "photo-full.jpg?v=31", title: "Medhansh.jpg" }, { src: "photo.jpg?v=31", title: "Avatar.jpg" }],
+    photos: [{ src: "photo-full.jpg?v=32", title: "Medhansh.jpg" }, { src: "photo.jpg?v=32", title: "Avatar.jpg" }],
     // Shared data everyone sees. Games: sys.scores.submit(game, score, extra) / sys.scores.top(game, n, ascending)
     scores: { top: (g, n, asc) => Cloud.top(g, n, asc), submit: async (g, s, x) => { await askName(); return Cloud.submit(g, s, x); }, name: () => playerName(), askName },
     pictures: { list: () => Cloud.pictures(), data: (id) => Cloud.pictureData(id), add: async (t, d, w, h) => { await askName(); return Cloud.pictureAdd(t, d, w, h); }, remove: (id) => Cloud.pictureDelete(id) },
@@ -1543,6 +1563,8 @@ TERMS
   }
 
   // ---------------- Message board (open: no sign-in, anyone can post to anyone) ----------------
+  // the docked board and the Message Board window share one cooldown, one post in flight and one refresh
+  const boardState = { last: 0, busy: false };
   function renderBoard(body, ctx = null) {
     const docked = !ctx;
     body.classList.add("mboard");
@@ -1553,7 +1575,7 @@ TERMS
       <div class="mb-list" aria-live="polite"><p class="muted">Loading messages…</p></div>`;
     const form = body.querySelector("form"), list = body.querySelector(".mb-list"), F = form.elements;
     F.from.value = store.lget("xp-board-name") || playerName() || "";
-    let last = 0, sig = null;
+    let sig = null;
     const ago = (t) => { const s = Math.max(0, (Date.now() - t) / 1000); return s < 60 ? "just now" : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : new Date(t).toLocaleDateString([], { month: "short", day: "numeric" }); };
     const paint = (rows) => {
       list.innerHTML = rows.length ? rows.map((m) => `<div class="mb-msg"><div class="mb-meta"><b>${esc(m.from)}</b> → <span>${esc(m.to)}</span><time data-t="${m.createdAt}" title="${new Date(m.createdAt).toLocaleString()}">${ago(m.createdAt)}</time></div><p>${esc(m.text)}</p></div>`).join("") : `<p class="muted">No messages yet. Be the first!</p>`;
@@ -1566,13 +1588,16 @@ TERMS
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = F.text.value.trim(); if (!text) return;
-      if (Date.now() - last < 15000) return msgBox("Message Board", "Please wait a few seconds before posting again.", "⚠️");
+      if (boardState.busy) return; // Ctrl+Enter submits even while the button is disabled
+      if (Date.now() - boardState.last < 15000) return msgBox("Message Board", "Please wait a few seconds before posting again.", "⚠️");
       const from = (F.from.value.trim() || "Anonymous").slice(0, 30), to = (F.to.value.trim() || "Everyone").slice(0, 30);
-      const btn = form.querySelector("button"); btn.disabled = true;
-      try { await Cloud.post(from, to, text); last = Date.now(); store.lset("xp-board-name", F.from.value.trim()); F.text.value = ""; F.to.value = ""; body.querySelector(".mb-count").textContent = "0 / 280"; sig = null; await load(); }
-      catch { msgBox("Message Board", "Couldn't post right now. Please try again.", "⚠️"); }
-      finally { btn.disabled = false; }
+      const btn = form.querySelector("button"); boardState.busy = true; btn.disabled = true;
+      try { await Cloud.post(from, to, text); boardState.last = Date.now(); store.lset("xp-board-name", F.from.value.trim()); F.text.value = ""; F.to.value = ""; body.querySelector(".mb-count").textContent = "0 / 280"; dispatchEvent(new Event("xp-board")); }
+      catch { msgBox("Message Board", "Couldn't post right now. Please try again: it won't be posted twice.", "⚠️"); }
+      finally { boardState.busy = false; btn.disabled = false; }
     });
+    const refresh = () => { sig = null; load(); };
+    addEventListener("xp-board", refresh); if (ctx) ctx.onClose(() => removeEventListener("xp-board", refresh));
     F.text.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) form.requestSubmit(); });
     // the docked board is hidden by CSS on small screens and before log-on; those screens use the Message Board window
     if (!docked || innerWidth > 900) load();
@@ -2256,7 +2281,7 @@ TERMS
   countVisit();
   // Vercel Web Analytics (cookie-free): only load it when it's switched on for the project, so there's no 404
   if (/\.vercel\.app$/.test(location.hostname)) fetch("/_vercel/insights/script.js", { method: "HEAD" }).then((r) => { if (r.ok) { const sc = document.createElement("script"); sc.defer = true; sc.src = "/_vercel/insights/script.js"; document.head.appendChild(sc); } }).catch(() => {});
-  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=31"; document.head.appendChild(l); } });
+  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=32"; document.head.appendChild(l); } });
   (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => Tasks.sync().then(() => { checkReminders(true); paintBell(); }));
   setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });

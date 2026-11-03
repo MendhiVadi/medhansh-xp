@@ -77,6 +77,19 @@ const FAKE = `(() => {
       if (url.search.includes("currentDocument.exists=true") && !fs.tasks[id]) return J({ error: { message: "nope" } }, 404);
       fs.tasks[id] = { ...fs.tasks[id], ...conv(JSON.parse(opt.body).fields) }; return J({});
     }
+    // message board: documentId creates, 409 on a repeat id, an optional slow reply (the write lands at once) or a failing reply
+    const hold = (ms) => new Promise((ok, no) => { const t = setTimeout(ok, ms); opt.signal?.addEventListener("abort", () => { clearTimeout(t); no(new DOMException("aborted", "AbortError")); }); });
+    fs.board ||= {};
+    if (p === "/board" && m === "POST") {
+      const id = url.searchParams.get("documentId") || "B" + (++fs.seq);
+      if (fs.board[id]) return J({ error: { message: "exists" } }, 409);
+      fs.board[id] = conv(JSON.parse(opt.body).fields);
+      if (fs.boardFail) { fs.boardFail--; return J({ error: { message: "boom" } }, 503); }
+      await hold(fs.boardSlow || 0);
+      return J({ name: "x/board/" + id, fields: unconv(fs.board[id]) });
+    }
+    if (p.startsWith("/board/") && m === "GET") { const d = fs.board[p.slice(7)]; return d ? J({ name: "x" + p, fields: unconv(d) }) : J({}, 404); }
+    if (s.includes(":runQuery") && opt.body?.includes('"board"')) return J(Object.entries(fs.board).map(([id, d]) => ({ document: { name: "x/board/" + id, fields: unconv(d) } })).sort((a, b) => +b.document.fields.createdAt.integerValue - +a.document.fields.createdAt.integerValue));
     if (s.includes(":runQuery")) return J([]);
     if (s.includes(":commit")) return J({});
     if (s.includes(":batchGet")) return J([]);
@@ -246,6 +259,38 @@ await test("resume page and real boot flow", async () => {
   await click("#userTile"); await sleep(2300);
   ok("log-on reaches the desktop with icons", await ev(`!document.querySelector("#desktop").classList.contains("hidden") && document.querySelectorAll("#icons .dicon").length>5`));
   const shot = await send("Page.captureScreenshot", { format: "png" }); fs.writeFileSync(SHOTS + "/desktop.png", Buffer.from(shot.data, "base64"));
+});
+await test("message board posts once", async () => {
+  await load(); await clearStorage();
+  const posts = () => ev(`__fs.log.filter(l=>l.m==="POST"&&l.p==="/board").length`), docs = () => ev(`Object.keys(__fs.board||{}).length`);
+  const type = async (sel, text) => { await click(sel); await ev(`document.querySelector(${JSON.stringify(sel)}).value=${JSON.stringify(text)}`); };
+  // a reply slower than the 8 s timeout, though the write landed: no error, no duplicate
+  await ev(`__fs.boardSlow=9500`);
+  await type(".board-dock textarea", "slow hello"); await key("Enter", 2); await sleep(150);
+  for (let i = 0; i < 4; i++) { await key("Enter", 2); await sleep(60); }
+  ok("repeated Ctrl+Enter sends one request", (await posts()) === 1, await posts());
+  await sleep(9000);
+  ok("a timed-out post that landed counts as posted", (await docs()) === 1 && (await ev(`document.querySelector(".board-dock textarea").value`)) === "" && !(await ev(`[...document.querySelectorAll(".win .ttl")].some(t=>/Message Board/.test(t.textContent)) && /Couldn't post/.test(document.body.textContent)`)));
+  ok("and it shows in the list", /slow hello/.test(await ev(`document.querySelector(".board-dock .mb-list").textContent`)));
+  // a failed reply, then the visitor tries again: still one message
+  await ev(`__fs.boardSlow=0; __fs.boardFail=1`);
+  await openApp("board"); await sleep(300);
+  ok("the window shares the cooldown", (await ev(`(()=>{const f=document.querySelector('.win[data-key="board"] form'); f.text.value="too soon"; f.requestSubmit(); return 1})()`)) && /wait a few seconds/.test(await ev(`document.body.textContent`)));
+  await closeAll(); await openApp("board"); await sleep(300);
+  ok("the window lists the post from the docked board", /slow hello/.test(await ev(`document.querySelector('.win[data-key="board"] .mb-list').textContent`)));
+  await ev(`(()=>{ document.querySelectorAll(".win").forEach(w=>w.dataset.key!=="board"&&w.querySelector(".tbtn[data-a=close]").click()); })()`);
+  await ev(`window.__bs = 1`);
+  // skip the cooldown for the next part
+  const w = `.win[data-key="board"]`;
+  await sleep(15100);
+  await ev(`(()=>{const f=document.querySelector('${w} form'); f.from.value="Ann"; f.text.value="retry me"; f.requestSubmit();})()`); await sleep(300);
+  ok("a failed post keeps the text and says so", (await ev(`document.querySelector('${w} form').text.value`)) === "retry me" && /won't be posted twice/.test(await ev(`document.body.textContent`)));
+  await ev(`[...document.querySelectorAll(".win")].filter(w=>w.dataset.key!=="board").forEach(w=>w.querySelector(".tbtn[data-a=close]").click())`);
+  await ev(`document.querySelector('${w} form').requestSubmit()`); await sleep(400);
+  const r = await ev(`(()=>{ const id=new URLSearchParams(__fs.log.filter(l=>l.m==="POST"&&l.p==="/board").at(-1).q).get("documentId"); return {id, checks:__fs.log.filter(l=>l.m==="GET"&&l.p==="/board/"+id).length, copies:Object.values(__fs.board).filter(d=>d.text==="retry me").length}; })()`);
+  ok("retrying checks the same id first and stores one message", r.copies === 1 && r.checks >= 1, JSON.stringify(r));
+  ok("and the docked board refreshes too", /retry me/.test(await ev(`document.querySelector(".board-dock .mb-list").textContent`)));
+  await closeAll();
 });
 if (process.env.SHOT) { label = "shot"; await send("Page.addScriptToEvaluateOnNewDocument", { source: `try{sessionStorage.setItem("xp-logged","1")}catch{}` }); await load(); await openApp("paint"); await sleep(500); const s = await send("Page.captureScreenshot", { format: "png" }); fs.writeFileSync(SHOTS + "/paint.png", Buffer.from(s.data, "base64")); }
 const fails = res.filter(([, c]) => !c).length;
