@@ -232,12 +232,12 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=33"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=34"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=33"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=34"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyExtra(name) {
@@ -266,8 +266,9 @@
     const app = opts.app || APPS[id];
     if (!app) return;
     if (app.action) return app.action();
-    // a full-screen window hides everything else, so new windows and message boxes bring the desktop back
-    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    // a full-screen window hides everything else: message boxes and dialogs open inside it, any other window brings the desktop back
+    const inFull = app.dialog ? fsEl() : null;
+    if (fsEl() && !inFull) exitFull();
     closeMenus(); busy();
     const el = document.createElement("div");
     el.className = "win";
@@ -286,7 +287,7 @@
         ${fixedSize ? "" : `<button class="tbtn" data-a="max" title="Maximize" aria-label="Maximize">□</button>`}
         <button class="tbtn close" data-a="close" title="Close" aria-label="Close">×</button>
       </div><div class="wbody"></div>${fixedSize ? "" : `<div class="resize"></div>`}`;
-    winLayer.appendChild(el);
+    (inFull || winLayer).appendChild(el);
     const task = document.createElement("div");
     task.className = "task";
     task.innerHTML = `${I[app.icon]}<span>${esc(app.title)}</span>`;
@@ -343,21 +344,37 @@
     confirm: (t, h, ok) => confirmBox(t, h, ok),
     notify: (t, h, o) => notify(t, h, o),
     career: { read: () => Career.read(), record: (g, r) => Career.record(g, r), levelOf: (p) => Career.levelOf(p), rank: (l) => Career.rank(l) },
-    photos: [{ src: "photo-full.jpg?v=33", title: "Medhansh.jpg" }, { src: "photo.jpg?v=33", title: "Avatar.jpg" }],
+    photos: [{ src: "photo-full.jpg?v=34", title: "Medhansh.jpg" }, { src: "photo.jpg?v=34", title: "Avatar.jpg" }],
     // Shared data everyone sees. Games: sys.scores.submit(game, score, extra) / sys.scores.top(game, n, ascending)
     scores: { top: (g, n, asc) => Cloud.top(g, n, asc), submit: async (g, s, x) => { await askName(); return Cloud.submit(g, s, x); }, name: () => playerName(), askName },
     pictures: { list: () => Cloud.pictures(), data: (id) => Cloud.pictureData(id), add: async (t, d, w, h) => { await askName(); return Cloud.pictureAdd(t, d, w, h); }, remove: (id) => Cloud.pictureDelete(id) },
     esc,
     P,
   };
-  // real full screen where the browser allows it, otherwise maximize
+  // real full screen where the browser allows it (standard or webkit), otherwise maximize
+  const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+  const exitFull = () => { try { const p = document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen?.(); p?.catch?.(() => {}); } catch {} };
+  const GEOM = ["left", "top", "width", "height", "transform"];
   function toggleFull(el) {
-    if (document.fullscreenElement === el) return document.exitFullscreen?.();
-    if (el.requestFullscreen) el.requestFullscreen({ navigationUI: "hide" }).catch(() => el.classList.toggle("max"));
+    if (fsEl() === el) return exitFull();
+    // the window's own size and place, put back exactly on the way out
+    if (!el.dataset.geom) el.dataset.geom = JSON.stringify(GEOM.map((k) => el.style[k]));
+    if (el.requestFullscreen) el.requestFullscreen({ navigationUI: "hide" }).catch(() => { delete el.dataset.geom; el.classList.toggle("max"); });
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    else el.classList.toggle("max");
+    else { delete el.dataset.geom; el.classList.toggle("max"); }
   }
-  document.addEventListener("fullscreenchange", () => wins.forEach((w) => w.el.classList.toggle("is-full", document.fullscreenElement === w.el)));
+  function onFullChange() {
+    const f = fsEl();
+    wins.forEach((w) => {
+      const on = f === w.el; w.el.classList.toggle("is-full", on);
+      const b = w.el.querySelector(".fsbtn"); if (b) { b.setAttribute("aria-pressed", on); b.title = on ? "Exit full screen (F11)" : "Full screen (F11)"; b.setAttribute("aria-label", on ? "Exit full screen" : "Full screen"); }
+      if (!on && w.el.dataset.geom) { try { JSON.parse(w.el.dataset.geom).forEach((v, i) => (w.el.style[GEOM[i]] = v)); } catch {} delete w.el.dataset.geom; }
+      // dialogs that opened inside a full-screen window go back to the desktop with it
+      if (!on) w.el.querySelectorAll(":scope > .wbody ~ .win, :scope > .win").forEach((d) => winLayer.appendChild(d));
+    });
+    (f || desktopEl).appendChild(balloons);
+  }
+  document.addEventListener("fullscreenchange", onFullChange); document.addEventListener("webkitfullscreenchange", onFullChange);
   addEventListener("keydown", (e) => {
     if (e.key !== "F11" || !activeKey) return;
     const w = wins.get(activeKey); if (!w?.app.full) return;
@@ -373,7 +390,7 @@
     const an = g.animate([f(a), f(b)], { duration: 190, easing: "cubic-bezier(.3,.1,.5,1)" });
     an.onfinish = an.oncancel = () => g.remove(); setTimeout(() => g.remove(), 500);
   }
-  function minimize(key) { const w = wins.get(key); if (!w) return; const from = w.el.getBoundingClientRect(); w.el.classList.add("min"); fly(from, w.task.getBoundingClientRect()); XPS.play("minimize"); if (activeKey === key) activeKey = null; paintActive(); }
+  function minimize(key) { const w = wins.get(key); if (!w) return; if (fsEl() === w.el) exitFull(); const from = w.el.getBoundingClientRect(); w.el.classList.add("min"); fly(from, w.task.getBoundingClientRect()); XPS.play("minimize"); if (activeKey === key) activeKey = null; paintActive(); }
   function restore(key) {
     const w = wins.get(key); if (!w) return;
     if (w.el.classList.contains("min")) { const from = w.task.getBoundingClientRect(); w.el.classList.remove("min"); fly(from, w.el.getBoundingClientRect()); XPS.play("restore"); }
@@ -411,7 +428,7 @@
   }
   // keep windows reachable after the browser is resized
   let wz; addEventListener("resize", () => { clearTimeout(wz); wz = setTimeout(() => wins.forEach(({ el, app }) => {
-    if (el.classList.contains("max")) return;
+    if (el.classList.contains("max") || el === fsEl() || el.dataset.geom) return; // a full-screen window keeps its saved size for later
     if (!app.fixed) { if (el.offsetWidth > innerWidth) el.style.width = innerWidth + "px"; if (el.offsetHeight > innerHeight - 30) el.style.height = innerHeight - 30 + "px"; }
     const w = el.offsetWidth || parseFloat(el.style.width) || 300, x = parseFloat(el.style.left) || 0, y = parseFloat(el.style.top) || 0;
     el.style.left = Math.min(innerWidth - 60, Math.max(80 - w, x)) + "px"; el.style.top = Math.min(innerHeight - 90, Math.max(0, y)) + "px";
@@ -2293,7 +2310,7 @@ TERMS
   countVisit();
   // Vercel Web Analytics (cookie-free): only load it when it's switched on for the project, so there's no 404
   if (/\.vercel\.app$/.test(location.hostname)) fetch("/_vercel/insights/script.js", { method: "HEAD" }).then((r) => { if (r.ok) { const sc = document.createElement("script"); sc.defer = true; sc.src = "/_vercel/insights/script.js"; document.head.appendChild(sc); } }).catch(() => {});
-  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=33"; document.head.appendChild(l); } });
+  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=34"; document.head.appendChild(l); } });
   (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => Tasks.sync().then(() => { checkReminders(true); paintBell(); }));
   setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });
