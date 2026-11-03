@@ -1,6 +1,6 @@
 // POST { email, via, phone, subject, message } -> emails a random 4-digit code (bound to this message) and returns { token } to send back with the message.
 // GET -> { enabled } so the site knows whether verified contact is available.
-import { configured, mailer, send, body, str, EMAIL, issue, digest, throttled, limited } from "./_mail.js";
+import { configured, mailer, send, body, str, EMAIL, issue, digest, throttled, limited, overLimit, visitor } from "./_mail.js";
 
 export default async function handler(req, res) {
   if (req.method === "GET") return send(res, 200, { enabled: configured() });
@@ -10,6 +10,7 @@ export default async function handler(req, res) {
   const m = { via: b.via === "phone" ? "phone" : "email", phone: str(b.phone, 20), subject: str(b.subject, 140), message: str(b.message, 4000) };
   if (!EMAIL.test(email)) return send(res, 400, { error: "Please enter a valid email address.", field: "email" });
   if (throttled(req, "otp", 5, 15 * 60 * 1000) || limited("otp-to:" + email.toLowerCase(), 3, 15 * 60 * 1000)) return send(res, 429, { error: "Too many codes requested. Try again in a few minutes." });
+  if ((await overLimit("otp-to:" + email.toLowerCase(), 6, 3600000)) || (await overLimit("otp-ip:" + visitor(req), 15, 3600000))) return send(res, 429, { error: "Too many codes requested. Try again later." });
   const { code, token } = issue(email, digest(m));
   try {
     await mailer().sendMail({

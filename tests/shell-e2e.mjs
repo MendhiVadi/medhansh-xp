@@ -7,7 +7,7 @@ const seen = { proxy: [] };
 // the real proxy code, except that *.test hostnames resolve to a local fixture server (every other host gets real DNS and the private-address block)
 const PX = await import(pathToFileURL(ROOT + "/api/proxy.js").href);
 const { lookup } = await import("node:dns/promises");
-const proxy = PX.makeProxy({ resolve: (h) => (h.endsWith(".test") ? Promise.resolve([{ address: "127.0.0.1", family: 4 }]) : lookup(h, { all: true })), isPrivate: (ip) => ip !== "127.0.0.1" && PX.privateIP(ip) });
+const proxy = PX.makeProxy({ resolve: (h) => (h.endsWith(".test") ? Promise.resolve([{ address: "127.0.0.1", family: 4 }]) : lookup(h, { all: true })), isPrivate: (ip) => ip !== "127.0.0.1" && PX.privateIP(ip), over: async () => seen.over === true });
 // fixture sites on port 8080: what real sites do that matters here
 const FIX = { cookies: [] };
 const fixture = http.createServer((req, res) => {
@@ -195,6 +195,15 @@ await test("calendar", async () => {
   await closeAll(); await openApp("calendar"); await sleep(500);
   await ev(`delete __fs.tasks.B1`); await click(`.task-list li[data-id="B1"] .tdone`); await sleep(200);
   ok("task deleted elsewhere is not resurrected", await ev(`!__fs.tasks.B1`));
+  // a reminder another tab already fired stays quiet here; an unclaimed one fires
+  await ev(`(()=>{ const d=new Date(Date.now()+180000), p=(n)=>String(n).padStart(2,"0"); window.__rd=d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()); window.__rt=p(d.getHours())+":"+p(d.getMinutes()); for (const [k,x] of [["R1","claimed elsewhere"],["R2","not claimed"]]) __fs.tasks[k]={date:__rd,time:__rt,text:x,done:false,remind:true,updatedAt:3}; })()`);
+  await closeAll(); await openApp("calendar"); await sleep(500); await closeAll();
+  await ev(`(()=>{ const due=new Date(__rd+"T"+__rt).getTime(); localStorage.setItem("xp-rem-fired",JSON.stringify({["R1|"+due]:Date.now()})); window.__dn=Date.now; Date.now=()=>window.__dn.call(Date)+300000; })()`);
+  await sleep(16000);
+  const fired = await ev(`[...document.querySelectorAll(".balloon")].map(b=>b.textContent).join("|")`);
+  ok("a reminder claimed by another tab stays quiet, an unclaimed one fires", /not claimed/.test(fired) && !/claimed elsewhere/.test(fired), fired);
+  await ev(`Date.now=window.__dn; delete __fs.tasks.R1; delete __fs.tasks.R2; document.querySelectorAll(".balloon .bx").forEach(b=>b.click())`);
+  await openApp("calendar"); await sleep(500);
   // a slow create with an edit during it must not POST twice
   await ev(`__fs.slow=400; __fs.log.length=0`);
   await ev(`(()=>{const i=document.querySelector(".ctext"); i.value="slow"; i.closest("form").requestSubmit();})()`); await sleep(60);
@@ -445,6 +454,8 @@ await test("explorer browses like a browser", async () => {
   await nav("http://deny.test:8080/redir"); await sleep(1800);
   ok("a redirect shows the final address", (await ev(`document.querySelector('${W} .ieurl').value`)) === "http://deny.test:8080/page2?from=redir");
   // pages that can't work here end in the new-tab dialog
+  seen.over = true; await nav("http://deny.test:8080/full"); await sleep(1500); seen.over = false;
+  ok("over the page limit, the window offers a new tab", /couldn't load/.test((await dialog()) || ""), (await dialog()) || "(none)"); await dismiss();
   await nav("http://deny.test:8080/rewrite?a=1"); await sleep(1500);
   ok("a page rewriting its own address doesn't corrupt the address bar", (await ev(`document.querySelector('${W} .ieurl').value`)) === "http://deny.test:8080/rewrite?a=1", await ev(`document.querySelector('${W} .ieurl').value`));
   await click(`${W} .iereload`); await sleep(1500);
