@@ -2,6 +2,7 @@
 import http from "node:http"; import fs from "node:fs"; import path from "node:path"; import { spawn } from "node:child_process"; import os from "node:os"; import { pathToFileURL } from "node:url";
 const ROOT = process.argv[2].split("\\").join("/"), SHOTS = process.argv[3].split("\\").join("/");
 const PORT = 5199, DBG = 9344;
+fs.mkdirSync(SHOTS, { recursive: true });
 const seen = { proxy: [] };
 // the real proxy code, except that *.test hostnames resolve to a local fixture server (every other host gets real DNS and the private-address block)
 const PX = await import(pathToFileURL(ROOT + "/api/proxy.js").href);
@@ -33,6 +34,7 @@ const server = http.createServer(async (req, res) => {
     seen.proxy.push({ url: u.searchParams.get("url"), check: u.searchParams.get("check"), site: req.headers["sec-fetch-site"], dest: req.headers["sec-fetch-dest"] });
     res.status = (c) => { res.statusCode = c; return res; };
     res.send = (b) => res.end(b); res.json = (b) => { res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(b)); };
+    req.headers["x-forwarded-for"] = "10.9." + (seen.proxy.length % 250) + ".1"; // a long run would trip the per-visitor throttle
     req.query = Object.fromEntries(u.searchParams); return proxy(req, res);
   }
   if (u.pathname.startsWith("/api/")) { res.statusCode = 404; return res.end("{}"); }
@@ -75,7 +77,8 @@ const click = async (sel) => {
 };
 const until = async (expr, ms = 5000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (await ev(expr)) return true; await sleep(40); } return false; };
 const res = []; const ok = (n, c, extra = "") => { res.push([n, !!c]); console.log((c ? "PASS " : "FAIL ") + n + (extra !== "" ? "  -> " + extra : "")); };
-const test = async (n, fn) => { if (process.env.ONLY && !n.includes(process.env.ONLY)) return; label = n; try { await fn(); } catch (e) { ok(n + " (threw)", false, e.message); } };
+// ONLY=<text> runs the tests whose name contains it; several can be given as a|b
+const test = async (n, fn) => { if (process.env.ONLY && !process.env.ONLY.split("|").some((o) => n.includes(o))) return; label = n; try { await fn(); } catch (e) { ok(n + " (threw)", false, e.message); } };
 
 // fake Firestore, installed before any page script
 const FAKE = `(() => {
@@ -127,6 +130,8 @@ const load = async (p = "/") => { await send("Page.navigate", { url: `http://127
 const openApp = async (name) => { await key("r", 1); await sleep(120); await ev(`(()=>{const i=document.querySelector(".runin"); i.value=${JSON.stringify(name)}; i.closest("form").requestSubmit();})()`); await sleep(350); };
 const closeAll = async () => { for (let i = 0; i < 12; i++) { const n = await ev(`(()=>{const b=[...document.querySelectorAll(".win .tbtn[data-a=close]")].pop(); if(b){b.click(); return 1} return 0})()`); if (!n) break; await sleep(40); } };
 const clearStorage = () => ev(`localStorage.clear()`);
+// a clean browser for a test: no saved settings (hidden board, mute...) left over from the tests before it
+const fresh = async () => { await load(); await ev(`localStorage.clear(); sessionStorage.clear(); sessionStorage.setItem("xp-logged","1"); indexedDB.deleteDatabase("xp-music")`); await load(); };
 
 await load();
 const APPS = (fs.readFileSync(ROOT + "/app.js", "utf8").match(/const APPS = \{[\s\S]*?\n  \};/)[0].match(/^\s{4}([a-z]+):\s*\{/gm) || []).map((s) => s.trim().split(":")[0]);
@@ -243,7 +248,7 @@ await test("search and IE", async () => {
   const src = await ev(`document.querySelector(".win iframe").getAttribute("src")`);
   ok("iframe loads /api/proxy", src?.startsWith("/api/proxy"), src);
   const before = seen.proxy.length; await ev(`document.querySelector(".iereload").click()`); await sleep(2000);
-  ok("Refresh keeps using the proxy", (await ev(`document.querySelector(".win iframe").getAttribute("src")`)).startsWith("/api/proxy") && seen.proxy.length > before);
+  ok("Refresh keeps using the proxy", (await ev(`document.querySelector(".win iframe").getAttribute("src")||""`)).startsWith("/api/proxy") && seen.proxy.length > before);
   await ev(`__nav("node.js")`); await sleep(400);
   ok("'node.js' is a search, not an address", (await ev(`document.querySelector(".ieaddr input").value`)).includes("duckduckgo"));
   await ev(`__nav("example.com")`); await sleep(300);
@@ -276,16 +281,17 @@ await test("phone layout", async () => {
 await test("resume page and real boot flow", async () => {
   await send("Page.navigate", { url: `http://127.0.0.1:${PORT}/resume.html` }); await sleep(800);
   ok("resume lists six games", await ev(`document.body.innerText.includes("six games")`));
-  await ev(`sessionStorage.removeItem("xp-logged")`); await send("Page.addScriptToEvaluateOnNewDocument", { source: `try{sessionStorage.removeItem("xp-logged")}catch{}` });
+  await ev(`sessionStorage.removeItem("xp-logged")`); const loggedOut = (await send("Page.addScriptToEvaluateOnNewDocument", { source: `try{sessionStorage.removeItem("xp-logged")}catch{}` })).identifier;
   await load(); await sleep(5000);
   const hidden = await ev(`document.querySelector("#login").classList.contains("hidden")`);
   ok("boot reaches the log-on screen", !hidden);
   await click("#userTile"); await sleep(2300);
   ok("log-on reaches the desktop with icons", await ev(`!document.querySelector("#desktop").classList.contains("hidden") && document.querySelectorAll("#icons .dicon").length>5`));
   const shot = await send("Page.captureScreenshot", { format: "png" }); fs.writeFileSync(SHOTS + "/desktop.png", Buffer.from(shot.data, "base64"));
+  await send("Page.removeScriptToEvaluateOnNewDocument", { identifier: loggedOut }); // later tests start logged in again
 });
 await test("message board posts once", async () => {
-  await load(); await clearStorage(); await ev(`sessionStorage.setItem("xp-player-name","Tester")`);
+  await fresh(); await ev(`sessionStorage.setItem("xp-player-name","Tester")`);
   const posts = () => ev(`__fs.log.filter(l=>l.m==="POST"&&l.p==="/board").length`), docs = () => ev(`Object.keys(__fs.board||{}).length`);
   const type = async (sel, text) => { await click(sel); await ev(`document.querySelector(${JSON.stringify(sel)}).value=${JSON.stringify(text)}`); };
   // a reply slower than the 8 s timeout, though the write landed: no error, no duplicate
@@ -317,7 +323,7 @@ await test("message board posts once", async () => {
   await closeAll();
 });
 await test("player name", async () => {
-  await load(); await clearStorage(); await ev(`__fs.board={}; sessionStorage.removeItem("xp-player-name"); sessionStorage.removeItem("xp-name-asked"); localStorage.setItem("xp-last-name","Old")`);
+  await fresh(); await ev(`__fs.board={}; localStorage.setItem("xp-last-name","Old")`);
   ok("the board's name field won't autofill", (await ev(`document.querySelector(".board-dock input[name=from]").autocomplete`)) === "off");
   await click(".board-dock textarea"); await ev(`document.querySelector(".board-dock textarea").value="hi"`); await key("Enter", 2); await sleep(300);
   ok("the first post asks for a name, prefilled with the last one", (await ev(`document.querySelector(".askbox input")?.value`)) === "Old");
@@ -340,7 +346,7 @@ await test("player name", async () => {
   ok("and doesn't ask again this session", (await ev(`sessionStorage.getItem("xp-name-asked")`)) === "1" && (await ev(`!sessionStorage.getItem("xp-player-name")`)));
 });
 await test("instagram link", async () => {
-  await load(); const IG = "https://www.instagram.com/mendhi_vadi/";
+  await fresh(); const IG = "https://www.instagram.com/mendhi_vadi/";
   await openApp("about"); await sleep(300);
   ok("About Me lists Instagram, opening in a new tab", await ev(`(()=>{const a=[...document.querySelectorAll('.win a')].find(a=>a.href===${JSON.stringify(IG)}); return !!a && a.target==="_blank" && /noopener/.test(a.rel) && !!a.querySelector("svg") && /Instagram/.test(a.textContent)})()`));
   await closeAll(); await openApp("ie"); await sleep(400);
@@ -351,7 +357,7 @@ await test("instagram link", async () => {
   await closeAll();
 });
 await test("vision assist opens in a new tab", async () => {
-  await load(); const VA = "https://vision-assist-two.vercel.app";
+  await fresh(); const VA = "https://vision-assist-two.vercel.app";
   const dlg = () => ev(`(()=>{const w=[...document.querySelectorAll(".win")].find(w=>/Open in new tab/.test(w.textContent)&&w.querySelector(".msgbox")); return w?w.querySelector(".msgbox").textContent:null})()`);
   const answer = (yes) => click(`.win:last-of-type .msgbox-actions .${yes ? "yes" : "no"}`);
   await openApp("ie"); await sleep(400);
@@ -387,7 +393,7 @@ await test("vision assist opens in a new tab", async () => {
   await closeAll();
 });
 await test("explorer browses like a browser", async () => {
-  await load(); await openApp("ie"); await sleep(400);
+  await fresh(); await openApp("ie"); await sleep(400);
   const W = `.win[data-key="ie"]`, frame = `document.querySelector('${W} .ieframe')`;
   const nav = async (u) => { await ev(`(()=>{const i=document.querySelector('${W} .ieurl'); i.value=${JSON.stringify(u)}; i.closest("form").requestSubmit();})()`); };
   const inFrame = (expr) => ev(`new Promise(ok=>{ const f=${frame}; const h=(e)=>{ if(e.source===f.contentWindow&&e.data&&e.data.__r!==undefined){ removeEventListener("message",h); ok(e.data.__r); } }; addEventListener("message",h); setTimeout(()=>ok(null),1500); })`);
@@ -445,7 +451,7 @@ await test("explorer browses like a browser", async () => {
   await closeAll();
 });
 await test("media player plays your own songs", async () => {
-  await load(); await ev(`indexedDB.deleteDatabase("xp-music")`); await sleep(200);
+  await fresh();
   await openApp("wmp"); await sleep(500);
   const g = `document.querySelector('.win[data-key="wmp"]').__g`;
   // a 1.5 s, 440 Hz WAV made here, a text file and a broken "mp3", dropped on the window together
