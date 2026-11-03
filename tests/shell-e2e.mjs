@@ -1,9 +1,9 @@
 // Drives headless Chrome over CDP against a local copy of the site. Firestore is faked inside the page: nothing reaches production.
-import http from "node:http"; import fs from "node:fs"; import path from "node:path"; import { spawn } from "node:child_process"; import os from "node:os";
+import http from "node:http"; import fs from "node:fs"; import path from "node:path"; import { spawn } from "node:child_process"; import os from "node:os"; import { pathToFileURL } from "node:url";
 const ROOT = process.argv[2].split("\\").join("/"), SHOTS = process.argv[3].split("\\").join("/");
 const PORT = 5199, DBG = 9344;
 const seen = { proxy: [] };
-const proxy = (await import("file:///" + ROOT + "/api/proxy.js")).default;
+const proxy = (await import(pathToFileURL(ROOT + "/api/proxy.js").href)).default;
 const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".jpg": "image/jpeg", ".pdf": "application/pdf" };
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
@@ -18,9 +18,12 @@ const server = http.createServer(async (req, res) => {
   fs.readFile(f, (e, d) => { if (e) { res.statusCode = 404; return res.end(); } res.setHeader("Content-Type", MIME[path.extname(f)] || "application/octet-stream"); res.end(d); });
 }).listen(PORT, "127.0.0.1");
 const prof = fs.mkdtempSync(path.join(os.tmpdir(), "xp-e2e-"));
-const chrome = spawn("C:/Program Files/Google/Chrome/Application/chrome.exe", ["--headless=new", `--remote-debugging-port=${DBG}`, `--user-data-dir=${prof}`, "--window-size=1366,768", "--autoplay-policy=no-user-gesture-required", "about:blank"], { stdio: "ignore" });
+// CHROME=<path> picks the browser; otherwise the first one found here
+const CHROME = process.env.CHROME || ["C:/Program Files/Google/Chrome/Application/chrome.exe", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/opt/pw-browsers/chromium", "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((p) => fs.existsSync(p));
+if (!CHROME) { console.error("No Chrome found: set CHROME=<path to chrome>"); process.exit(1); }
+const chrome = spawn(CHROME, [...(process.platform === "linux" ? ["--no-sandbox"] : []), "--headless=new", `--remote-debugging-port=${DBG}`, `--user-data-dir=${prof}`, "--window-size=1366,768", "--autoplay-policy=no-user-gesture-required", "about:blank"], { stdio: "ignore" });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-let target; for (let i = 0; i < 50 && !target; i++) { await sleep(200); try { target = (await (await fetch(`http://127.0.0.1:${DBG}/json`)).json()).find((t) => t.type === "page"); } catch {} }
+let target; for (let i = 0; i < 100 && !target; i++) { await sleep(200); try { target = (await (await fetch(`http://127.0.0.1:${DBG}/json`)).json()).find((t) => t.type === "page"); } catch {} }
 const ws = new WebSocket(target.webSocketDebuggerUrl); await new Promise((r) => (ws.onopen = r));
 let id = 0; const pend = new Map(), errors = [];
 let label = "boot";
