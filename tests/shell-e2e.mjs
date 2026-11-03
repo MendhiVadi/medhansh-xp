@@ -3,7 +3,29 @@ import http from "node:http"; import fs from "node:fs"; import path from "node:p
 const ROOT = process.argv[2].split("\\").join("/"), SHOTS = process.argv[3].split("\\").join("/");
 const PORT = 5199, DBG = 9344;
 const seen = { proxy: [] };
-const proxy = (await import(pathToFileURL(ROOT + "/api/proxy.js").href)).default;
+// the real proxy code, except that *.test hostnames resolve to a local fixture server (every other host gets real DNS and the private-address block)
+const PX = await import(pathToFileURL(ROOT + "/api/proxy.js").href);
+const { lookup } = await import("node:dns/promises");
+const proxy = PX.makeProxy({ resolve: (h) => (h.endsWith(".test") ? Promise.resolve([{ address: "127.0.0.1", family: 4 }]) : lookup(h, { all: true })), isPrivate: (ip) => ip !== "127.0.0.1" && PX.privateIP(ip) });
+// fixture sites on port 8080: what real sites do that matters here
+const FIX = { cookies: [] };
+const fixture = http.createServer((req, res) => {
+  const u = new URL(req.url, "http://" + req.headers.host), host = u.hostname, p = u.pathname; FIX.cookies.push(req.headers.cookie || "");
+  const html = (b, h = {}) => { res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", ...h }); res.end(b); };
+  if (host === "frame.test") return html(`<title>Frameable</title><p>FRAMEOK</p><a id="two" href="/two">two</a>`);
+  if (p.startsWith("/app")) return html(`<!doctype html><html><head><title>App</title><script>var ok=[];try{localStorage.setItem("k","v");ok.push(localStorage.getItem("k")==="v")}catch(e){ok.push(false)}try{document.cookie="a=1";ok.push(/a=1/.test(document.cookie))}catch(e){ok.push(false)}try{history.pushState({}, "", "/app/next");ok.push(true)}catch(e){ok.push(false)}</script></head><body><p id="r"></p><a id="p2" href="/page2">page 2</a><form id="s" action="/search"><input name="q" value="cats"></form><form id="pf" method="post" action="/send"><input name="m" value="x"></form><script>document.getElementById("r").textContent=ok.every(Boolean)?"SHIMS OK":"SHIMS FAIL "+ok</script></body></html>`, { "X-Frame-Options": "DENY", "Set-Cookie": "track=1" });
+  if (p === "/page2") return html(`<title>Page 2</title><p>PAGE TWO</p>`, { "X-Frame-Options": "DENY" });
+  if (p === "/search") return html(`<title>Search</title><p>RESULTS ${u.searchParams.get("q")}</p>`, { "X-Frame-Options": "DENY" });
+  if (p === "/redir") { res.writeHead(302, { Location: "/page2?from=redir" }); return res.end(); }
+  if (p === "/login") return html(`<title>Sign in</title><form><input name=u><input type="password" name=p></form>`, { "X-Frame-Options": "DENY" });
+  if (p === "/jslogin") return html(`<title>Sign in</title><p>wait</p><script>setTimeout(function(){document.body.insertAdjacentHTML("beforeend","<input type=password>")},300)</script>`, { "X-Frame-Options": "DENY" });
+  if (p === "/slow") return; // never answers
+  if (p === "/big") return html("<p>" + "x".repeat(5 * 1024 * 1024), { "X-Frame-Options": "DENY" });
+  if (p === "/cf") { res.writeHead(403, { "Content-Type": "text/html", "cf-mitigated": "challenge" }); return res.end("<title>Just a moment...</title>"); }
+  if (p === "/blank") return html(`<title>Blank</title><div id="root"></div><script>/* an app that never renders here */</script>`, { "X-Frame-Options": "DENY" });
+  if (p === "/latin") { res.writeHead(200, { "Content-Type": "text/html; charset=iso-8859-1", "X-Frame-Options": "DENY" }); return res.end(Buffer.from("<title>Latin</title><p>caf\xe9</p>", "latin1")); }
+  res.writeHead(404); res.end("nope");
+}).listen(8080, "127.0.0.1");
 const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".jpg": "image/jpeg", ".pdf": "application/pdf" };
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
@@ -21,7 +43,8 @@ const prof = fs.mkdtempSync(path.join(os.tmpdir(), "xp-e2e-"));
 // CHROME=<path> picks the browser; otherwise the first one found here
 const CHROME = process.env.CHROME || ["C:/Program Files/Google/Chrome/Application/chrome.exe", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/opt/pw-browsers/chromium", "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((p) => fs.existsSync(p));
 if (!CHROME) { console.error("No Chrome found: set CHROME=<path to chrome>"); process.exit(1); }
-const chrome = spawn(CHROME, [...(process.platform === "linux" ? ["--no-sandbox"] : []), "--headless=new", `--remote-debugging-port=${DBG}`, `--user-data-dir=${prof}`, "--window-size=1366,768", "--autoplay-policy=no-user-gesture-required", "about:blank"], { stdio: "ignore" });
+// site isolation off, so the test can read Explorer's sandboxed frame from the page's frame tree
+const chrome = spawn(CHROME, [...(process.platform === "linux" ? ["--no-sandbox"] : []), "--disable-site-isolation-trials", "--disable-features=IsolateOrigins,site-per-process", "--headless=new", `--remote-debugging-port=${DBG}`, `--user-data-dir=${prof}`, "--window-size=1366,768", "--autoplay-policy=no-user-gesture-required", "about:blank"], { stdio: "ignore" });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let target; for (let i = 0; i < 100 && !target; i++) { await sleep(200); try { target = (await (await fetch(`http://127.0.0.1:${DBG}/json`)).json()).find((t) => t.type === "page"); } catch {} }
 const ws = new WebSocket(target.webSocketDebuggerUrl); await new Promise((r) => (ws.onopen = r));
@@ -50,6 +73,7 @@ const click = async (sel) => {
   if (!r) throw new Error("no element " + sel);
   for (const type of ["mouseMoved", "mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x: r.x, y: r.y, button: type === "mouseMoved" ? "none" : "left", buttons: type === "mousePressed" ? 1 : 0, clickCount: 1 });
 };
+const until = async (expr, ms = 5000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (await ev(expr)) return true; await sleep(40); } return false; };
 const res = []; const ok = (n, c, extra = "") => { res.push([n, !!c]); console.log((c ? "PASS " : "FAIL ") + n + (extra !== "" ? "  -> " + extra : "")); };
 const test = async (n, fn) => { if (process.env.ONLY && !n.includes(process.env.ONLY)) return; label = n; try { await fn(); } catch (e) { ok(n + " (threw)", false, e.message); } };
 
@@ -362,8 +386,66 @@ await test("vision assist opens in a new tab", async () => {
   for (const t of after) if (t.url.startsWith(VA) || (t.url === "about:blank" && t.id !== target.id)) await fetch(`http://127.0.0.1:${DBG}/json/close/${t.id}`).catch(() => {});
   await closeAll();
 });
+await test("explorer browses like a browser", async () => {
+  await load(); await openApp("ie"); await sleep(400);
+  const W = `.win[data-key="ie"]`, frame = `document.querySelector('${W} .ieframe')`;
+  const nav = async (u) => { await ev(`(()=>{const i=document.querySelector('${W} .ieurl'); i.value=${JSON.stringify(u)}; i.closest("form").requestSubmit();})()`); };
+  const inFrame = (expr) => ev(`new Promise(ok=>{ const f=${frame}; const h=(e)=>{ if(e.source===f.contentWindow&&e.data&&e.data.__r!==undefined){ removeEventListener("message",h); ok(e.data.__r); } }; addEventListener("message",h); setTimeout(()=>ok(null),1500); })`);
+  const dialog = () => ev(`(()=>{const w=[...document.querySelectorAll(".win")].find(w=>/Open in new tab/.test(w.textContent)&&w.querySelector(".msgbox")); return w?w.querySelector(".msgbox").textContent:null})()`);
+  const dismiss = () => ev(`[...document.querySelectorAll(".win")].filter(w=>/Open in new tab/.test(w.textContent)&&w.querySelector(".msgbox")).forEach(w=>w.querySelector(".no").click())`);
+  // the Explorer frame (found by its name), read from an isolated world so the page's own scripts can't interfere
+  const ieWorld = async () => { const want = await ev(`(()=>{const f=${frame}; return f.hasAttribute("srcdoc")?"about:srcdoc":f.src})()`); const t = await send("Page.getFrameTree"); const find = (n) => n.frame.url === want && n.frame.parentId ? n.frame : (n.childFrames || []).map(find).find(Boolean); const kid = find(t.frameTree); if (!kid) return null; return (await send("Page.createIsolatedWorld", { frameId: kid.id })).executionContextId; };
+  const inIE = async (expression) => { const c = await ieWorld(); if (!c) return null; const r = await send("Runtime.evaluate", { expression, contextId: c, returnByValue: true }); return r.result.value; };
+  const text = async () => (await inIE("document.body ? document.body.innerText : ''")) || "";
+  void inFrame;
+  // an http page judged frameable still goes through the proxy (it would be mixed content on https)
+  await nav("http://frame.test:8080/"); await sleep(1500);
+  ok("an http:// page goes through the proxy", (await ev(`${frame}.getAttribute("src")||""`)).startsWith("/api/proxy") && /FRAMEOK/.test(await text()));
+  ok("loading ends: throbber stops, Stop greys out, status Done", await until(`!document.querySelector('${W} .iethrob').classList.contains("on") && document.querySelector('${W} .iestop').disabled && document.querySelector('${W} .iestat').textContent==="Done"`, 3000));
+  // a framing-refusing app: shims make storage, cookies and history work; the address bar follows pushState
+  await nav("http://deny.test:8080/app"); await sleep(2000);
+  ok("storage, cookie and history shims let the page's script run", /SHIMS OK/.test(await text()), await text());
+  ok("the address bar follows in-page navigation", (await ev(`document.querySelector('${W} .ieurl').value`)) === "http://deny.test:8080/app/next");
+  ok("no cookies reach the site, none come back", FIX.cookies.every((c) => !c) && !(await ev(`document.cookie.includes("track")`)));
+  // a link click and a GET form are new history entries; Back and Forward walk them
+  await send("Runtime.evaluate", { expression: "0" });
+  const clickIn = async (sel) => { const p = await inIE(`(()=>{const r=document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2}})()`); const f = await ev(`(()=>{const r=${frame}.getBoundingClientRect(); return {x:r.left,y:r.top}})()`); for (const type of ["mouseMoved", "mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x: f.x + p.x, y: f.y + p.y, button: type === "mouseMoved" ? "none" : "left", buttons: type === "mousePressed" ? 1 : 0, clickCount: 1 }); };
+  await clickIn("#p2"); await sleep(1500);
+  ok("a link inside the page navigates in the window", /PAGE TWO/.test(await text()) && (await ev(`document.querySelector('${W} .ieurl').value`)) === "http://deny.test:8080/page2");
+  await click(`${W} .ieback`); await sleep(1800);
+  ok("Back returns to the app page", (await ev(`document.querySelector('${W} .ieurl').value`)).startsWith("http://deny.test:8080/app"));
+  await click(`${W} .iefwd`); await sleep(1500);
+  ok("Forward goes to page 2 again", /PAGE TWO/.test(await text()));
+  await click(`${W} .ieback`); await sleep(1800);
+  await inIE(`document.getElementById("s").requestSubmit()`); await sleep(1500);
+  ok("a GET search form works", /RESULTS cats/.test(await text()));
+  await click(`${W} .ieback`); await sleep(1800);
+  await inIE(`document.getElementById("pf").requestSubmit()`); await sleep(600);
+  ok("a POST form offers a new tab instead", /sends information/.test((await dialog()) || "")); await dismiss();
+  // redirects show the final address
+  await nav("http://deny.test:8080/redir"); await sleep(1800);
+  ok("a redirect shows the final address", (await ev(`document.querySelector('${W} .ieurl').value`)) === "http://deny.test:8080/page2?from=redir");
+  // pages that can't work here end in the new-tab dialog
+  for (const [path, why, wait] of [["/login", /password/, 1800], ["/jslogin", /password/, 2200], ["/cf", /person/, 1800], ["/big", /too large/, 2500], ["/blank", /didn't load properly/, 6500]]) {
+    await nav("http://deny.test:8080" + path); await sleep(wait);
+    ok(`${path}: offers a new tab, saying why`, why.test((await dialog()) || ""), (await dialog()) || "(no dialog) " + (await ev(`document.querySelector('${W} .iestat').textContent`)));
+    await dismiss(); await sleep(100);
+  }
+  await nav("http://deny.test:8080/latin"); await sleep(1500);
+  ok("non-UTF-8 pages keep their accents", /café/.test(await text()));
+  // Stop cancels a slow page; it doesn't fail later
+  await nav("http://deny.test:8080/slow"); await sleep(800);
+  ok("a slow page shows the loading indicator", await ev(`document.querySelector('${W} .iethrob').classList.contains("on") && !document.querySelector('${W} .iestop').disabled && !document.querySelector('${W} .ieprog').classList.contains("hidden")`));
+  await click(`${W} .iestop`); await sleep(300);
+  ok("Stop cancels it", /canceled/.test(await text()) && (await ev(`document.querySelector('${W} .iestat').textContent`)) === "Stopped");
+  await sleep(9000); ok("and nothing pops up later", !(await dialog()));
+  // left alone, a page that never answers ends in the dialog instead of a blank frame
+  await nav("http://deny.test:8080/slow"); await sleep(10500);
+  ok("a page that never answers ends in the new-tab dialog", /too long/.test((await dialog()) || ""), (await dialog()) || "(none)"); await dismiss();
+  await closeAll();
+});
 if (process.env.SHOT) { label = "shot"; await send("Page.addScriptToEvaluateOnNewDocument", { source: `try{sessionStorage.setItem("xp-logged","1")}catch{}` }); await load(); await openApp("paint"); await sleep(500); const s = await send("Page.captureScreenshot", { format: "png" }); fs.writeFileSync(SHOTS + "/paint.png", Buffer.from(s.data, "base64")); }
 const fails = res.filter(([, c]) => !c).length;
 console.log(`\n${res.length - fails}/${res.length} passed; dialogs seen: ${dialogs.length}`);
 console.log("runtime errors:", errors.length ? "\n" + [...new Set(errors)].join("\n") : "none");
-chrome.kill(); server.close(); ws.close(); setTimeout(() => process.exit(0), 300);
+chrome.kill(); server.close(); fixture.close(); ws.close(); setTimeout(() => process.exit(0), 300);

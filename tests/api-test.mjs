@@ -45,6 +45,8 @@ for (const u of ["http://127.0.0.1/", "http://[::1]/", "http://[::ffff:127.0.0.1
   const r = await call({ url: u, check: "1" });
   ok("blocked " + u, r.json?.blocked === true);
 }
+{ const r = await new Promise((done) => { const res = { h: {}, code: 0, setHeader(k, v) { this.h[k.toLowerCase()] = v; }, status(c) { this.code = c; return this; }, send(b) { done({ code: this.code, h: this.h }); return this; } }; P({ method: "POST", query: { url: "https://example.com/" }, headers: { "sec-fetch-site": "same-origin" } }, res); });
+  ok("POST is refused (no form relay)", r.code === 405 && r.h.allow === "GET"); }
 if (!online) { console.log("SKIP live proxy checks: example.com doesn't resolve here (no network)"); process.exit(0); }
 let r = await call({ url: "https://example.com/" }, { "sec-fetch-site": "none" }); ok("top-level open refused", r.code === 403);
 r = await call({ url: "https://example.com/" }, { "sec-fetch-site": "cross-site" }); ok("cross-site refused", r.code === 403);

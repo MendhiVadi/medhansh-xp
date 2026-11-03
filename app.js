@@ -233,12 +233,12 @@
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=36"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=37"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=36"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=37"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   function lazyExtra(name) {
@@ -345,7 +345,7 @@
     confirm: (t, h, ok) => confirmBox(t, h, ok),
     notify: (t, h, o) => notify(t, h, o),
     career: { read: () => Career.read(), record: (g, r) => Career.record(g, r), levelOf: (p) => Career.levelOf(p), rank: (l) => Career.rank(l) },
-    photos: [{ src: "photo-full.jpg?v=36", title: "Medhansh.jpg" }, { src: "photo.jpg?v=36", title: "Avatar.jpg" }],
+    photos: [{ src: "photo-full.jpg?v=37", title: "Medhansh.jpg" }, { src: "photo.jpg?v=37", title: "Avatar.jpg" }],
     // Shared data everyone sees. Games: sys.scores.submit(game, score, extra) / sys.scores.top(game, n, ascending)
     scores: { top: (g, n, asc) => Cloud.top(g, n, asc), submit: async (g, s, x) => { await askName(); return Cloud.submit(g, s, x); }, name: () => playerName(), askName },
     pictures: { list: () => Cloud.pictures(), data: (id) => Cloud.pictureData(id), add: async (t, d, w, h) => { await askName(); return Cloud.pictureAdd(t, d, w, h); }, remove: (id) => Cloud.pictureDelete(id) },
@@ -737,11 +737,11 @@
   function renderIE(body, ctx) {
     body.style.display = "flex"; body.style.flexDirection = "column"; body.style.overflow = "hidden";
     body.innerHTML = `<div class="menubar"></div>
-      <div class="toolbar"><button class="ieback" title="Back">◀ Back</button><button class="iefwd" title="Forward">▶</button><button class="iereload" title="Refresh">⟳</button><button class="iehome" title="Home">🏠 Home</button><button class="ienew" title="Open this page in a new tab">↗ New tab</button></div>
+      <div class="toolbar"><button class="ieback" title="Back">◀ Back</button><button class="iefwd" title="Forward">▶</button><button class="iestop" title="Stop (Esc)" disabled>✕ Stop</button><button class="iereload" title="Refresh (F5)">⟳</button><button class="iehome" title="Home">🏠 Home</button><button class="ienew" title="Open this page in a new tab">↗ New tab</button><span class="iethrob" aria-hidden="true">${I.ie}</span></div>
       <form class="addr ieaddr">Address <div class="field">${I.ie}<input class="ieurl" spellcheck="false" autocomplete="off" aria-label="Address"></div><button class="xpbtn">Go</button></form>
       <div class="iebar hidden">Some sites refuse to be shown inside other pages. If this stays blank, use <a href="#" class="ieopen">open in a new tab</a>.</div>
       <div class="ieview"><div class="iehomepage"></div><iframe class="ieframe hidden" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe></div>
-      <div class="statusbar"><span class="iestat">Done</span></div>`;
+      <div class="statusbar"><span class="iestat">Done</span><span class="ieprog hidden" role="progressbar" aria-label="Loading"><i></i></span></div>`;
     const $b = (q) => body.querySelector(q), urlIn = $b(".ieurl"), frame = $b(".ieframe"), home = $b(".iehomepage"), bar = $b(".iebar"), stat = $b(".iestat");
     const hist = [], HOME = "about:favorites"; let pos = -1;
     const L = [["GitHub", links.github, "github"], ["LinkedIn", links.linkedin, "linkedin"], ["Instagram", links.instagram, "instagram"], ["X / Twitter", links.twitter, "x"], ["Website", links.website, "globe"], ["Email", "mailto:" + links.email, "mail"], ["Resume (PDF)", links.resumePdf, "pdf"]].filter(([, u]) => u && u !== "mailto:");
@@ -757,35 +757,77 @@
       if (m && (/^\d{1,3}(\.\d{1,3}){3}$/.test(m[1]) || (/^[a-z]{2,}$/.test(end) && !/^(js|ts|jsx|tsx|py|rb|java|cpp|cs|go|rs|php|html|htm|css|json|md|txt|csv|xml|yml|yaml|sh|exe|dll|pdf|png|jpg|jpeg|gif|svg|zip)$/.test(end)))) return "https://" + q;
       return "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q);
     };
+    // ---- loading, stopping and failing like a normal browser ----
+    const SANDBOX = frame.getAttribute("sandbox"), PROXY_SANDBOX = "allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox";
+    let ctl = null, loadT = 0, loading = 0, failed = 0;
+    const busy = (on, text) => {
+      loading = on ? show.n : 0; $b(".iethrob").classList.toggle("on", !!on); $b(".ieprog").classList.toggle("hidden", !on);
+      $b(".iestop").disabled = !on; if (text) stat.textContent = text;
+    };
+    const page = (title, text) => `<div style="font:13px Tahoma,sans-serif;padding:18px 22px;color:#000"><h2 style="font:bold 16px Tahoma,sans-serif;color:#0a246a;margin:0 0 10px">${title}</h2><p>${text}</p></div>`;
+    const WHY = {
+      login: "This page asks for a password. Logins never go through the portfolio's browser, so your details stay between you and the site.",
+      post: "This form sends information to the site, which only works on the site's own page.",
+      challenge: "The site wants to check that you're a person, which only works on its own page.",
+      toolarge: "This page is too large to show here.",
+      timeout: "The page took too long to load here.",
+      empty: "This page didn't load properly inside this window.",
+      mixed: "This is an http:// page, which browsers block inside a secure page.",
+      error: "Internet Explorer couldn't load this page here.",
+    };
+    // a page that can't work here ends in the same choice as Vision Assist: open it in a new tab, or stay
+    function fail(kind, n = show.n) {
+      if (n !== show.n || failed === n) return; failed = n;
+      clearTimeout(loadT); ctl?.abort(); busy(false, "Couldn't show the page here");
+      const why = esc(WHY[kind] || WHY.error);
+      frame.setAttribute("sandbox", SANDBOX); frame.removeAttribute("src"); frame.srcdoc = page("This page can't be shown here", why);
+      offerTab(hist[pos], why);
+    }
+    function stop() {
+      if (!loading) return;
+      show.n++; clearTimeout(loadT); ctl?.abort(); busy(false, "Stopped");
+      frame.setAttribute("sandbox", SANDBOX); frame.removeAttribute("src"); frame.srcdoc = page("Navigation to the webpage was canceled", "Press Refresh to try again.");
+    }
     function show(url) {
       urlIn.value = url === HOME ? "" : url; urlIn.placeholder = "Type a web address or search the web";
       $b(".ieback").disabled = pos <= 0; $b(".iefwd").disabled = pos >= hist.length - 1; $b(".ienew").disabled = url === HOME;
       ctx.setTitle(url === HOME ? "Favorites - Internet Explorer" : url.replace(/^https?:\/\/(www\.)?/, "").split(/[/?#]/)[0] + " - Internet Explorer");
-      if (url === HOME) { clearTimeout(show.t); show.n = (show.n || 0) + 1; frame.classList.add("hidden"); frame.removeAttribute("srcdoc"); frame.src = "about:blank"; home.classList.remove("hidden"); bar.classList.add("hidden"); stat.textContent = "Done"; return; }
-      home.classList.add("hidden"); frame.classList.remove("hidden"); stat.textContent = "Opening page " + url + "…";
-      bar.classList.add("hidden"); clearTimeout(show.t);
+      clearTimeout(show.t); clearTimeout(loadT); ctl?.abort();
       const n = show.n = (show.n || 0) + 1;
-      // ask the server whether the site allows framing; if not, show it through the sandboxed proxy
-      fetch(`/api/proxy?check=1&url=${encodeURIComponent(url)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((j) => {
+      if (url === HOME) { busy(false, "Done"); frame.classList.add("hidden"); frame.removeAttribute("srcdoc"); frame.src = "about:blank"; home.classList.remove("hidden"); bar.classList.add("hidden"); return; }
+      home.classList.add("hidden"); frame.classList.remove("hidden"); bar.classList.add("hidden");
+      busy(true, "Opening page " + url + "…");
+      // a page that never finishes ends in the same honest choice instead of a blank frame
+      loadT = setTimeout(() => fail("timeout", n), 20000);
+      // ask the server whether the site allows framing; if not, or if it's plain http (blocked as mixed content), show it through the sandboxed proxy
+      const c = (ctl = new AbortController()); setTimeout(() => c.abort(), 10000);
+      fetch(`/api/proxy?check=1&url=${encodeURIComponent(url)}`, { signal: c.signal }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((j) => {
         if (n !== show.n) return;
-        const proxied = j && j.frameable === false && !j.blocked;
-        frame.setAttribute("sandbox", proxied ? "allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox" : SANDBOX);
+        if (j?.blocked) { clearTimeout(loadT); busy(false, "Cannot find server"); frame.setAttribute("sandbox", SANDBOX); frame.removeAttribute("src"); frame.srcdoc = page("Internet Explorer cannot display the webpage", "The address can't be reached. Check that it's typed correctly."); return; }
+        if (j?.timeout) return fail("timeout", n); // the page itself would only time out too
+        if (!j && /^http:/i.test(url) && location.protocol === "https:") return fail("mixed", n);
+        const proxied = !!j && (j.frameable === false || /^http:/i.test(url));
+        frame.setAttribute("sandbox", proxied ? PROXY_SANDBOX : SANDBOX);
         bar.firstChild.textContent = proxied ? "Shown through the portfolio's proxy, so logins and some interactive sites may not work. You can also " : "Some sites refuse to be shown inside other pages. If this stays blank, use ";
-        if (proxied || !j) show.t = setTimeout(() => bar.classList.remove("hidden"), proxied ? 600 : 2500);
-        if (j?.blocked) { frame.srcdoc = `<p style="font:13px Tahoma,sans-serif;padding:16px">Internet Explorer cannot display this address.</p>`; return; }
+        if (proxied || !j) show.t = setTimeout(() => n === show.n && bar.classList.remove("hidden"), proxied ? 600 : 2500);
         frame.removeAttribute("srcdoc");
         frame.src = proxied ? `/api/proxy?url=${encodeURIComponent(url)}` : url;
       });
     }
-    const SANDBOX = frame.getAttribute("sandbox");
-    // pages shown through the proxy report link clicks and their title back here
+    // pages shown through the proxy report their address, title, link clicks and failures back here
     const onMsg = (e) => {
-      if (e.source !== frame.contentWindow || !e.data || typeof e.data !== "object") return;
-      if (typeof e.data.xpNav === "string" && /^https?:/i.test(e.data.xpNav)) go(e.data.xpNav);
-      if (typeof e.data.xpTitle === "string" && e.data.xpTitle) { ctx.setTitle(e.data.xpTitle.slice(0, 80) + " - Internet Explorer"); stat.textContent = "Done"; }
+      if (e.source !== frame.contentWindow || !e.data || typeof e.data !== "object" || pos < 0 || hist[pos] === HOME) return;
+      const d = e.data;
+      if (typeof d.xpFail === "string") return fail(d.xpFail);
+      if (typeof d.xpNav === "string" && /^https?:/i.test(d.xpNav)) return go(d.xpNav);
+      // redirects and in-page navigation: the address bar follows, without a new history entry
+      if (typeof d.xpUrl === "string" && /^https?:/i.test(d.xpUrl) && d.xpUrl !== hist[pos]) { hist[pos] = d.xpUrl; if (document.activeElement !== urlIn) urlIn.value = d.xpUrl; }
+      if (typeof d.xpTitle === "string" && d.xpTitle) ctx.setTitle(d.xpTitle.slice(0, 80) + " - Internet Explorer");
+      if (d.xpLoaded && loading) { clearTimeout(loadT); busy(false, "Done"); }
     };
-    addEventListener("message", onMsg); ctx.onClose(() => removeEventListener("message", onMsg));
-    frame.addEventListener("load", () => { stat.textContent = "Done"; });
+    addEventListener("message", onMsg); ctx.onClose(() => { removeEventListener("message", onMsg); clearTimeout(loadT); ctl?.abort(); });
+    // a real page finished (not the blank one a new navigation starts from)
+    frame.addEventListener("load", () => { if (loading && (frame.hasAttribute("srcdoc") || frame.getAttribute("src") !== "about:blank")) { clearTimeout(loadT); busy(false, "Done"); } });
     // pages that can't work inside this window (data.js projects marked newTab) are offered in a new tab instead
     const origin = (u) => { try { return new URL(u).origin; } catch { return ""; } };
     const offerTab = (url, why) => confirmBox("Internet Explorer", `${why}<br><br>Open <b>${esc(origin(url).replace(/^https?:\/\//, ""))}</b> in a new tab?`, "Open in new tab", () => window.open(url, "_blank", "noopener"));
@@ -800,16 +842,22 @@
     $b(".iefwd").onclick = () => { if (pos < hist.length - 1) show(hist[++pos]); };
     $b(".iereload").onclick = () => { const u = hist[pos]; if (u && u !== HOME) show(u); };
     $b(".iehome").onclick = () => go(HOME);
+    $b(".iestop").onclick = stop;
     const openTab = () => { const u = hist[pos]; if (u && u !== HOME) window.open(u, "_blank", "noopener"); };
     $b(".ienew").onclick = openTab; $b(".ieopen").addEventListener("click", (e) => { e.preventDefault(); openTab(); });
     home.addEventListener("click", (e) => { const a = e.target.closest("[data-browse]"); if (a) { e.preventDefault(); go(a.getAttribute("href")); } });
     ctx.menu(body.querySelector(".menubar"), [
       { label: "File", items: [{ label: "Open in new tab", act: openTab }, "-", { label: "Close", act: ctx.close }] },
-      { label: "View", items: [{ label: "Refresh", key: "F5", act: () => $b(".iereload").click() }, { label: "Home", act: () => go(HOME) }] },
+      { label: "View", items: () => [{ label: "Back", key: "Alt+←", disabled: pos <= 0, act: () => $b(".ieback").click() }, { label: "Forward", key: "Alt+→", disabled: pos >= hist.length - 1, act: () => $b(".iefwd").click() }, { label: "Stop", key: "Esc", disabled: !loading, act: stop }, { label: "Refresh", key: "F5", act: () => $b(".iereload").click() }, { label: "Home", act: () => go(HOME) }] },
       { label: "Favorites", items: () => [...demos.map((p) => ({ label: p.name, act: () => go(p.url) })), "-", { label: "Wikipedia", act: () => go("https://en.wikipedia.org") }] },
       { label: "Help", items: [{ label: "About Internet Explorer", act: () => msgBox("Internet Explorer", "A real browser inside the portfolio. Sites that block being shown inside other pages are loaded through a sandboxed proxy, so most pages open here; logins and very interactive apps work best in a New tab.") }] },
     ]);
-    const f5 = (e) => { if (e.key === "F5" && ctx.isActive()) { e.preventDefault(); $b(".iereload").click(); } };
+    const f5 = (e) => {
+      if (!ctx.isActive()) return;
+      if (e.key === "F5") { e.preventDefault(); $b(".iereload").click(); }
+      else if (e.key === "Escape" && loading) { e.preventDefault(); stop(); }
+      else if (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) { e.preventDefault(); $b(e.key === "ArrowLeft" ? ".ieback" : ".iefwd").click(); }
+    };
     addEventListener("keydown", f5); ctx.onClose(() => removeEventListener("keydown", f5));
     go(ctx.url || HOME);
   }
@@ -2319,7 +2367,7 @@ TERMS
   countVisit();
   // Vercel Web Analytics (cookie-free): only load it when it's switched on for the project, so there's no 404
   if (/\.vercel\.app$/.test(location.hostname)) fetch("/_vercel/insights/script.js", { method: "HEAD" }).then((r) => { if (r.ok) { const sc = document.createElement("script"); sc.defer = true; sc.src = "/_vercel/insights/script.js"; document.head.appendChild(sc); } }).catch(() => {});
-  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=36"; document.head.appendChild(l); } });
+  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=37"; document.head.appendChild(l); } });
   (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => Tasks.sync().then(() => { checkReminders(true); paintBell(); }));
   setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });
