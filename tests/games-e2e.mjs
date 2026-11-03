@@ -11,9 +11,12 @@ const server = http.createServer((req, res) => {
 }).listen(PORT, "127.0.0.1");
 fs.mkdirSync(SHOTS, { recursive: true });
 const prof = fs.mkdtempSync(path.join(os.tmpdir(), "xp-g-"));
-const chrome = spawn("C:/Program Files/Google/Chrome/Application/chrome.exe", ["--headless=new", `--remote-debugging-port=${DBG}`, `--user-data-dir=${prof}`, "--window-size=1366,768", "--autoplay-policy=no-user-gesture-required", "about:blank"], { stdio: "ignore" });
+// CHROME=<path> picks the browser; otherwise the first one found here
+const CHROME = process.env.CHROME || ["C:/Program Files/Google/Chrome/Application/chrome.exe", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/opt/pw-browsers/chromium", "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((p) => fs.existsSync(p));
+if (!CHROME) { console.error("No Chrome found: set CHROME=<path to chrome>"); process.exit(1); }
+const chrome = spawn(CHROME, [...(process.platform === "linux" ? ["--no-sandbox"] : []), "--headless=new", `--remote-debugging-port=${DBG}`, `--user-data-dir=${prof}`, "--window-size=1366,768", "--autoplay-policy=no-user-gesture-required", "about:blank"], { stdio: "ignore" });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-let target; for (let i = 0; i < 50 && !target; i++) { await sleep(200); try { target = (await (await fetch(`http://127.0.0.1:${DBG}/json`)).json()).find((t) => t.type === "page"); } catch {} }
+let target; for (let i = 0; i < 100 && !target; i++) { await sleep(200); try { target = (await (await fetch(`http://127.0.0.1:${DBG}/json`)).json()).find((t) => t.type === "page"); } catch {} }
 const ws = new WebSocket(target.webSocketDebuggerUrl); await new Promise((r) => (ws.onopen = r));
 let id = 0, label = "boot"; const pend = new Map(), errors = [];
 ws.onmessage = (m) => {

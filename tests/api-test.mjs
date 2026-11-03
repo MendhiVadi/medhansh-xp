@@ -1,6 +1,7 @@
+import { pathToFileURL } from "node:url";
 const ROOT = process.argv[2].split("\\").join("/");
 process.env.GMAIL_USER = "a@example.com"; process.env.GMAIL_APP_PASSWORD = "x";
-const url = (p) => "file:///" + ROOT + "/" + p;
+const url = (p) => pathToFileURL(ROOT + "/" + p).href;
 const realFetch = globalThis.fetch;
 const store = new Map();
 globalThis.fetch = async (u, opt = {}) => {
@@ -34,6 +35,7 @@ ok("replyTo address stays the verified one: " + JSON.stringify(out.replyTo), out
 ok("gmail transport still builds", !!nm.createTransport({ service: "gmail", auth: { user: "a", pass: "b" } }));
 // proxy
 globalThis.fetch = realFetch;
+const online = await (await import("node:dns")).promises.lookup("example.com").then(() => true, () => false);
 const P = (await import(url("api/proxy.js"))).default;
 const call = (query, headers = {}) => new Promise((done) => {
   const res = { h: {}, code: 0, setHeader(k, v) { this.h[k.toLowerCase()] = v; }, status(c) { this.code = c; return this; }, send(b) { done({ code: this.code, body: b, h: this.h }); return this; }, json(b) { done({ code: this.code, json: b, h: this.h }); return this; }, end() { done({ code: this.code, h: this.h }); return this; } };
@@ -43,6 +45,7 @@ for (const u of ["http://127.0.0.1/", "http://[::1]/", "http://[::ffff:127.0.0.1
   const r = await call({ url: u, check: "1" });
   ok("blocked " + u, r.json?.blocked === true);
 }
+if (!online) { console.log("SKIP live proxy checks: example.com doesn't resolve here (no network)"); process.exit(0); }
 let r = await call({ url: "https://example.com/" }, { "sec-fetch-site": "none" }); ok("top-level open refused", r.code === 403);
 r = await call({ url: "https://example.com/" }, { "sec-fetch-site": "cross-site" }); ok("cross-site refused", r.code === 403);
 r = await call({ url: "https://example.com/", check: "1" }, { "sec-fetch-site": "same-origin" }); console.log("check example.com", JSON.stringify(r.json));
