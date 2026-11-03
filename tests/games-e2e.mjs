@@ -641,6 +641,50 @@ await test("random input in every game", async () => {
     await closeAll();
   }
 });
+await test("full screen", async () => {
+  await load(true, true);
+  const W = (k) => `document.querySelector('.win[data-key="${k}"]')`;
+  const geom = (k) => ev(`(()=>{const w=${W(k)}, r=w.getBoundingClientRect(); return JSON.stringify([w.style.left,w.style.top,w.style.width,w.style.height,w.style.transform,Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)])})()`);
+  const bad = [];
+  for (const k of ["solitaire", "spider", "mine", "pinball", "snake", "breakout", "wmp", "pictures", "paint"]) {
+    await openApp(k); await sleep(250); if (await ev(`!!document.querySelector(".splash")`)) { await key(" "); await sleep(200); }
+    const g0 = await geom(k);
+    for (let i = 0; i < 3; i++) {
+      await click(`.win[data-key="${k}"] .fsbtn`);
+      if (!(await until(`document.fullscreenElement===${W(k)}`, 2000))) { bad.push(k + ": didn't enter (" + i + ")"); break; }
+      await sleep(250);
+      const full = await ev(`(()=>{const r=${W(k)}.getBoundingClientRect(), b=${W(k)}.querySelector(".fsbtn"); return Math.round(r.width)===innerWidth && Math.round(r.height)===innerHeight && b.getAttribute("aria-pressed")==="true" && /Exit/.test(b.title)})()`);
+      if (!full) bad.push(k + ": not filling the screen or button not pressed (" + i + ")");
+      await click(`.win[data-key="${k}"] .fsbtn`);
+      if (!(await until(`!document.fullscreenElement`, 2000))) { bad.push(k + ": didn't leave (" + i + ")"); break; }
+      await sleep(250);
+      const g1 = await geom(k); if (g1 !== g0) bad.push(`${k}: geometry ${g0} -> ${g1} (${i})`);
+    }
+    await closeAll();
+  }
+  ok("3 round trips in and out of full screen for every app with the button; size and place come back exactly", !bad.length, bad.join(" | "));
+  // a running game pauses for the switch
+  await openApp("snake"); await sleep(100); await key(" "); await sleep(100); await key("ArrowUp"); await sleep(50); await key(" ");
+  await until(`${G("snake")}.state==="run"`, 2500);
+  await click(`.win[data-key="snake"] .fsbtn`); await until(`!!document.fullscreenElement`, 2000); await sleep(150);
+  ok("a running game pauses when it goes full screen", (await ev(`${G("snake")}.state`)) === "paused");
+  // minimize leaves full screen
+  await click(`.win[data-key="snake"] .tbtn[data-a="min"]`); await sleep(300);
+  ok("minimize leaves full screen first", await ev(`!document.fullscreenElement && ${W("snake")}.classList.contains("min")`));
+  await closeAll();
+  // dialogs and balloons show inside full screen
+  await openApp("mine"); await sleep(150); await click(`.win[data-key="mine"] .fsbtn`); await until(`!!document.fullscreenElement`, 2000);
+  await click(`.win[data-key="mine"] .menubar [data-mi="1"]`); await sleep(60); await ev(`document.querySelector(".dropdown [data-k]").click()`); await sleep(300);
+  ok("a message box opens inside the full-screen window, which stays full screen", await ev(`document.fullscreenElement===${W("mine")} && !!document.fullscreenElement.querySelector(".win .msgbox")`));
+  await ev(`document.fullscreenElement.querySelector(".win .msgbox").closest(".win").querySelector(".xpbtn").click()`); await sleep(100);
+  await openApp("solitaire"); await sleep(200); await key(" "); await sleep(100);
+  await click(`.win[data-key="solitaire"] .fsbtn`); await until(`document.fullscreenElement===${W("solitaire")}`, 2000);
+  await ev(`(()=>{ const G=${G("solitaire")}, mk=(s,r)=>({id:s*13+r,s,r,up:true}); G.S={s:[],w:[],f:[0,1,2,3].map(s=>Array.from({length:13},(_,i)=>mk(s,i+1))),t:[[],[],[],[],[],[],[]]}; G.secs=100; G.checkWin(); })()`); await sleep(300);
+  ok("trophy balloons show in full screen", await ev(`!!document.fullscreenElement.querySelector(".balloons .balloon") && /Trophy/.test(document.fullscreenElement.querySelector(".balloons").textContent)`));
+  await key("Escape"); await click(`.win[data-key="solitaire"] .fsbtn`); await until(`!document.fullscreenElement`, 2000); await sleep(100);
+  ok("leaving puts the balloons back on the desktop", await ev(`document.querySelector(".balloons").parentElement.id==="desktop"`));
+  await closeAll();
+});
 await test("reduced motion", async () => {
   await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
   await load(); await openApp("solitaire"); await sleep(60);

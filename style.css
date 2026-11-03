@@ -764,6 +764,7 @@ button { font: inherit; }
 .win:fullscreen .resize { display: none; }
 .win::backdrop { background: #000; }
 .fsbtn { font-size: 13px; }
+.fsbtn[aria-pressed="true"] { box-shadow: inset 1px 1px 3px rgba(0, 0, 0, .55); background-color: #1c4fd6; }
 
 /* ======================================================================
    Windows XP finish: pointers, scroll bars, title-bar buttons, start-up screens, menus, dialogs and game chrome

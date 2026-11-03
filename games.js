@@ -83,6 +83,8 @@
   };
   const observe = (ctx, el, fn) => { const ro = new ResizeObserver(fn); ro.observe(el); ctx.onClose(() => ro.disconnect()); };
   const listen = (ctx, type, fn) => { addEventListener(type, fn); ctx.onClose(() => removeEventListener(type, fn)); };
+  // going in or out of full screen resizes everything mid-frame (slowly, on some machines), so action games pause for it
+  const onFull = (ctx, fn) => { for (const t of ["fullscreenchange", "webkitfullscreenchange"]) { document.addEventListener(t, fn); ctx.onClose(() => document.removeEventListener(t, fn)); } };
   // a key belongs to the game unless it was typed into a field, or pressed somewhere outside its window (Start menu, tray...)
   const mine = (ctx, e) => { const t = e.target; if (!t?.closest || t === document.body || t === document.documentElement) return true; return ctx.el.contains(t) && !/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) && !t.isContentEditable; };
 
@@ -747,7 +749,7 @@
     });
     // pause as soon as the window loses focus or the tab is hidden
     const autoPause = () => { if (state === "run") pause(); };
-    listen(ctx, "blur", autoPause); listen(ctx, "visibilitychange", () => { if (document.hidden) autoPause(); });
+    listen(ctx, "blur", autoPause); listen(ctx, "visibilitychange", () => { if (document.hidden) autoPause(); }); onFull(ctx, autoPause);
     const keys = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0] };
     listen(ctx, "keydown", (e) => {
       if (!ctx.isActive() || !mine(ctx, e) || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -1120,6 +1122,7 @@
     listen(ctx, "keyup", (e) => { if (e.key === "ArrowLeft") kl = false; else if (e.key === "ArrowRight") kr = false; });
     listen(ctx, "blur", () => { kl = kr = false; if (state === "run") pause(); });
     listen(ctx, "visibilitychange", () => { if (document.hidden && state === "run") pause(); });
+    onFull(ctx, () => { kl = kr = false; if (state === "run") pause(); });
     ctx.menu(body.querySelector(".menubar"), [{ label: "Game", items: () => [
       { label: "New Game", key: "F2", act: () => newGame() },
       { label: state === "paused" ? "Resume" : "Pause", key: "P", disabled: state !== "run" && state !== "paused", act: pause },
@@ -1516,6 +1519,7 @@
     listen(ctx, "keyup", (e) => { if (isCode(e.code)) kd[e.code] = false; });
     listen(ctx, "blur", () => { releaseAll(); if (state === "play") pause(); });
     listen(ctx, "visibilitychange", () => { if (document.hidden) { releaseAll(); if (state === "play") pause(); } });
+    onFull(ctx, () => { releaseAll(); if (state === "play") pause(); });
     ctx.menu(body.querySelector(".menubar"), [
       { label: "Game", items: () => [
         { label: "New Game", key: "F2", act: newGame },
