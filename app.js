@@ -173,6 +173,7 @@
     spider: `<svg viewBox="0 0 32 32"><rect x="4" y="6" width="15" height="21" rx="2" fill="#2f5fd0" stroke="#123" transform="rotate(-12 11 16)"/><rect x="12" y="5" width="15" height="21" rx="2" fill="#fff" stroke="#333"/><circle cx="19.5" cy="15.5" r="3" fill="#111"/><path d="M15 12l2 2M24 12l-2 2M14.5 16h2M24.5 16h-2M15 20l2-2M24 20l-2-2" stroke="#111"/></svg>`,
     stats: `<svg viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="2" fill="#fff" stroke="#4a6fa0"/><rect x="8" y="17" width="4" height="8" fill="#1e7ae6"/><rect x="14" y="11" width="4" height="14" fill="#5aa83a"/><rect x="20" y="7" width="4" height="18" fill="#f2a900"/></svg>`,
     board: `<svg viewBox="0 0 32 32"><rect x="3" y="4" width="26" height="22" rx="2" fill="#c9a26b" stroke="#7a5a2e"/><rect x="6" y="7" width="9" height="8" fill="#fff59d" transform="rotate(-4 10 11)"/><rect x="17" y="8" width="9" height="8" fill="#b3e5fc" transform="rotate(5 21 12)"/><rect x="9" y="17" width="10" height="7" fill="#f8bbd0" transform="rotate(2 14 20)"/><circle cx="10" cy="8" r="1.2" fill="#d0362f"/><circle cx="21" cy="9" r="1.2" fill="#1e7ae6"/><circle cx="14" cy="18" r="1.2" fill="#5aa83a"/></svg>`,
+    rebuild: `<svg viewBox="0 0 32 32"><defs><linearGradient id="rbig" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset=".55" stop-color="#a78bfa"/><stop offset="1" stop-color="#f472b6"/></linearGradient></defs><path d="M16 29l13-6.5L16 16 3 22.5z" fill="#06263a" stroke="#22d3ee"/><path d="M16 23.5l13-6.5L16 10.5 3 17z" fill="#1e1b4b" stroke="#a78bfa"/><path d="M16 18l13-6.5L16 5 3 11.5z" fill="url(#rbig)" stroke="#fff" stroke-width=".8"/><path d="M25.5 2.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" fill="#fff"/></svg>`,
     yapless: `<svg viewBox="0 0 32 32"><rect x="3" y="5" width="26" height="19" rx="6" fill="#ff7a32"/><path d="M10 24l-2 5 7-5" fill="#ff7a32"/><path d="M10 12h12M10 17h7" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>`,
   };
 
@@ -215,6 +216,7 @@
   // windows that can go true full screen (title-bar ⛶ button or F11)
   ["solitaire", "spider", "mine", "pinball", "snake", "breakout", "wmp", "pictures", "paint"].forEach((k) => (APPS[k].full = true));
   APPS.reset = { title: "Reset Desktop", icon: "showdesk", action: () => askReset() };
+  APPS.rebuild = { title: "Visual Rebuild", icon: "rebuild", action: () => runRebuild() };
   const GAME_IDS = ["solitaire", "spider", "mine", "pinball", "snake", "breakout"];
   // Minesweeper's panel: a seven-segment clock and the little face
   const SEG_POLY = { a: "2,.5 11,.5 9,2.5 4,2.5", f: "1,1.5 3,3.5 3,9.5 1,11", b: "12,1.5 12,11 10,9.5 10,3.5", g: "2,11.5 4,10.5 9,10.5 11,11.5 9,12.5 4,12.5", e: "1,12 3,13.5 3,19.5 1,21.5", c: "12,12 12,21.5 10,19.5 10,13.5", d: "4,20.5 9,20.5 11,22.5 2,22.5" };
@@ -227,20 +229,32 @@
     dead: `<svg viewBox="0 0 20 20">${faceBase}<path d="M5.500 6.500l3 3m0-3l-3 3M11.500 6.500l3 3m0-3l-3 3" stroke="#000" stroke-width="1.200"/><path d="M5.500 15c1.500-3 7.500-3 9 0" fill="none" stroke="#000" stroke-width="1.200"/></svg>`,
     cool: `<svg viewBox="0 0 20 20">${faceBase}<path d="M3 7h14" stroke="#000"/><path d="M4.500 7h4.500l-.5 3h-3.500zM11 7h4.500l-.5 3h-3.500z"/><path d="M6 13c1.500 2.500 6.500 2.500 8 0" fill="none" stroke="#000" stroke-width="1.200"/></svg>`,
   };
-  const DESKTOP = ["about", "projects", "resume", "ie", "contact", "msn", "cmd", "calendar", "games", "pictures", "wmp", "paint", "notepad", "stats", "board", "reset", "recycle"];
-  const DESK_LABEL = { stats: "Site Stats", board: "Message Board", reset: "Reset Desktop", pinball: "3D Pinball", spider: "Spider Solitaire", calc: "Calculator", wmp: "Media Player", pictures: "My Pictures", taskmgr: "Task Manager", control: "Control Panel", run: "Run", search: "Search", help: "Help and Support", privacy: "Privacy", about: "About Me", resume: "Resume", projects: "My Projects", contact: "Contact Me", ie: "Internet Explorer", cmd: "Command Prompt", msn: "MSN Messenger", mine: "Minesweeper", paint: "Paint", notepad: "Notepad", recycle: "Recycle Bin", computer: "My Computer", games: "Games", calendar: "Calendar", solitaire: "Solitaire", snake: "Snake", breakout: "Brick Breaker", display: "Display" };
+  const DESKTOP = ["about", "projects", "resume", "ie", "contact", "msn", "cmd", "calendar", "games", "pictures", "wmp", "paint", "notepad", "stats", "board", "rebuild", "reset", "recycle"];
+  const DESK_LABEL = { rebuild: "Visual Rebuild", stats: "Site Stats", board: "Message Board", reset: "Reset Desktop", pinball: "3D Pinball", spider: "Spider Solitaire", calc: "Calculator", wmp: "Media Player", pictures: "My Pictures", taskmgr: "Task Manager", control: "Control Panel", run: "Run", search: "Search", help: "Help and Support", privacy: "Privacy", about: "About Me", resume: "Resume", projects: "My Projects", contact: "Contact Me", ie: "Internet Explorer", cmd: "Command Prompt", msn: "MSN Messenger", mine: "Minesweeper", paint: "Paint", notepad: "Notepad", recycle: "Recycle Bin", computer: "My Computer", games: "Games", calendar: "Calendar", solitaire: "Solitaire", snake: "Snake", breakout: "Brick Breaker", display: "Display" };
 
   // Games live in games.js and are fetched only when first opened
   let gamesReady;
   const loadGames = () => gamesReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "games.js?v=40"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "games.js?v=41"; s.onload = ok; s.onerror = () => { gamesReady = null; fail(); };
     document.head.appendChild(s);
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=40"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=41"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
+  // Visual Rebuild (rebuild.js): a purely visual, full-screen rebuild of the site, fetched on first use
+  let rebuildReady;
+  const loadRebuild = () => rebuildReady ||= new Promise((ok, fail) => {
+    const s = document.createElement("script"); s.src = "rebuild.js?v=40"; s.onload = ok; s.onerror = () => { rebuildReady = null; fail(); };
+    document.head.appendChild(s);
+  });
+  function runRebuild() {
+    closeMenus(); busy();
+    if (fsEl()) exitFull();
+    loadRebuild().then(() => window.REBUILD({ desktop: $("#desktop") }))
+      .catch(() => msgBox("Visual Rebuild", "Could not load Visual Rebuild. Check your connection.", "⚠️"));
+  }
   function lazyExtra(name) {
     return (body, ctx) => {
       body.innerHTML = `<div class="loading">Loading…</div>`;
@@ -280,8 +294,10 @@
     const off = (cascade++ % 6) * 24;
     el.style.left = Math.round(Math.max(6, Math.min(dw - w - 6, (dw - w) / 2 + off - 60))) + "px";
     el.style.top = Math.round(Math.max(6, Math.min(dh - h - 6, (dh - h) / 2 + off - 50))) + "px";
-    if (!app.fixed) { el.style.width = w + "px"; el.style.height = h + "px"; }
+    // a dialog is as tall as its text (a fixed height pushed OK below the fold on long messages); fitWin pulls it back on screen once rendered
+    if (!app.fixed) { el.style.width = w + "px"; if (!app.dialog) el.style.height = h + "px"; }
     const fixedSize = app.fixed || app.dialog;
+    if (app.dialog) el.classList.add("dialog");
     el.innerHTML = `
       <div class="titlebar">${I[app.icon]}<span class="ttl">${esc(app.title)}</span>
         ${app.full ? `<button class="tbtn fsbtn" data-a="fs" title="Full screen (F11)" aria-label="Full screen">⛶</button>` : ""}${app.dialog ? "" : `<button class="tbtn" data-a="min" title="Minimize" aria-label="Minimize">_</button>`}
@@ -326,6 +342,7 @@
       sys,
     };
     app.render(el.querySelector(".wbody"), ctx);
+    if (app.dialog) fitWin(el); // its height is only known once rendered
     // any menubar without its own handlers still gets working File / View / Help menus
     el.querySelectorAll(".menubar:not([data-wired])").forEach((mb) => wireMenu(mb, defaultMenus(app, ctx)));
     applyOrder(el, key);
@@ -334,7 +351,7 @@
     focus(key);
     return rec;
   }
-  const RUN_ALIAS = { mspaint: "paint", "notepad.exe": "notepad", "calc.exe": "calc", "cmd.exe": "cmd", taskmgr: "taskmgr", iexplore: "ie", explorer: "computer", winmine: "mine", sol: "solitaire", spider: "spider", pinball: "pinball", wmplayer: "wmp", control: "control" };
+  const RUN_ALIAS = { rebuild: "rebuild", mspaint: "paint", "notepad.exe": "notepad", "calc.exe": "calc", "cmd.exe": "cmd", taskmgr: "taskmgr", iexplore: "ie", explorer: "computer", winmine: "mine", sol: "solitaire", spider: "spider", pinball: "pinball", wmplayer: "wmp", control: "control" };
   const sys = {
     windows: () => [...wins].filter(([k]) => !k.startsWith("msg") && !k.startsWith("ask")).map(([k, w]) => ({ key: k, title: w.el.querySelector(".ttl").textContent, minimized: w.el.classList.contains("min"), active: k === activeKey })),
     focus: (k) => { if (wins.has(k)) restore(k); },
@@ -394,10 +411,10 @@
   function minimize(key) { const w = wins.get(key); if (!w) return; if (fsEl() === w.el) exitFull(); const from = w.el.getBoundingClientRect(); w.el.classList.add("min"); fly(from, w.task.getBoundingClientRect()); XPS.play("minimize"); if (activeKey === key) activeKey = null; paintActive(); }
   function restore(key) {
     const w = wins.get(key); if (!w) return;
-    if (w.el.classList.contains("min")) { const from = w.task.getBoundingClientRect(); w.el.classList.remove("min"); fly(from, w.el.getBoundingClientRect()); XPS.play("restore"); }
+    if (w.el.classList.contains("min")) { const from = w.task.getBoundingClientRect(); w.el.classList.remove("min"); fitWin(w.el); fly(from, w.el.getBoundingClientRect()); XPS.play("restore"); }
     focus(key);
   }
-  function toggleMax(el) { const from = el.getBoundingClientRect(); el.classList.toggle("max"); fly(from, el.getBoundingClientRect()); XPS.play(el.classList.contains("max") ? "maximize" : "restore"); }
+  function toggleMax(el) { const from = el.getBoundingClientRect(); el.classList.toggle("max"); if (!el.classList.contains("max")) fitWin(el); fly(from, el.getBoundingClientRect()); XPS.play(el.classList.contains("max") ? "maximize" : "restore"); }
   function focus(key) {
     const w = wins.get(key); if (!w) return;
     if (activeKey !== key) w.el.style.zIndex = ++z;
@@ -428,13 +445,16 @@
       if (top) focus(top[0]); else paintActive();
     }
   }
-  // keep windows reachable after the browser is resized
-  let wz; addEventListener("resize", () => { clearTimeout(wz); wz = setTimeout(() => wins.forEach(({ el, app }) => {
-    if (el.classList.contains("max") || el === fsEl() || el.dataset.geom) return; // a full-screen window keeps its saved size for later
-    if (!app.fixed) { if (el.offsetWidth > innerWidth) el.style.width = innerWidth + "px"; if (el.offsetHeight > innerHeight - 30) el.style.height = innerHeight - 30 + "px"; }
-    const w = el.offsetWidth || parseFloat(el.style.width) || 300, x = parseFloat(el.style.left) || 0, y = parseFloat(el.style.top) || 0;
-    el.style.left = Math.min(innerWidth - 60, Math.max(80 - w, x)) + "px"; el.style.top = Math.min(innerHeight - 90, Math.max(0, y)) + "px";
-  }), 100); });
+  // keep a window wholly on the screen, so its title-bar buttons and bottom edge stay reachable. The CSS already caps a window at the desktop
+  // (max-width / max-height on .win, reversible when the screen grows again); this pulls it inside. Runs after the browser is resized, when a
+  // minimized window comes back and when a maximized one is restored (a hidden window measures 0, so it is placed when it shows)
+  function fitWin(el) {
+    if (el.classList.contains("max") || el.classList.contains("min") || el === fsEl() || el.dataset.geom) return; // a full-screen window keeps its saved place for later
+    const dw = innerWidth, dh = innerHeight - 30, w = el.offsetWidth, h = el.offsetHeight;
+    const x = parseFloat(el.style.left) || 0, y = parseFloat(el.style.top) || 0;
+    el.style.left = Math.round(Math.max(0, Math.min(dw - w, x))) + "px"; el.style.top = Math.round(Math.max(0, Math.min(dh - h, y))) + "px";
+  }
+  let wz; addEventListener("resize", () => { clearTimeout(wz); wz = setTimeout(() => wins.forEach(({ el }) => fitWin(el)), 100); });
   // Drag / resize with pointer capture; updates are batched to one per animation frame
   function drag(handle, el, resize) {
     handle.addEventListener("pointerdown", (e) => {
@@ -447,7 +467,7 @@
       el.classList.add("moving");
       const apply = () => {
         raf = 0;
-        if (resize) { el.style.width = Math.max(260, r.width + dx) + "px"; el.style.height = Math.max(140, r.height + dy) + "px"; }
+        if (resize) { el.style.width = Math.max(260, Math.min(innerWidth - r.left, r.width + dx)) + "px"; el.style.height = Math.max(140, Math.min(innerHeight - 30 - r.top, r.height + dy)) + "px"; } // not past the screen edge or under the taskbar
         else { const [x, y] = pos(); el.style.transform = `translate3d(${x - r.left}px,${y - r.top}px,0)`; }
       };
       const move = (ev) => { dx = ev.clientX - sx; dy = ev.clientY - sy; raf ||= requestAnimationFrame(apply); };
@@ -542,6 +562,10 @@
       });
       (document.fullscreenElement || document.body).appendChild(dd); openMenu = dd;
       dd.style.left = Math.max(0, Math.min(r.left, innerWidth - dd.offsetWidth - 2)) + "px";
+      // no room above the taskbar: open upward, as XP did; otherwise cap the height so the list scrolls instead of being cut off
+      const room = (document.fullscreenElement ? innerHeight : innerHeight - 30) - r.bottom - 4; // full screen has no taskbar
+      if (dd.offsetHeight > room && r.top - dd.offsetHeight >= 0) dd.style.top = r.top - dd.offsetHeight + "px";
+      else if (dd.offsetHeight > room) dd.style.maxHeight = Math.max(60, room) + "px";
     };
     bar.addEventListener("pointerdown", (e) => { const s = e.target.closest("[data-mi]"); if (!s) return; e.stopPropagation(); const wk = bar.closest(".win")?.dataset.key; if (wk) focus(wk); s.classList.contains("on") ? closeMenus() : show(s); });
     bar.addEventListener("pointerover", (e) => { if (e.pointerType !== "mouse") return; const s = e.target.closest("[data-mi]"); if (s && openMenu && !s.classList.contains("on")) show(s); });
@@ -1065,8 +1089,9 @@ Approximate round trip times in milli-seconds:
     const recenter = () => requestAnimationFrame(() => {
       if (ctx.el.classList.contains("max") || innerWidth <= 640) return;
       const r = ctx.el.getBoundingClientRect();
-      ctx.el.style.left = Math.round(Math.max(6, (innerWidth - r.width) / 2)) + "px";
-      ctx.el.style.top = Math.round(Math.max(6, (innerHeight - 30 - r.height) / 2)) + "px";
+      // centred, but a board taller than the screen starts at the top edge rather than running under the taskbar
+      ctx.el.style.left = Math.round(Math.max(0, Math.min(Math.max(6, (innerWidth - r.width) / 2), innerWidth - r.width))) + "px";
+      ctx.el.style.top = Math.round(Math.max(0, Math.min(Math.max(6, (innerHeight - 30 - r.height) / 2), innerHeight - 30 - r.height))) + "px";
     });
     function reset(resized) {
       [W, H, M] = LEVELS[level]; endRun++; ctx.skipWait(); // an old game's end delay would swallow the next Space
@@ -1783,7 +1808,7 @@ TERMS
       // phone home screen: fixed 4-column grid in a simple order, nothing saved
       const C = 4, cw = Math.floor((innerWidth - 12) / C);
       iconsEl.classList.add("phone");
-      iconEls.forEach((el, i) => { el.style.width = cw + "px"; el.style.transform = `translate(${6 + (i % C) * cw}px,${8 + ((i / C) | 0) * 96}px)`; });
+      iconEls.forEach((el, i) => { el.style.width = cw + "px"; el.style.transform = `translate(${6 + (i % C) * cw}px,${8 + ((i / C) | 0) * 100}px)`; });
       iconsEl.style.setProperty("--rows", Math.ceil(iconEls.length / C));
       return;
     }
@@ -2114,7 +2139,7 @@ TERMS
     readVol();
     trayPop.innerHTML = POPS[trayOpen]();
     const btn = $("#t" + { vol: "Vol", net: "Net", bat: "Bat", clock: "Clock" }[trayOpen]).getBoundingClientRect();
-    trayPop.style.right = Math.max(4, innerWidth - btn.right - 30) + "px";
+    trayPop.style.right = Math.max(4, Math.min(innerWidth - btn.right - 30, innerWidth - trayPop.offsetWidth - 4)) + "px"; // under its button, but not past the left edge
   }
   function toggleTray(which) {
     if (trayOpen === which) return closeTray();
@@ -2390,7 +2415,7 @@ TERMS
   countVisit();
   // Vercel Web Analytics (cookie-free): only load it when it's switched on for the project, so there's no 404
   if (/\.vercel\.app$/.test(location.hostname)) fetch("/_vercel/insights/script.js", { method: "HEAD" }).then((r) => { if (r.ok) { const sc = document.createElement("script"); sc.defer = true; sc.src = "/_vercel/insights/script.js"; document.head.appendChild(sc); } }).catch(() => {});
-  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=40"; document.head.appendChild(l); } });
+  (window.requestIdleCallback || ((f) => setTimeout(f, 3000)))(() => { if (!navigator.connection?.saveData) { const l = document.createElement("link"); l.rel = "prefetch"; l.href = "games.js?v=41"; document.head.appendChild(l); } });
   (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => Tasks.sync().then(() => { checkReminders(true); paintBell(); }));
   setInterval(() => !document.hidden && !wins.has("calendar") && Tasks.sync(), 60000);
   $("#tBell").addEventListener("click", (e) => { e.stopPropagation(); openApp("calendar"); });
