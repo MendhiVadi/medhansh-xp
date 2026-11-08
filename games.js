@@ -398,7 +398,8 @@
     function computeLayout() {
       const W = table.clientWidth || 560, H = table.clientHeight || 400;
       const gap = Math.max(4, Math.min(12, W * 0.015));
-      const cw = Math.min(80, (W - gap * 8) / 7), ch = cw * 1.36;
+      // width-bound, but also height-bound so the top row plus a dealt 7th column (6 downs at 0.12ch + 1 card = 1.72ch) fits: (2.72ch + 3 gaps) <= H
+      const cw = Math.min(80, (W - gap * 8) / 7, (H - gap * 3) / (1.36 * 2.72)), ch = cw * 1.36;
       layout = { cw, ch, gap, H };
       table.style.setProperty("--cw", cw + "px"); table.style.setProperty("--ch", ch + "px");
     }
@@ -436,7 +437,7 @@
         let dOff = ch * 0.12, uOff = ch * 0.27;
         const need = downs * dOff + Math.max(0, ups - 1) * uOff + ch, avail = H - tabY - gap;
         // squeeze the fan so the whole column fits in the table height
-        if (need > avail && col.length > 1) { const f = Math.max(0.2, (avail - ch) / (need - ch)); dOff *= f; uOff *= f; }
+        if (need > avail && col.length > 1) { const f = Math.max(0.06, (avail - ch) / (need - ch)); dOff *= f; uOff *= f; }
         let y = tabY; col.forEach((c, i) => { card(c, "t" + k, i, xOf(k), y); y += c.up ? uOff : dOff; });
       });
       table.innerHTML = html.join("");
@@ -1767,7 +1768,8 @@
     function computeLayout() {
       const W = table.clientWidth || 560, H = table.clientHeight || 400;
       const gap = Math.max(3, Math.min(10, W * 0.012));
-      const cw = Math.min(80, (W - gap * 11) / 10), ch = cw * 1.36;
+      // width-bound, but also height-bound so the top row plus a dealt column (5 downs at 0.1ch + 1 card = 1.5ch) fits: (2.5ch + 3 gaps) <= H
+      const cw = Math.min(80, (W - gap * 11) / 10, (H - gap * 3) / (1.36 * 2.5)), ch = cw * 1.36;
       layout = { cw, ch, gap, H };
       table.style.setProperty("--cw", cw + "px"); table.style.setProperty("--ch", ch + "px");
     }
@@ -1803,7 +1805,7 @@
         const downs = col.filter((c) => !c.up).length, ups = col.length - downs;
         let dOff = ch * 0.1, uOff = ch * 0.25;
         const need = downs * dOff + Math.max(0, ups - 1) * uOff + ch, avail = H - tabY - gap;
-        if (need > avail && col.length > 1) { const f = Math.max(0.15, (avail - ch) / (need - ch)); dOff *= f; uOff *= f; }
+        if (need > avail && col.length > 1) { const f = Math.max(0.06, (avail - ch) / (need - ch)); dOff *= f; uOff *= f; }
         let y = tabY; col.forEach((c, i) => { card(c, "t" + k, i, xOf(k), y); y += c.up ? uOff : dOff; });
       });
       table.innerHTML = html.join("");

@@ -26,7 +26,8 @@
     if (document.getElementById("x-extras-css")) return;
     const st = document.createElement("style"); st.id = "x-extras-css";
     st.textContent = `
-.x-root{display:flex;flex-direction:column;height:100%;min-height:0;font:11px Tahoma,sans-serif;color:#000}
+.wbody:has(>.x-root){display:flex;flex-direction:column} /* the menubar above takes its own height and the app the rest; height:100% put the last 23px under the window's edge */
+.x-root{display:flex;flex-direction:column;flex:1;min-height:0;font:11px Tahoma,sans-serif;color:#000}
 .x-calc{flex:1;min-height:0;background:#ece9d8;padding:6px;display:flex;flex-direction:column;gap:5px}
 .x-calc .disp{background:#fff;border:2px inset #fff;border-color:#7f9db9 #fff #fff #7f9db9;text-align:right;font:18px "Lucida Console",monospace;padding:3px 5px;height:26px;line-height:26px;overflow:hidden;white-space:nowrap}
 .x-calc .row0{display:flex;gap:4px;align-items:stretch}

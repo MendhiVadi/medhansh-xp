@@ -152,7 +152,7 @@ button { font: inherit; }
 .ico-key::after { content: "🔑"; position: absolute; inset: 0; font-size: 11px; text-align: center; line-height: 18px; }
 
 /* ---------- Windows ---------- */
-.win { position: absolute; display: flex; flex-direction: column; min-width: 260px; min-height: 140px; background: #ece9d8;
+.win { position: absolute; display: flex; flex-direction: column; min-width: 260px; min-height: 140px; max-width: 100%; max-height: calc(100% - 30px); background: #ece9d8;
   border: 3px solid #0831d9; border-top: 0; border-radius: 8px 8px 0 0; box-shadow: 2px 2px 10px rgba(0,0,0,.45);
   animation: winopen .15s ease-out; }
 .win:has(.taskpane) { container-type: inline-size; container-name: win; }
@@ -347,7 +347,7 @@ button { font: inherit; }
 
 /* ---------- Dropdown menus ---------- */
 .menubar span.on { background: #316ac5; color: #fff; }
-.dropdown { position: fixed; z-index: 9990; min-width: 170px; max-width: calc(100vw - 8px); max-height: calc(100vh - 8px); overflow-y: auto; background: #fff; border: 1px solid #aca899; box-shadow: 2px 2px 4px rgba(0,0,0,.3); padding: 2px; font-size: 11px; }
+.dropdown { position: fixed; z-index: 9990; min-width: 170px; max-width: calc(100vw - 8px); max-height: calc(100vh - 38px); overflow-y: auto; background: #fff; border: 1px solid #aca899; box-shadow: 2px 2px 4px rgba(0,0,0,.3); padding: 2px; font-size: 11px; }
 .dropdown div { display: flex; align-items: center; padding: 4px 8px 4px 2px; min-height: 22px; cursor: default; white-space: nowrap; }
 .dropdown div i { width: 18px; text-align: center; font-style: normal; }
 .dropdown div span { flex: 1; }
@@ -432,10 +432,8 @@ button { font: inherit; }
   .boot-foot { bottom: 10px; }
   .login-top, .login-bottom { height: 8%; min-height: 32px; }
   .login-left .xp-logo { width: 52px; height: 45px; }
-  .login-brand { font-size: 32px; }
   .login-left p { margin-top: 8px; font-size: 13px; }
   .login-divider { margin: 16px 0; }
-  .user-tile .avatar { width: 52px; height: 52px; font-size: 20px; }
   .user-tile b { font-size: 17px; }
   .sm-head { min-height: 44px; padding: 4px 8px; }
   .sm-head .avatar { width: 34px; height: 34px; font-size: 14px; }
@@ -458,20 +456,25 @@ button { font: inherit; }
 
 /* ---------- Mobile ---------- */
 @media (max-width: 640px) {
-  .win { left: 0 !important; top: 0 !important; width: 100% !important; height: calc(100% - 30px) !important; border-radius: 0; }
+  .win:not(.dialog) { left: 0 !important; top: 0 !important; width: 100% !important; height: calc(100% - 30px) !important; border-radius: 0; }
+  .win.dialog { max-width: calc(100vw - 12px); } /* message / ask boxes keep their own size; just never wider than the phone */
   .taskpane { display: none; }
   .login-mid { flex-direction: column; gap: 20px; }
   .login-left, .login-right { text-align: center; padding: 0; flex: none; }
   .login-divider { display: none; }
   .login-bottom span { display: none; }
-  .task { flex-basis: 40px; }
+  .tasks { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; } /* icon-only buttons never shrink below their icon; the strip scrolls instead */
+  .tasks::-webkit-scrollbar { display: none; }
+  .task { flex: 0 0 34px; min-width: 34px; padding: 0 8px; justify-content: center; }
   .task span { display: none; }
   .start-btn { padding-right: 14px; }
   .start-menu { width: 100vw; }
   .sm-body { flex-direction: column; max-height: calc(100vh - 140px); overflow: auto; }
   .sm-right { border-left: 0; border-top: 1px solid #95bdee; }
   .boot-title { font-size: 34px; }
+  .paint canvas { max-width: 100%; height: auto; } /* the 800x520 canvas scales to the window so every pixel is reachable without scrolling (pointer positions go through getBoundingClientRect) */
 }
+@media (pointer: coarse) and (max-width: 900px) { .paint canvas { max-width: 100%; height: auto; } } /* small touch screens only: a touch laptop keeps the bitmap 1:1 */
 
 /* larger photo on the welcome screen */
 .user-tile .avatar { width: 110px; height: 110px; font-size: 38px; border-width: 4px; border-radius: 8px; }
@@ -491,7 +494,6 @@ button { font: inherit; }
 @media (max-height: 520px) {
   .login-top, .login-bottom { height: 44px; flex-shrink: 0; }
   .login-left .xp-logo { width: 44px; height: 38px; }
-  .login-brand { font-size: 28px; }
   .login-left p { margin-top: 8px; font-size: 13px; }
 }
 
@@ -564,7 +566,7 @@ button { font: inherit; }
 .balloon .xpbtn { min-width: 0; padding: 2px 8px; }
 .balloon .bx { position: absolute; right: 6px; top: 6px; border: 0; background: none; cursor: pointer; }
 .balloon.fade { opacity: .55; }
-@media (max-width: 640px) { .cal-app { flex-direction: column; } .cal-left { width: auto; } }
+@media (max-width: 640px) { .cal-app { flex-direction: column; } .cal-left { width: auto; flex-shrink: 1; max-height: 55%; } }
 
 /* QA fixes */
 [hidden] { display: none !important; }
@@ -681,7 +683,7 @@ button { font: inherit; }
   .icons.phone .dicon:active svg { transform: scale(.92); }
 }
 
-@media (max-width: 640px) { .icons.phone::after { content: ""; display: block; height: calc(var(--rows, 4) * 96px + 16px); } }
+@media (max-width: 640px) { .icons.phone::after { content: ""; display: block; height: calc(var(--rows, 4) * 100px + 16px); } } /* 100px rows: a two-line label makes an icon 99px tall */
 
 .msn { position: relative; }
 .emopick { position: absolute; right: 8px; bottom: 74px; display: grid; grid-template-columns: repeat(5, 30px); gap: 2px; padding: 4px; background: #fff; border: 1px solid #7f9db9; box-shadow: 2px 2px 6px rgba(0,0,0,.3); z-index: 2; }
@@ -768,7 +770,7 @@ button { font: inherit; }
 .paint-tools .pt-name { font-size: 10px; color: #333; text-align: center; line-height: 1.2; }
 
 /* full-screen windows */
-.win:fullscreen, .win.is-full { left: 0 !important; top: 0 !important; width: 100vw !important; height: 100vh !important; transform: none !important; border-width: 0; border-radius: 0; }
+.win:fullscreen, .win.is-full { left: 0 !important; top: 0 !important; width: 100vw !important; height: 100vh !important; max-width: none; max-height: none; transform: none !important; border-width: 0; border-radius: 0; }
 .win:fullscreen .titlebar { border-radius: 0; margin: 0; }
 .win:fullscreen .resize { display: none; }
 .win::backdrop { background: #000; }
@@ -851,6 +853,10 @@ html.busy, html.busy * { cursor: var(--cur-busy) !important; }
 .sm-fly .sm-folder > ul { display: none; position: absolute; left: 100%; bottom: -3px; color: #000; }
 .sm-fly .sm-folder:hover > ul, .sm-fly .sm-folder.open > ul { display: block; }
 @media (max-width: 640px) { .sm-fly { left: 0; right: 0; } .sm-fly > ul { max-height: 70vh; overflow: auto; } .sm-fly .sm-folder > ul { position: static; flex-basis: 100%; } .sm-fly .sm-folder.open { flex-wrap: wrap; } }
+/* short desktop-mode screens (landscape phones, tiny laptop windows): the list scrolls and sub-folders open in place, as on phones; a scrolling list would clip a floating sub-menu */
+@media (min-width: 641px) and (max-height: 520px) { .sm-fly > ul { max-height: calc(100dvh - 34px); overflow: auto; } .sm-fly .sm-folder > ul { position: static; flex-basis: 100%; } .sm-fly .sm-folder.open { flex-wrap: wrap; } }
+/* narrow desktop-mode screens: the sub-menu would run off the right edge, so it opens to the left */
+@media (min-width: 641px) and (max-width: 770px) { .sm-fly .sm-folder > ul { left: auto; right: 100%; } }
 
 /* menus fade in; default buttons carry XP's blue inner edge */
 .dropdown, .ctx { animation: screenfade .1s ease-out; }
@@ -890,7 +896,7 @@ html.busy, html.busy * { cursor: var(--cur-busy) !important; }
 .game-msg { color: #000; font: 12px/1.5 Tahoma, sans-serif; background: rgba(0,0,0,.34); padding: 8px; }
 .game-msg b { font-size: inherit; color: inherit; }
 .game-msg.light { background: none; align-items: flex-end; padding-bottom: 14%; }
-.gm-box { max-width: min(330px, 92%); max-height: 96%; overflow: hidden; padding: 0 14px 10px; text-align: center; background: #ece9d8; border: 3px solid #0831d9; border-top: 0; border-radius: 7px 7px 0 0; box-shadow: 2px 3px 10px rgba(0,0,0,.55); animation: winopen .14s ease-out; }
+.gm-box { max-width: min(330px, 92%); max-height: 96%; overflow: auto; padding: 0 14px 10px; text-align: center; background: #ece9d8; border: 3px solid #0831d9; border-top: 0; border-radius: 7px 7px 0 0; box-shadow: 2px 3px 10px rgba(0,0,0,.55); animation: winopen .14s ease-out; }
 .gm-box > b:first-child, .sol-win > b:first-child { display: block; margin: 0 -14px 8px; padding: 4px 8px; color: #fff; text-align: left; font: bold 13px "Trebuchet MS", Tahoma, sans-serif; text-shadow: 1px 1px #0f1089; border-radius: 5px 5px 0 0; background: linear-gradient(#0997ff, #0053ee 12%, #0050ee 45%, #06f 88%, #003dd7); }
 .gm-box small { color: #333; line-height: 1.5; }
 .gm-box .wl { margin: 2px 0; }
