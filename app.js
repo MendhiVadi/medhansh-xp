@@ -909,6 +909,10 @@
     print(`Windows XP Portfolio Edition Command Interpreter\n(C) Copyright 1985-2001 Microsoft Corp.\n\nType "help" for a list of commands.\n`);
     root.addEventListener("click", () => input.focus());
     setTimeout(() => input.focus(), 50);
+    const appNames = Object.keys(APPS).filter((k) => k !== "recycle"), appRows = [];
+    let appRow = "";
+    appNames.forEach((a, i) => { const tail = i < appNames.length - 1 ? "," : "", add = (appRow ? " " : "") + a + tail; if ((appRow + add).length > 44) { appRows.push(appRow); appRow = a + tail; } else appRow += add; });
+    appRows.push(appRow);
     const CMDS = {
       help: () => `Available commands:
   ABOUT       - Displays biography
@@ -921,11 +925,11 @@
   DIR / LS    - Lists files in current folder
   TREE        - Displays folder hierarchy
   CALC [expr] - Evaluates maths (e.g. calc 24*7)
-  PING [host] - Measures real round-trip time to a website (e.g. ping github.com)
+  PING [host] - Real round-trip time to a site (ping github.com)
   ECHO [text] - Prints text
-  COLOR [code]- 0a=green 0b=cyan 0c=red 0e=yellow 0f=white 07=default
+  COLOR [code] - 0a=green 0b=cyan 0c=red 0e=yellow 0f=white 07=default
   GAMES       - Lists the games you can play
-  START [app] - Launches an app: ${Object.keys(APPS).filter((k) => k !== "recycle").join(", ")}
+  START [app] - Launches an app:${appRows.map((r) => "\n                " + r).join("")}
   MATRIX      - Digital rain
   VER         - Displays version
   SYSTEMINFO  - Displays system configuration
