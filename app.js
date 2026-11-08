@@ -1626,21 +1626,13 @@ Last updated: ${new Date().getFullYear()}
 This is the personal portfolio of ${P.name} (${P.location}).
 
 WHAT IS STORED
-- Contact Me: your name, email, optional phone number and message. Your email
-  is verified with a one-time code first; then the message is emailed to me.
-  Nothing from the contact form is stored in a database.
-- Shared Notepad and Calendar: anything you type there is public. Everyone who
-  visits can see and change it. Please don't put personal information in them.
-- Message Board and My Pictures: posts and uploads are public, along with the
-  name you give. Anyone can delete a shared picture.
-- World leaderboards: when you finish a game, your score and the name you give
-  are saved and shown to everyone.
-- Site Statistics: this site counts page views and returning browsers. The
-  counters hold only totals, nothing about you.
-- Your browser keeps small preferences (icon layout, wallpaper, volume, your
-  name, your own best scores) in local storage. These stay on your device.
-- Hosting (Vercel) and visit analytics (Vercel Web Analytics, no cookies) see
-  anonymous technical data such as pages viewed, country and browser.
+- Contact Me: your name, email, optional phone number and message. Your email is verified with a one-time code first; then the message is emailed to me. Nothing from the contact form is stored in a database.
+- Shared Notepad and Calendar: anything you type there is public. Everyone who visits can see and change it. Please don't put personal information in them.
+- Message Board and My Pictures: posts and uploads are public, along with the name you give. Anyone can delete a shared picture.
+- World leaderboards: when you finish a game, your score and the name you give are saved and shown to everyone.
+- Site Statistics: this site counts page views and returning browsers. The counters hold only totals, nothing about you.
+- Your browser keeps small preferences (icon layout, wallpaper, volume, your name, your own best scores) in local storage. These stay on your device.
+- Hosting (Vercel) and visit analytics (Vercel Web Analytics, no cookies) see anonymous technical data such as pages viewed, country and browser.
 
 WHAT IS NOT DONE
 - No ads, no selling or sharing your details, no mailing lists.
@@ -1651,8 +1643,7 @@ YOUR CHOICES
 
 TERMS
 - The site is provided as is, for fun and to show my work.
-- Don't post abusive or illegal content in the shared Notepad, Calendar,
-  Message Board, My Pictures or leaderboard names; it may be removed.
+- Don't post abusive or illegal content in the shared Notepad, Calendar, Message Board, My Pictures or leaderboard names; it may be removed.
 `)}</textarea>`;
     inner.style.overflow = "hidden";
   }
