@@ -3,9 +3,9 @@
 // 2.6-9s    01 BACK END: the swarm types the real source into blueprint panels (firestore.rules, api/otp.js, the Firestore
 //           collections, a vercel deploy, the mailer) and wires them up across the whole screen
 // 9-14.5s   02 FRONT END: the modules (index.html, app.js, sound.js, data.js, style.css, the lazy chunks) are built on top of
-//           the dimmed back end, and threads start stitching themselves between the two layers
+//           the dimmed back end
 // 14.5-62s  03 APPS (ends sooner if the swarm finishes): real app windows, two or three at a time, each outlined as a wireframe, painted top to bottom and filled in
-//           piece by piece with a job for every agent (mines carried from a crate, a joker drawn by hand and copied into the deck, wrong calendar digits
+//           piece by piece with a job for every agent (mines carried from a crate, a joker drawn by hand, wrong calendar digits
 //           replaced by numbers flung from below, paints dipped from a palette, Internet Explorer opening the Instagram profile); a window is
 //           minimised once its swarm is done with it
 // then 7s   04 FINAL TOUCHES: the windows fly away, the wallpaper opens from the first click, icons, taskbar and tray are placed, the
@@ -50,6 +50,19 @@
 .rb-r::before { content: "▸"; color: var(--a); }
 .rb-r em { margin-left: auto; font-style: normal; color: #64748b; font-size: .9em; overflow: hidden; text-overflow: ellipsis; }
 .rb-box .rb-pad { height: 6px; }
+/* the deploy panel is a Windows XP Command Prompt window */
+.rb-pn.term.xp .rb-cl.p { color: #c0c0c0; }
+.rb-pn.xp { border: 3px solid #0a4fe0; border-top: 0; border-radius: 8px 8px 0 0; background: #000; }
+.rb-pn.xp .rb-bh { border: 0; padding: 0 4px 0 6px; gap: 5px; background: linear-gradient(180deg, #0997ff 0%, #0053ee 9%, #0050ee 40%, #0066ff 86%, #005bff 92%, #003dd7 100%); }
+.rb-pn.xp .rb-bh b { font: bold 13px Trebuchet MS, Tahoma, sans-serif; letter-spacing: 0; color: #fff; text-shadow: 1px 1px 1px #0f1f7a; }
+.rb-pn.xp .rb-bh i { width: 16px; height: 14px; border-radius: 1px; background: #000; box-shadow: 0 0 0 1px #c9d6f5; color: #e5e5e5; font: bold 8px/14px Consolas, monospace; text-align: center; font-style: normal; }
+.rb-xpb { margin-left: auto; display: flex; gap: 2px; flex: none; }
+.rb-xpb u { position: relative; width: 19px; height: 19px; border: 1px solid #fff; border-radius: 3px; background: radial-gradient(circle at 30% 25%, #6f9bf5, #2553d8 70%); box-sizing: border-box; text-decoration: none; }
+.rb-xpb u.c { background: radial-gradient(circle at 30% 25%, #f0a48c, #d8421c 70%); }
+.rb-xpb u::before, .rb-xpb u::after { content: ""; position: absolute; background: #fff; }
+.rb-xpb u.m::before { left: 3px; bottom: 3px; width: 7px; height: 3px; } .rb-xpb u.m::after { display: none; }
+.rb-xpb u.x::before { left: 3px; top: 3px; width: 11px; height: 11px; background: none; border: 1px solid #fff; border-top-width: 3px; box-sizing: border-box; } .rb-xpb u.x::after { display: none; }
+.rb-xpb u.c::before, .rb-xpb u.c::after { left: 3px; top: 7.5px; width: 11px; height: 2px; transform: rotate(45deg); } .rb-xpb u.c::after { transform: rotate(-45deg); }
 .rb-sw { display: flex; gap: 6px; height: 14px; padding: 4px 10px 2px; clip-path: inset(0 100% 0 0); transition: clip-path .4s steps(8); }
 .rb-sw.on { clip-path: inset(0 0 0 0); }
 .rb-sw i { flex: 1; height: 12px; border-radius: 2px; }
@@ -136,29 +149,29 @@
 .rb-app .rb-dg.rb-dgnew { color: #ff6a13; font-weight: bold; }
 .rb-app .rb-dg.rb-gap, .rb-app .rb-nodg .rb-dg { visibility: hidden; }
 /* the Instagram page Internet Explorer opens */
-.rb-ig { position: absolute; inset: 0; overflow: hidden; background: #0c1014; color: #f5f5f5; font: 12px/1.4 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; text-align: left; }
-.rb-ig-top { height: 42px; border-bottom: 1px solid #262b31; display: flex; align-items: center; gap: 14px; padding: 0 18px; }
+.rb-ig { position: absolute; inset: 0; overflow: hidden; background: #fff; color: #262626; font: 12px/1.4 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; text-align: left; }
+.rb-ig-top { height: 36px; border-bottom: 1px solid #dbdbdb; display: flex; align-items: center; gap: 14px; padding: 0 18px; }
 .rb-ig-logo { font: italic 700 21px "Segoe Script", "Brush Script MT", "Snell Roundhand", cursive; }
-.rb-ig-search { margin-left: auto; width: 170px; height: 26px; border-radius: 7px; background: #25292e; color: #a8a8a8; padding: 0 10px; line-height: 26px; box-sizing: border-box; }
+.rb-ig-search { margin-left: auto; width: 170px; height: 26px; border-radius: 7px; background: #efefef; color: #8e8e8e; padding: 0 10px; line-height: 26px; box-sizing: border-box; }
 .rb-ig-ico { font-size: 18px; }
-.rb-ig-head { display: flex; gap: 26px; padding: 34px 26px 12px; align-items: flex-start; }
+.rb-ig-head { display: flex; gap: 26px; padding: 30px 26px 8px; align-items: flex-start; }
 .rb-ig-pic { position: relative; flex: none; }
-.rb-ig-avatar { width: 96px; height: 96px; border-radius: 50%; padding: 3px; box-sizing: border-box; background: #2b3036; }
-.rb-ig-avatar i { display: block; width: 100%; height: 100%; border-radius: 50%; border: 3px solid #0c1014; box-sizing: border-box; background: url(photo.jpg?v=40) center / cover; }
-.rb-ig-note { position: absolute; left: 50%; top: -26px; transform: translateX(-50%); width: max-content; max-width: 104px; padding: 4px 9px; border-radius: 11px; background: #25292e; font-size: 10px; line-height: 1.2; text-align: center; }
+.rb-ig-avatar { width: 84px; height: 84px; border-radius: 50%; padding: 3px; box-sizing: border-box; background: #dbdbdb; }
+.rb-ig-avatar i { display: block; width: 100%; height: 100%; border-radius: 50%; border: 3px solid #fff; box-sizing: border-box; background: url(photo.jpg?v=40) center / cover; }
+.rb-ig-note { position: absolute; left: 50%; top: -26px; transform: translateX(-50%); width: max-content; max-width: 104px; padding: 4px 9px; border-radius: 11px; background: #25292e; color: #f5f5f5; font-size: 10px; line-height: 1.2; text-align: center; }
 .rb-ig-info { flex: 1; min-width: 0; }
 .rb-ig-name { font-size: 19px; font-weight: 700; }
 .rb-ig-full { font-size: 12.5px; margin-top: 2px; }
 .rb-ig-stats { display: flex; gap: 20px; margin: 7px 0 9px; font-size: 13px; } .rb-ig-stats b { font-weight: 600; }
 .rb-ig-bio { font-size: 12.5px; line-height: 1.45; } .rb-ig-bio span { display: block; } .rb-ig-bio .rb-ig-th { font-weight: 600; }
-.rb-ig-acts { display: grid; grid-template-columns: 1fr 1fr 34px; gap: 8px; padding: 0 26px 12px; }
-.rb-ig-acts button { font: 600 12px "Segoe UI", system-ui, sans-serif; height: 30px; padding: 0; border-radius: 8px; border: 0; background: #25292e; color: #f5f5f5; }
-.rb-ig-hl { display: flex; gap: 22px; padding: 0 30px 12px; }
-.rb-ig-hl i { display: block; width: 58px; height: 58px; border-radius: 50%; border: 3px solid #0c1014; outline: 2px solid #2b3036; box-sizing: border-box; }
-.rb-ig-tabs { border-top: 1px solid #262b31; display: flex; justify-content: center; gap: 44px; font: 600 11px "Segoe UI", system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #a8a8a8; padding: 9px 0 8px; }
-.rb-ig-tabs span:first-child { color: #f5f5f5; }
-.rb-ig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 0 26px; }
-.rb-ig-item { aspect-ratio: 1; background: #25292e center / cover; }
+.rb-ig-acts { display: grid; grid-template-columns: 1fr 1fr 34px; gap: 8px; padding: 0 26px 10px; }
+.rb-ig-acts button { font: 600 12px "Segoe UI", system-ui, sans-serif; height: 30px; padding: 0; border-radius: 8px; border: 0; background: #efefef; color: #262626; }
+.rb-ig-hl { display: flex; gap: 22px; padding: 2px 30px 10px; }
+.rb-ig-hl i { display: block; width: 50px; height: 50px; border-radius: 50%; border: 3px solid #fff; outline: 2px solid #dbdbdb; box-sizing: border-box; }
+.rb-ig-tabs { border-top: 1px solid #dbdbdb; display: flex; justify-content: center; gap: 44px; font: 600 11px "Segoe UI", system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #8e8e8e; padding: 7px 0 5px; }
+.rb-ig-tabs span:first-child { color: #262626; }
+.rb-ig-grid { display: grid; grid-template-columns: repeat(3, 96px); justify-content: center; gap: 3px; }
+.rb-ig-item { aspect-ratio: 3 / 4; background: #efefef center / cover; }
 
 /* the desktop copy that is built last */
 .rb-wall { position: absolute; inset: 0; clip-path: circle(0 at var(--x, 50%) var(--y, 50%)); transition: clip-path 1.2s cubic-bezier(.6,0,.2,1); }
@@ -172,13 +185,6 @@
 .rb-ui .rb-h.rb-hc { clip-path: circle(0% at 50% 40%); }
 .rb-ui .rb-h.rb-on { clip-path: inset(0 0 0 0); }
 .rb-ui .rb-h.rb-hc.rb-on { clip-path: circle(80% at 50% 40%); }
-
-/* thread */
-.rb-sew { position: absolute; inset: 0; pointer-events: none; transition: opacity .8s; }
-.rb-sew > svg { position: absolute; left: 0; top: 0; overflow: visible; }
-.rb-seam { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 7 5; }
-.rb-seam-u { fill: none; stroke-width: 1; opacity: .3; }
-.rb-sg { transition: opacity 1.2s; } .rb-sg.old { opacity: .3; }
 
 /* swarm */
 .rb-fx, .rb-ags { position: absolute; inset: 0; pointer-events: none; transition: opacity .4s; }
@@ -272,7 +278,6 @@
 
   const AGENTS = [["nova", "#f472b6"], ["atlas", "#22d3ee"], ["pixel", "#a3e635"], ["echo", "#fbbf24"], ["flux", "#a78bfa"], ["orbit", "#fb7185"], ["vega", "#34d399"], ["juno", "#60a5fa"],
     ["kite", "#f59e0b"], ["ion", "#2dd4bf"], ["lumen", "#e879f9"], ["quill", "#facc15"], ["rho", "#38bdf8"], ["zed", "#4ade80"]];
-  const THREADS = ["#f43f5e", "#fbbf24", "#22d3ee", "#e879f9", "#a3e635", "#fb923c"];
 
   // the back end, as real source (condensed): each one is a panel the swarm opens and types into
   const PANELS = {
@@ -307,7 +312,10 @@
     db: { title: "FIRESTORE", tag: "resume-41921", kind: "db", lines: [
       ["shared/notepad", "read · write", 1], ["tasks", "validated", 38], ["pictures", "add · delete", 12], ["scores", "add-only", 214],
       ["board", "add-only", 57], ["stats", "+1 max", 6], ["otp", "5 attempts", 19], ["limits", "hashed keys", 44]] },
-    deploy: { title: "VERCEL EDGE", tag: "18 regions", kind: "term", lines: [
+    deploy: { title: "Command Prompt", xp: true, kind: "term", lines: [
+      "Microsoft Windows XP [Version 5.1.2600]",
+      "(C) Copyright 1985-2001 Microsoft Corp.",
+      "",
       "C:\\medhansh-xp> vercel deploy --prod",
       "Vercel CLI 59.11.2",
       "Deploying medhansh-xp",
@@ -337,15 +345,13 @@
   const APP_IDS = ["cmd", "paint", "projects", "msn", "calendar", "mine", "solitaire", "ie", "snake", "about"];
   // where each window goes: left and right alternate, so a small window on one side is never hidden by the next one
   const APP_SPOT = [[.28, .42], [.72, .36], [.26, .64], [.78, .62], [.7, .38], [.3, .6], [.74, .36], [.26, .5], [.74, .6], [.58, .5]];
-  // which module each finished app is stitched to underneath
-  const APP_LINK = { cmd: "app", paint: "app", projects: "data", msn: "otp", calendar: "db", mine: "games", solitaire: "games", ie: "app", snake: "games", about: "data" };
   // the Instagram profile Internet Explorer opens. Instagram refuses to be framed and the show never touches the network,
-  // so this is a drawing of the page: the text and counts are copied from the real profile (the "Followed by" line is left out on purpose);
+  // so this is a drawing of the page: a light-mode drawing with the text and counts copied from the real profile (the "Followed by" list is left out on purpose);
   // the profile picture, highlights and post are stand-ins.
   const IG = { handle: "mendhi_vadi", name: "Medhansh", note: "Mughe kya mai to batak hu", posts: 1, followers: 456, following: 532,
     bio: "fuck it, we ball", threads: "mendhi_vadi",
     highlights: ["conic-gradient(#ef4444,#f59e0b,#22c55e,#3b82f6,#ef4444)", "linear-gradient(180deg,#6366f1,#f97316 62%,#312e81)", "linear-gradient(135deg,#92400e,#1f2937)"],
-    tiles: ["linear-gradient(135deg,#f58529,#dd2a7b)"] };
+    tiles: ["linear-gradient(180deg,#2a0606 0 24%,#1f7a2e 24% 58%,#8a8a8a 58%)"] };
   // the paints on the palette the swarm dips into for Paint
   const PAL_COLORS = ["#ff8040", "#ff0000", "#ffff00", "#008000", "#0080ff", "#0000ff", "#800080", "#804000", "#800000", "#ffffff", "#000000"];
 
@@ -421,7 +427,6 @@
     ov.innerHTML = `<div class="rb-grid"></div>
       <div class="rb-layer rb-be">${svgL}</div><div class="rb-layer rb-fe">${svgL}</div>
       <div class="rb-layer rb-apps"></div><div class="rb-wall"></div>
-      <div class="rb-sew"><svg width="${vw}" height="${vh}" viewBox="0 0 ${vw} ${vh}"></svg></div>
       <div class="rb-fx"></div><div class="rb-ags"></div>
       <div class="rb-glitch-bars">${Array.from({ length: 7 }, () => `<i style="top:${rand(0, 96).toFixed(1)}%;height:${rand(1, 9).toFixed(1)}px"></i>`).join("")}</div>
       <div class="rb-intro"><div class="rb-intro-t">&nbsp;</div><div class="rb-intro-bar"></div><div class="rb-intro-s">&nbsp;</div></div>
@@ -432,7 +437,7 @@
         <button class="rb-skip" type="button">SKIP<small>ESC</small></button></div>
       <div class="rb-flash"></div>`;
     const q = (s) => ov.querySelector(s);
-    const beL = q(".rb-be"), feL = q(".rb-fe"), appsL = q(".rb-apps"), wall = q(".rb-wall"), sewL = q(".rb-sew"), sewS = q(".rb-sew svg"), fx = q(".rb-fx"), agL = q(".rb-ags");
+    const beL = q(".rb-be"), feL = q(".rb-fe"), appsL = q(".rb-apps"), wall = q(".rb-wall"), fx = q(".rb-fx"), agL = q(".rb-ags");
     const cap = q(".rb-cap"), hud = q(".rb-hud"), intro = q(".rb-intro"), flash = q(".rb-flash");
     ["backgroundColor", "backgroundImage", "backgroundSize", "backgroundPosition", "backgroundRepeat", "backgroundOrigin", "backgroundClip"].forEach((k) => (wall.style[k] = rcs[k]));
     wall.after(clone);
@@ -631,14 +636,15 @@
     };
     const makePanel = (p, r, color) => {
       const el = document.createElement("div");
-      el.className = "rb-pn " + p.kind;
+      el.className = "rb-pn " + p.kind + (p.xp ? " xp" : "");
       el.style.cssText = `--a:${color};left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px` + (p.kind === "db" ? `;--clh:${dbRow}px` : "");
       const rows = shown(p).map((ln, k) => {
         if (p.kind === "db") return `<div class="rb-cl rb-dr"><span>${esc(ln[0])}</span><em>${esc(ln[1])}</em><i style="--w:${Math.round(14 + Math.log10(ln[2] + 1) * 34)}%"></i><u>${ln[2]}</u></div>`;
-        if (p.kind === "term") return `<div class="rb-cl${k === 0 ? " p" : /^(Production|Aliased)/.test(ln) ? " ok" : ""}"><code>${esc(ln)}</code></div>`;
+        if (p.kind === "term") return `<div class="rb-cl${/^C:\\/.test(ln) ? " p" : /^(Production|Aliased)/.test(ln) ? " ok" : ""}"><code>${esc(ln)}</code></div>`;
         return `<div class="rb-cl"><s>${k + 1}</s><code>${hl(ln)}</code></div>`;
       }).join("");
-      el.innerHTML = `<div class="rb-bh"><i></i><b>${esc(p.title)}</b><small>${esc(p.tag || "")}</small></div><div class="rb-pb">${rows}</div>`;
+      const right = p.xp ? `<span class="rb-xpb"><u class="m"></u><u class="x"></u><u class="c"></u></span>` : `<small>${esc(p.tag || "")}</small>`;
+      el.innerHTML = `<div class="rb-bh"><i>${p.xp ? "C:\\" : ""}</i><b>${esc(p.title)}</b>${right}</div><div class="rb-pb">${rows}</div>`;
       beL.appendChild(el);
       return el;
     };
@@ -699,45 +705,6 @@
       rects[id] = { x: R.x + clamp(R.w * fx0, 0, R.w - w), y: R.y + clamp(R.h * fy0, 0, Math.max(0, R.h - h)), w, h };
     });
 
-    // ---------- a thread stitched between two pieces, in the background ----------
-    let seamN = 0;
-    const inside = (r, s) => { let x = r.x + r.w * rand(0.25, 0.75), y = r.y + r.h * rand(0.3, 0.7); if (s && s !== 1) { x = vw / 2 + (x - vw / 2) * s; y = vh / 2 + (y - vh / 2) * s; } return [x, y]; };
-    const stitch = (A, B, color = pick(THREADS), ms = rand(1100, 1600)) => {
-      if (!A || !B) return;
-      const [x1, y1] = A, [x2, y2] = B, dx = x2 - x1, dy = y2 - y1;
-      if (Math.hypot(dx, dy) < 40) return;
-      const bend = rand(0.12, 0.3) * (Math.random() < 0.5 ? -1 : 1), cx = (x1 + x2) / 2 - dy * bend, cy = (y1 + y2) / 2 + dx * bend;
-      const d = `M${x1.toFixed(1)} ${y1.toFixed(1)} Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`;
-      const id = "rbM" + seamN++;
-      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.setAttribute("class", "rb-sg");
-      g.innerHTML = `<mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="${vw}" height="${vh}"><path d="${d}" fill="none" stroke="#fff" stroke-width="10" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" style="transition:stroke-dashoffset ${ms * sp}ms linear"/></mask>
-        <path class="rb-seam-u" stroke="${color}" d="${d}" mask="url(#${id})"/><path class="rb-seam" stroke="${color}" d="${d}" mask="url(#${id})"/>
-        <circle r="3" fill="${color}" cx="${x1}" cy="${y1}"/>`;
-      sewS.appendChild(g);
-      void g.getBoundingClientRect();
-      g.querySelector("mask path").style.strokeDashoffset = "0";
-      blip(rand(500, 700), 0.05, "triangle", 0.04, rand(300, 400));
-      at(ms, () => g.insertAdjacentHTML("beforeend", `<circle r="3" fill="${color}" cx="${x2}" cy="${y2}"/>`));
-      at(ms + 2600, () => g.classList.add("old"));
-      at(ms + (narrow ? 5500 : 9000), () => g.remove());
-    };
-    // the threads that tie the front end to the back end; app windows join the pool as they are built
-    const SEAMS = [["index", "deploy"], ["app", "rules"], ["app", "otp"], ["games", "db"], ["data", "deploy"], ["app", "db"], ["extras", "deploy"], ["style", "index"], ["sound", "app"], ["app", "mail"], ["index", "otp"], ["games", "rules"]];
-    let seamPool = []; const appRects = {};
-    const ptOf = (id) => {
-      if (appRects[id]) return inside(appRects[id]);
-      const r = rects[id]; if (!r || !boxes[id]) return null;
-      return FE[id] ? inside(r, feL.classList.contains("under") ? 0.985 : 1) : inside(r, beL.classList.contains("under") ? 0.965 : 1);
-    };
-    let seamI = 0;
-    const sewOne = () => {
-      const ready = [...SEAMS, ...seamPool].filter(([a, b]) => ptOf(a) && ptOf(b));
-      if (!ready.length) return;
-      const [a, b] = ready[(seamI++ * 7) % ready.length];
-      stitch(ptOf(a), ptOf(b));
-    };
-
     // ---------- real apps: opened hidden behind the overlay, copied twice (wireframe and real), closed again ----------
     const opened = new Set(), apps = [];
     const prepApp = async (id) => {
@@ -748,7 +715,7 @@
       skipBtn.focus({ preventScroll: true });
       for (let k = 0; k < 30 && el.querySelector(".loading"); k++) await wait(100);
       await wait(260);
-      const w = el.offsetWidth, h = el.offsetHeight, tb = el.querySelector(".titlebar")?.offsetHeight || 30;
+      const w = el.offsetWidth, h = id === "ie" && !narrow ? Math.max(el.offsetHeight, Math.min(vh - 96, 580)) : el.offsetHeight, tb = el.querySelector(".titlebar")?.offsetHeight || 30;
       const make = () => {
         const c = el.cloneNode(true);
         c.removeAttribute("id"); c.querySelectorAll("[id]").forEach((e) => e.removeAttribute("id"));
@@ -942,14 +909,14 @@
     const SPECIAL_OWN = ".card, .mine-grid, .cal-app, .paint-area canvas, .cmd .line input, .msn-bar textarea, .ieview";
     const SPECIAL = {
       // cards: the deck goes down first, then several agents deal from it at once
-      solitaire(rl, base, k) { const j = joker(rl, base, k, [base + ":b"]); return j ? [j, ...(deal(rl, base, k, j) || [])] : []; },
+      solitaire(rl, base, k) { const ids = deal(rl, base, k) || []; const j = joker(rl, base, k, ids); return j ? [...ids, j] : ids; },
       // minesweeper: the grid is drawn row by row, then a crate of mines arrives, every mine is carried over and placed by hand,
       // and once all of them are on the board they are hidden under their cells together
       mine(rl, base, k, partIds, win, app) {
         const g = rl.querySelector(".mine-grid"); if (!g?.children.length) return;
         const rowIds = drawRows(g, base, k, "grid"), ids = [...rowIds];
         const cells = [...g.children];
-        const picks = cells.map((c) => [Math.random(), c]).sort((p, q) => p[0] - q[0]).slice(0, 10).map((p) => p[1]);
+        const picks = cells.map((c) => [Math.random(), c]).sort((p, q) => p[0] - q[0]).slice(0, Math.min(24, Math.floor(cells.length * 0.3))).map((p) => p[1]);
         const cx = win.x > 120 ? win.x - 60 : Math.min(vw - 60, win.x + win.w + 60), cy = Math.min(vh - 50, win.y + win.h - 40);
         const crate = document.createElement("div");
         crate.className = "rb-crate"; crate.style.cssText = `left:${cx - 42}px;top:${cy - 32}px`; crate.innerHTML = CRATE_SVG;
@@ -957,11 +924,11 @@
         const crateId = base + ":crate"; ids.push(crateId);
         task(crateId, async (a) => { say(a, "mines"); await go(a, cx, cy + 44); fx.appendChild(crate); flyIn(crate, 0, 70, 320 * k); click(a); await wait(220 * k); }, { deps: [base + ":b"], pri: -1, x: cx, y: cy });
         const placed = [];
-        [0, 1, 2].forEach((n) => { const id = `${base}:mines${n}`; ids.push(id); task(id, async (a) => {
-          for (const c of picks.filter((_, j) => j % 3 === n)) {
+        [0, 1, 2, 3, 4, 5].forEach((n) => { const id = `${base}:mines${n}`; ids.push(id); task(id, async (a) => {
+          for (const c of picks.filter((_, j) => j % 6 === n)) {
             say(a, "pick up");
-            await go(a, cx + rand(-14, 14), cy + rand(-10, 6), 260 * k); click(a);
-            const [tx, ty, cr] = mid(c), m = document.createElement("div"), t = 340 * k;
+            await go(a, cx + rand(-14, 14), cy + rand(-10, 6), 130 * k); click(a);
+            const [tx, ty, cr] = mid(c), m = document.createElement("div"), t = 190 * k;
             m.className = "rb-mine"; m.style.cssText = `left:${a.x}px;top:${a.y}px;--s:${Math.max(8, cr.width * 0.55)}px`;
             fx.appendChild(m);
             say(a, "place mine");
@@ -969,17 +936,17 @@
             await go(a, tx, ty - 6, t, "cubic-bezier(.4,0,.6,1)");
             click(a); c.animate([{ background: "#ffe08a" }, { background: "#c0c0c0" }], { duration: 420 * sp });
             placed.push({ m, c });
-            await wait(120 * k);
+            await wait(30 * k);
           }
         }, { deps: [...rowIds, crateId], pri: -1, x: cx, y: cy }); });
         const hideId = base + ":hide", [gx, gy] = mid(g);
         task(hideId, async (a) => {
           say(a, "hide mines");
-          await go(a, gx, gy); await wait(900 * k); click(a);
+          await go(a, gx, gy, 200 * k); await wait(450 * k); click(a);
           placed.forEach(({ m, c }) => { m.classList.add("bury"); c.animate([{ background: "#ffe08a" }, { background: "#c0c0c0" }], { duration: 420 * sp }); at(300, () => m.remove()); });
           crate.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 * sp, fill: "forwards" });
           at(320, () => crate.remove());
-          await wait(420 * k);
+          await wait(260 * k);
         }, { deps: ids.filter((id) => id.includes(":mines")), pri: -1, x: gx, y: gy });
         ids.push(hideId);
         return ids;
@@ -1292,60 +1259,33 @@
         return id;
       });
     }
-    // the hand-drawn joker is copied across the table, every copy turns into a different card at the same instant, and those cards are dealt to their places
-    function deal(rl, base, k, jokerId) {
-      const table = rl.querySelector(".sol-table");
+    function deal(rl, base, k) {
       const cards = [...rl.querySelectorAll(".card")].filter((c) => !c.closest(".deck-grid"));
-      if (!table || !cards.length) return;
+      if (!cards.length) return;
       cards.forEach((c) => c.classList.add("rb-hide"));
-      const cs = getComputedStyle(table), cw = parseFloat(cs.getPropertyValue("--cw")) || 71, ch = parseFloat(cs.getPropertyValue("--ch")) || 96, tr = table.getBoundingClientRect();
-      const cols = Math.min(13, cards.length), rows = Math.ceil(cards.length / cols), dx = Math.min(cw * 0.7, (tr.width - cw - 16) / Math.max(1, cols - 1)), dy = Math.min(ch * 0.62, (tr.height - ch - 16) / Math.max(1, rows));
-      const x0 = (tr.width - cw - dx * (cols - 1)) / 2, y0 = Math.max(8, tr.height - ch - dy * (rows - 1) - 10);
-      const faces = ["♠", "♥", "♦", "♣"].flatMap((s) => ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"].map((v) => [v, s])).map((f) => [Math.random(), f]).sort((p, q) => p[0] - q[0]).map((p) => p[1]);
-      const spots = cards.map((_, n) => ({ x: x0 + (n % cols) * dx, y: y0 + Math.floor(n / cols) * dy }));
-      const shown = [], copyId = base + ":copy", ids = [copyId], box = (p, z) => `left:${p.x}px;top:${p.y}px;width:${cw}px;height:${ch}px;z-index:${z}`;
-      task(copyId, async (a) => {
-        const jk = table.querySelector(".rb-joker"); if (!jk) return;
-        const jx = parseFloat(jk.style.left), jy = parseFloat(jk.style.top);
-        say(a, "copy");
-        await go(a, tr.left + jx + cw / 2, tr.top + jy + ch / 2); click(a);
-        const copies = spots.map((p, n) => {
-          const c = jk.cloneNode(true); c.style.cssText = box(p, 6 + n);
-          c.style.visibility = "hidden"; table.appendChild(c);
-          at(n * 15 * k, () => { c.style.visibility = ""; flyIn(c, jx - p.x, jy - p.y, 240 * k); if (n % 6 === 0) tick(); });
-          return c;
-        });
-        await wait((copies.length * 15 + 240 + 320) * k);
-        // no in-between: on one frame they are all jokers, on the next they are the deck
-        say(a, "transform"); click(a); chime();
-        copies.forEach((c, n) => {
-          const [v, s] = faces[n % faces.length], f = document.createElement("div");
-          f.className = "card" + (s === "♥" || s === "♦" ? " red" : ""); f.style.cssText = c.style.cssText; f.style.visibility = "";
-          f.innerHTML = `<span class="ci">${v}<br>${s}</span><span class="ci br">${v}<br>${s}</span><span class="cc">${s}</span>`;
-          c.replaceWith(f); shown[n] = f;
-          f.animate([{ filter: "brightness(2.2)" }, { filter: "brightness(1)" }], { duration: 260 * sp, easing: "ease-out" });
-        });
-        await wait(520 * k);
-      }, { deps: [jokerId], pri: -1, x: tr.left + tr.width / 2, y: tr.top + tr.height / 2 });
-      const per = Math.max(3, Math.ceil(cards.length / 10));
-      for (let b = 0; b * per < cards.length; b++) {
-        const first = b * per, group = cards.slice(first, first + per), id = `${base}:deal${b}`;
+      const stock = cards.filter((c) => c.dataset.pile === "s"), rest = cards.filter((c) => c.dataset.pile !== "s");
+      const [ox, oy] = mid(stock[0] || cards[0]);
+      const ids = [base + ":deck"];
+      task(base + ":deck", async (a) => {
+        say(a, "shuffle");
+        await go(a, ox, oy); click(a);
+        stock.forEach((c, n) => { reveal(c); flyIn(c, rand(-40, 40), -60, 280 * k, n * 40); });
+        await wait(320 * k);
+      }, { deps: [base + ":b"], pri: -1, x: ox, y: oy });
+      const per = Math.max(3, Math.ceil(rest.length / 10));
+      for (let b = 0; b * per < rest.length; b++) {
+        const group = rest.slice(b * per, b * per + per), id = `${base}:deal${b}`;
         ids.push(id);
         task(id, async (a) => {
           say(a, "deal");
-          for (const [n, c] of group.entries()) {
-            const f = shown[first + n];
-            if (!f) { reveal(c); continue; }
-            const [ox, oy] = mid(f);
-            await go(a, ox, oy, 120 * k);
+          for (const c of group) {
+            await go(a, ox, oy, 150 * k);
             const [cx, cy] = mid(c);
-            f.style.zIndex = 200;
-            f.animate([{ translate: "0 0" }, { translate: `${cx - ox}px ${cy - oy}px` }], { duration: 230 * k * sp, easing: "cubic-bezier(.3,.7,.3,1)", fill: "forwards" });
+            reveal(c); flyIn(c, ox - cx, oy - cy, 230 * k);
             await go(a, cx, cy, 230 * k, "cubic-bezier(.3,.7,.3,1)");
-            reveal(c); f.remove();
           }
           tick();
-        }, { deps: [copyId], pri: -1, x: tr.left + tr.width / 2, y: tr.top + tr.height / 2 });
+        }, { deps: [base + ":deck"], pri: -1, x: ox, y: oy });
       }
       return ids;
     }
@@ -1388,8 +1328,6 @@
       wrap.querySelectorAll(".rb-hide").forEach((e) => e.classList.remove("rb-hide"));
       goUnder(wrap);
       (app.extras || []).forEach((e) => { e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 * sp, fill: "forwards" }); at(320, () => e.remove()); });
-      delete appRects[app.id];
-      seamPool = seamPool.filter(([id]) => id !== app.id);
       wrap.style.transformOrigin = "0 0";
       wrap.classList.add("min");
       wrap.style.transform = `translate(${60 + (i % 6) * 110}px, ${vh - 22}px) scale(0.05)`;
@@ -1440,12 +1378,9 @@
           }, { deps: [base + ":t"], pri: -1, x: bx, y: by });
           return id;
         });
-        // the window is done once every piece is in: the wireframe goes, and the window joins the stitching
+        // the window is done once every piece is in: the wireframe goes
         task(base + ":d", async () => {
-          wrap.classList.add("done"); goUnder(wrap);
-          appRects[app.id] = r;
-          seamPool.push([app.id, APP_LINK[app.id] || "app"]);
-          if (!rm) stitch(inside(r), ptOf(APP_LINK[app.id] || "app"), pick(THREADS), 1000);
+          wrap.classList.add("done"); goUnder(wrap); app.doneAt = performance.now();
           chime();
         }, { deps: [base + ":b", ...partIds, ...tbIds, ...ownIds], pri: -2, x, y });
         const f = await frame(a, r, "win · " + app.title.replace(/ - .*$/, "").replace(/^.* - /, ""), 360 * k);
@@ -1486,7 +1421,6 @@
     at(650, () => { ov.classList.add("on"); skipBtn.focus({ preventScroll: true }); });
     at(900, () => { decode(q(".rb-intro-t"), "VISUAL REBUILD", 900); q(".rb-intro-bar").classList.add("on"); blip(90, 0.9, "sawtooth", 0.6, 45); });
     at(1150, () => { q(".rb-intro-s").innerHTML = "unmounting render tree · <b>0 nodes remain</b>"; tick(); });
-    at(1900, () => { q(".rb-intro-s").innerHTML = "spawning swarm ▸ <b>8 agents · thread</b>"; tick(); });
     at(1000, () => prepAll());
 
     // 2.6-9s: the back end, typed in from the real source and wired up
@@ -1511,8 +1445,7 @@
       }
     });
 
-    // 9-14.5s: the front end on top of the back end; threads start stitching the two together
-    let sewTimer = 0;
+    // 9-14.5s: the front end on top of the back end
     at(9000, () => {
       beL.classList.add("under");
       pace = 1.05;
@@ -1523,7 +1456,6 @@
       wire(feL, ["index", "r", 0.5], ["app", "l", 0.3], "boot");
       wire(feL, ["app", "b", 0.3], ["games", "t", 0.5], "import()");
       wire(feL, ["app", narrow ? "b" : "r", narrow ? 0.75 : 0.8], ["extras", "t", 0.4], "import()");
-      if (!rm) sewTimer = every(narrow ? 1400 : 850, sewOne);
     });
 
     // 14.5-43s: the real apps, two or three at a time, each outlined, painted and filled in piece by piece
@@ -1538,14 +1470,15 @@
       if (ended) return;
       while (nextApp < APP_IDS.length && apps[nextApp] === null) nextApp++;
       const now = performance.now(), allOpened = nextApp >= APP_IDS.length;
+      // a window goes to the taskbar soon after its swarm finishes, rather than waiting for the next one to need the room
+      for (let n = onScreen.length - 1; n >= 0; n--) if (apps[onScreen[n]].doneAt && now - apps[onScreen[n]].doneAt > 1400 * sp) minimize(onScreen.splice(n, 1)[0]);
       if (allOpened) {
         if ((onScreen.every((i) => !busyWith("app:" + apps[i].id)) && now - lastOpen > 1500 * sp) || now - lastOpen > 11000 * sp) { stop(appTimer); at(700, endSeq); }
         return;
       }
       if (apps[nextApp] === undefined || now - lastOpen < 1500 * sp) return;
-      // these windows open on top of the one named: let the set piece underneath finish first
-      const heldBy = { snake: "solitaire", solitaire: "calendar" }[APP_IDS[nextApp]];
-      if (heldBy && busyWith("app:" + heldBy) && now - lastOpen < 18000 * sp) return;
+      // Solitaire opens on top of the Calendar: let the Calendar finish first
+      if (APP_IDS[nextApp] === "solitaire" && busyWith("app:calendar") && now - lastOpen < 18000 * sp) return;
       if (onScreen.length >= 3) {
         const old = apps[onScreen[0]];
         if (busyWith("app:" + old.id) && now - old.openedAt < (old.id === "calendar" ? 22000 : 10000) * sp) return;
@@ -1569,7 +1502,7 @@
     // the ending: the windows fly away and the desktop is built, then the taskbar, then the swarm flies home
     function endSeq() {
       if (ended) return;
-      ended = true; stop(appTimer); stop(sewTimer);
+      ended = true; stop(appTimer);
       progLock = true; progEl.style.transition = `width ${6.6 * sp}s linear`; progEl.style.width = "100%";
       at(400, () => {
         queue.length = 0; focusPt = null;
@@ -1584,7 +1517,6 @@
         }));
         fx.querySelectorAll(".rb-fr").forEach((f) => f.classList.add("gone"));
         fx.querySelectorAll(".rb-crate, .rb-pal, .rb-num, .rb-mine").forEach((e) => e.remove());
-        sewL.style.opacity = "0";
         blip(55, 1.0, "sawtooth", 0.4, 140);
       });
       at(900, () => {
