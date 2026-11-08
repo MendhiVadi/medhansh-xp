@@ -1,14 +1,14 @@
-// Visual Rebuild, Mark 2: a ~50 second, purely visual rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
+// Visual Rebuild, Mark 2: a purely visual, roughly one minute rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
 // 0-2.6s    the live desktop glitches out and the title decodes
 // 2.6-9s    01 BACK END: the swarm types the real source into blueprint panels (firestore.rules, api/otp.js, the Firestore
 //           collections, a vercel deploy, the mailer) and wires them up across the whole screen
 // 9-14.5s   02 FRONT END: the modules (index.html, app.js, sound.js, data.js, style.css, the lazy chunks) are built on top of
-//           the dimmed back end, and needles start stitching threads between the two layers
-// 14.5-47s  03 APPS: real app windows, two or three at a time, each outlined as a wireframe, painted top to bottom and filled in
-//           piece by piece with a job for every agent (mines carried from a crate, a joker drawn by hand, the calendar fixed and
-//           pushed into place, paints dipped from a palette, Internet Explorer opening the Instagram profile); a window is
+//           the dimmed back end, and threads start stitching themselves between the two layers
+// 14.5-62s  03 APPS (ends sooner if the swarm finishes): real app windows, two or three at a time, each outlined as a wireframe, painted top to bottom and filled in
+//           piece by piece with a job for every agent (mines carried from a crate, a joker drawn by hand and copied into the deck, wrong calendar digits
+//           replaced by numbers flung from below, paints dipped from a palette, Internet Explorer opening the Instagram profile); a window is
 //           minimised once its swarm is done with it
-// 47-54s    04 DESKTOP: the windows fly away, the wallpaper opens from the first click, icons, taskbar and tray are placed, the
+// then 7s   04 FINAL TOUCHES: the windows fly away, the wallpaper opens from the first click, icons, taskbar and tray are placed, the
 //           swarm flies home into the Start button and the live desktop takes over
 // A HUD at the top keeps the phase, the swarm size and the clock, and a caption names each phase as it starts. Space or Esc skips.
 // It is all theatre: nothing here writes data or touches the network. Loaded on demand by app.js.
@@ -89,7 +89,7 @@
 .rb-app .rb-wf svg, .rb-app .rb-wf img, .rb-app .rb-wf canvas, .rb-app .rb-wf .avatar { opacity: 0 !important; }
 .rb-app .rb-wf .rb-wfoff { opacity: 0 !important; transition: opacity .35s; }
 .rb-app.wf .rb-wf { opacity: 1; }
-.rb-app.done .rb-wf { opacity: 0; }
+.rb-app.done .rb-wf, .rb-app.under .rb-wf { opacity: 0; }
 .rb-app .rb-rl { clip-path: inset(0 100% calc(100% - var(--tb)) 0); transition: clip-path var(--t, .4s) linear; }
 .rb-app .rb-rl.t { clip-path: inset(0 0 calc(100% - var(--tb)) 0); }
 .rb-app .rb-rl.b { clip-path: inset(0 0 0 0); }
@@ -110,40 +110,55 @@
   background: radial-gradient(circle at 35% 35%, #fff 0 12%, #111 14%); box-shadow: 0 0 0 2px rgba(0,0,0,.25); animation: rbMine .2s cubic-bezier(.3,1.6,.5,1) both; }
 .rb-mine::before, .rb-mine::after { content: ""; position: absolute; left: 50%; top: -22%; width: 2px; height: 144%; margin-left: -1px; background: #111; }
 .rb-mine::after { transform: rotate(90deg); }
-.rb-mine.bury { transform: scale(0); opacity: 0; transition: transform .25s ease-in, opacity .25s; }
+.rb-mine.bury { animation: none; transform: scale(0); opacity: 0; transition: transform .25s ease-in, opacity .25s; }
 @keyframes rbMine { from { transform: scale(0); } to { transform: scale(1); } }
 /* props the swarm brings along: a crate of mines, a painter's palette, a hand-drawn joker, numbers thrown at the calendar */
 .rb-crate, .rb-pal { position: absolute; pointer-events: none; }
 .rb-crate { width: 84px; height: 64px; filter: drop-shadow(0 6px 10px rgba(0,0,0,.5)); } .rb-crate svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.rb-pal { width: 280px; height: 215px; filter: drop-shadow(0 12px 22px rgba(0,0,0,.55)); } .rb-pal svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.rb-pal { width: 124px; height: 95px; filter: drop-shadow(0 5px 9px rgba(0,0,0,.55)); } .rb-pal svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .rb-pal .rb-blob { transform-box: fill-box; transform-origin: center; }
+.rb-pal .rb-swirl { fill: none; stroke-linecap: round; stroke-dasharray: 46 30; animation: rbPalSwirl 2.4s linear infinite; }
+.rb-pal .rb-swirl + .rb-swirl { animation-duration: 3.4s; animation-direction: reverse; }
+.rb-pal .rb-palbr { transform-box: fill-box; transform-origin: 6% 94%; animation: rbPalMix 1.5s ease-in-out infinite; }
+@keyframes rbPalSwirl { to { stroke-dashoffset: -152; } }
+@keyframes rbPalMix { 0%, 100% { transform: translate(-13px, -4px) rotate(-5deg); } 25% { transform: translate(7px, -9px) rotate(2deg); } 50% { transform: translate(14px, 4px) rotate(5deg); } 75% { transform: translate(-6px, 9px) rotate(-2deg); } }
 .rb-ag .rb-dip { position: absolute; left: 11px; top: -5px; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
 .rb-joker { position: absolute; background: #fff; border: 1px solid #333; border-radius: 5px; box-shadow: 1px 1px 2px rgba(0,0,0,.35); overflow: hidden; z-index: 5; }
 .rb-joker svg { display: block; width: 100%; height: 100%; }
 .rb-joker path.l { fill: none; stroke: #1f1f1f; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
 .rb-joker .f { fill-opacity: 0; transition: fill-opacity .5s; } .rb-joker.fill .f { fill-opacity: .92; }
 .rb-joker text { font: bold 8px Arial, sans-serif; fill: #1f1f1f; opacity: 0; transition: opacity .3s; } .rb-joker.txt text { opacity: 1; }
-.rb-num { position: absolute; width: 26px; height: 32px; border-radius: 4px; background: #fff; border: 1px solid #7a96df; box-shadow: 0 6px 14px rgba(0,0,0,.4);
-  font: bold 15px Tahoma, sans-serif; color: #000; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.rb-num { position: absolute; font-family: Tahoma, sans-serif; font-weight: bold; line-height: 1; color: #ff6a13; text-shadow: 0 0 10px rgba(255,106,19,.7), 0 3px 6px rgba(0,0,0,.45); pointer-events: none; }
+.rb-app .cal.rb-calbig b { font-size: inherit; display: flex; align-items: center; justify-content: center; }
+.rb-app .cal.rb-calbig button { display: flex; align-items: center; justify-content: center; padding: 0; font: inherit; min-height: 0; }
+.rb-app .cal.rb-callines > button, .rb-app .cal.rb-callines > span { outline: 1px solid #c9d8ee; outline-offset: 0; border-radius: 0; }
+.rb-app .rb-dg { display: inline-block; font-style: normal; transition: color .3s; }
+.rb-app .rb-dg.rb-dgnew { color: #ff6a13; font-weight: bold; }
+.rb-app .rb-dg.rb-gap, .rb-app .rb-nodg .rb-dg { visibility: hidden; }
 /* the Instagram page Internet Explorer opens */
-.rb-ig { position: absolute; inset: 0; overflow: hidden; background: #fff; color: #262626; font: 12px/1.4 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; text-align: left; }
-.rb-ig-top { height: 42px; border-bottom: 1px solid #dbdbdb; display: flex; align-items: center; gap: 14px; padding: 0 18px; }
+.rb-ig { position: absolute; inset: 0; overflow: hidden; background: #0c1014; color: #f5f5f5; font: 12px/1.4 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; text-align: left; }
+.rb-ig-top { height: 42px; border-bottom: 1px solid #262b31; display: flex; align-items: center; gap: 14px; padding: 0 18px; }
 .rb-ig-logo { font: italic 700 21px "Segoe Script", "Brush Script MT", "Snell Roundhand", cursive; }
-.rb-ig-search { margin-left: auto; width: 170px; height: 26px; border-radius: 7px; background: #efefef; color: #8e8e8e; padding: 0 10px; line-height: 26px; box-sizing: border-box; }
+.rb-ig-search { margin-left: auto; width: 170px; height: 26px; border-radius: 7px; background: #25292e; color: #a8a8a8; padding: 0 10px; line-height: 26px; box-sizing: border-box; }
 .rb-ig-ico { font-size: 18px; }
-.rb-ig-head { display: flex; gap: 26px; padding: 16px 26px 10px; align-items: flex-start; }
-.rb-ig-avatar { width: 92px; height: 92px; border-radius: 50%; padding: 3px; box-sizing: border-box; background: conic-gradient(#f9ce34, #ee2a7b, #6228d7, #f9ce34); flex: none; }
-.rb-ig-avatar i { display: block; width: 100%; height: 100%; border-radius: 50%; border: 3px solid #fff; box-sizing: border-box; background: url(photo.jpg?v=40) center / cover; }
+.rb-ig-head { display: flex; gap: 26px; padding: 34px 26px 12px; align-items: flex-start; }
+.rb-ig-pic { position: relative; flex: none; }
+.rb-ig-avatar { width: 96px; height: 96px; border-radius: 50%; padding: 3px; box-sizing: border-box; background: #2b3036; }
+.rb-ig-avatar i { display: block; width: 100%; height: 100%; border-radius: 50%; border: 3px solid #0c1014; box-sizing: border-box; background: url(photo.jpg?v=40) center / cover; }
+.rb-ig-note { position: absolute; left: 50%; top: -26px; transform: translateX(-50%); width: max-content; max-width: 104px; padding: 4px 9px; border-radius: 11px; background: #25292e; font-size: 10px; line-height: 1.2; text-align: center; }
 .rb-ig-info { flex: 1; min-width: 0; }
-.rb-ig-name { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 400; }
-.rb-ig-name button { font: 600 12px "Segoe UI", system-ui, sans-serif; padding: 5px 14px; border-radius: 8px; border: 0; background: #0095f6; color: #fff; }
-.rb-ig-name button + button { background: #efefef; color: #262626; }
-.rb-ig-stats { display: flex; gap: 24px; margin: 9px 0 7px; font-size: 13px; } .rb-ig-stats b { font-weight: 600; }
-.rb-ig-bio { font-size: 12.5px; line-height: 1.45; } .rb-ig-bio span { display: block; } .rb-ig-bio span:last-child { color: #00376b; font-weight: 600; }
-.rb-ig-tabs { border-top: 1px solid #dbdbdb; display: flex; justify-content: center; gap: 44px; font: 600 11px "Segoe UI", system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #8e8e8e; padding: 9px 0 8px; margin-top: 4px; }
-.rb-ig-tabs span:first-child { color: #262626; }
+.rb-ig-name { font-size: 19px; font-weight: 700; }
+.rb-ig-full { font-size: 12.5px; margin-top: 2px; }
+.rb-ig-stats { display: flex; gap: 20px; margin: 7px 0 9px; font-size: 13px; } .rb-ig-stats b { font-weight: 600; }
+.rb-ig-bio { font-size: 12.5px; line-height: 1.45; } .rb-ig-bio span { display: block; } .rb-ig-bio .rb-ig-th { font-weight: 600; }
+.rb-ig-acts { display: grid; grid-template-columns: 1fr 1fr 34px; gap: 8px; padding: 0 26px 12px; }
+.rb-ig-acts button { font: 600 12px "Segoe UI", system-ui, sans-serif; height: 30px; padding: 0; border-radius: 8px; border: 0; background: #25292e; color: #f5f5f5; }
+.rb-ig-hl { display: flex; gap: 22px; padding: 0 30px 12px; }
+.rb-ig-hl i { display: block; width: 58px; height: 58px; border-radius: 50%; border: 3px solid #0c1014; outline: 2px solid #2b3036; box-sizing: border-box; }
+.rb-ig-tabs { border-top: 1px solid #262b31; display: flex; justify-content: center; gap: 44px; font: 600 11px "Segoe UI", system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #a8a8a8; padding: 9px 0 8px; }
+.rb-ig-tabs span:first-child { color: #f5f5f5; }
 .rb-ig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 0 26px; }
-.rb-ig-item { aspect-ratio: 1; background: #ddd center / cover; }
+.rb-ig-item { aspect-ratio: 1; background: #25292e center / cover; }
 
 /* the desktop copy that is built last */
 .rb-wall { position: absolute; inset: 0; clip-path: circle(0 at var(--x, 50%) var(--y, 50%)); transition: clip-path 1.2s cubic-bezier(.6,0,.2,1); }
@@ -158,16 +173,12 @@
 .rb-ui .rb-h.rb-on { clip-path: inset(0 0 0 0); }
 .rb-ui .rb-h.rb-hc.rb-on { clip-path: circle(80% at 50% 40%); }
 
-/* needles and thread */
+/* thread */
 .rb-sew { position: absolute; inset: 0; pointer-events: none; transition: opacity .8s; }
 .rb-sew > svg { position: absolute; left: 0; top: 0; overflow: visible; }
 .rb-seam { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 7 5; }
 .rb-seam-u { fill: none; stroke-width: 1; opacity: .3; }
 .rb-sg { transition: opacity 1.2s; } .rb-sg.old { opacity: .3; }
-.rb-nd { position: absolute; left: 0; top: 0; width: 92px; height: 14px; offset-rotate: auto; offset-anchor: 100% 50%; offset-distance: 0%; }
-.rb-nd svg { display: block; width: 92px; height: 14px; overflow: visible; animation: rbBob .26s ease-in-out infinite alternate; }
-@keyframes rbBob { from { transform: translateX(0) scale(1); opacity: 1; } to { transform: translateX(-7px) scale(.9, .8); opacity: .7; } }
-.rb-nd.out { opacity: 0 !important; }
 
 /* swarm */
 .rb-fx, .rb-ags { position: absolute; inset: 0; pointer-events: none; transition: opacity .4s; }
@@ -213,7 +224,6 @@
 .rb-cap.off { opacity: 0; }
 .rb-cap::before { content: ""; position: absolute; left: 50%; top: 50%; width: min(1000px, 96vw); height: 250%; transform: translate(-50%, -48%); z-index: -1;
   background: radial-gradient(closest-side, rgba(2,4,12,.9), rgba(2,4,12,.6) 55%, transparent); }
-.rb-cap small { display: block; font: 11px var(--rb-mono); letter-spacing: .55em; color: var(--c); transition: color .6s; }
 .rb-cap b { display: block; font: 800 clamp(22px, 3.2vw, 44px)/1.15 var(--rb-sans); letter-spacing: .3em; text-indent: .3em; color: #fff; margin: 6px 0 4px;
   text-shadow: 0 0 30px color-mix(in srgb, var(--c) 60%, transparent); }
 .rb-cap span { font: 14px var(--rb-sans); color: #94a3b8; letter-spacing: .04em; }
@@ -330,10 +340,12 @@
   // which module each finished app is stitched to underneath
   const APP_LINK = { cmd: "app", paint: "app", projects: "data", msn: "otp", calendar: "db", mine: "games", solitaire: "games", ie: "app", snake: "games", about: "data" };
   // the Instagram profile Internet Explorer opens. Instagram refuses to be framed and the show never touches the network,
-  // so this is a drawing of the page: the handle, name and bio are real, the counts and tiles are stand-ins.
-  const IG = { handle: "mendhi_vadi", name: "Medhansh Khattar", posts: 12, followers: "1,204", following: 318,
-    bio: ["AI/ML engineer · Founder & CEO, Yap-less", "CS @ VIT Bhopal · Navi Mumbai", "medhansh-xp.vercel.app"],
-    tiles: ["url(photo.jpg?v=40)", "linear-gradient(135deg,#f58529,#dd2a7b)", "linear-gradient(135deg,#515bd4,#8134af)", "linear-gradient(135deg,#43e97b,#38f9d7)", "url(photo-full.jpg?v=40)", "linear-gradient(135deg,#fdf497,#fd5949)"] };
+  // so this is a drawing of the page: the text and counts are copied from the real profile (the "Followed by" line is left out on purpose);
+  // the profile picture, highlights and post are stand-ins.
+  const IG = { handle: "mendhi_vadi", name: "Medhansh", note: "Mughe kya mai to batak hu", posts: 1, followers: 456, following: 532,
+    bio: "fuck it, we ball", threads: "mendhi_vadi",
+    highlights: ["conic-gradient(#ef4444,#f59e0b,#22c55e,#3b82f6,#ef4444)", "linear-gradient(180deg,#6366f1,#f97316 62%,#312e81)", "linear-gradient(135deg,#92400e,#1f2937)"],
+    tiles: ["linear-gradient(135deg,#f58529,#dd2a7b)"] };
   // the paints on the palette the swarm dips into for Paint
   const PAL_COLORS = ["#ff8040", "#ff0000", "#ffff00", "#008000", "#0080ff", "#0000ff", "#800080", "#804000", "#800000", "#ffffff", "#000000"];
 
@@ -409,12 +421,11 @@
     ov.innerHTML = `<div class="rb-grid"></div>
       <div class="rb-layer rb-be">${svgL}</div><div class="rb-layer rb-fe">${svgL}</div>
       <div class="rb-layer rb-apps"></div><div class="rb-wall"></div>
-      <div class="rb-sew"><svg width="${vw}" height="${vh}" viewBox="0 0 ${vw} ${vh}"><defs><linearGradient id="rbNdG" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#f8fafc"/><stop offset=".45" stop-color="#cbd5e1"/><stop offset="1" stop-color="#475569"/></linearGradient></defs></svg></div>
+      <div class="rb-sew"><svg width="${vw}" height="${vh}" viewBox="0 0 ${vw} ${vh}"></svg></div>
       <div class="rb-fx"></div><div class="rb-ags"></div>
       <div class="rb-glitch-bars">${Array.from({ length: 7 }, () => `<i style="top:${rand(0, 96).toFixed(1)}%;height:${rand(1, 9).toFixed(1)}px"></i>`).join("")}</div>
       <div class="rb-intro"><div class="rb-intro-t">&nbsp;</div><div class="rb-intro-bar"></div><div class="rb-intro-s">&nbsp;</div></div>
-      <div class="rb-cap off" aria-live="polite"><small></small><b></b><span></span></div>
+      <div class="rb-cap off" aria-live="polite"><b></b><span></span></div>
       <div class="rb-vig"></div>
       <div class="rb-hud off"><span class="rb-brand">VISUAL REBUILD</span><span class="rb-prog"><i></i></span>
         <span class="rb-meta"><b class="rb-ph">BOOT</b><span class="rb-ags-n">0 agents</span><span class="rb-clock">00.000</span></span>
@@ -432,7 +443,7 @@
     skipBtn.addEventListener("click", () => finish(true));
     const t0 = performance.now();
     const clockEl = q(".rb-clock"), progEl = q(".rb-prog i");
-    const TOTAL = 53000;
+    const TOTAL = 66000;
     let progLock = false;
     every(60, () => {
       const e = (performance.now() - t0) / sp;
@@ -440,9 +451,9 @@
       if (!progLock) progEl.style.width = Math.min(94, (e / TOTAL) * 100) + "%";
     });
     const phase = (name, c) => { q(".rb-ph").textContent = name; if (c) ov.style.setProperty("--c", c); };
-    const caption = (small, big, line) => {
+    const caption = (big, line) => {
       cap.classList.remove("off", "swap"); void cap.offsetWidth; cap.classList.add("swap");
-      cap.querySelector("small").textContent = small; cap.querySelector("b").textContent = big; cap.querySelector("span").textContent = line;
+      cap.querySelector("b").textContent = big; cap.querySelector("span").textContent = line;
     };
     const capOff = () => { cap.classList.remove("swap"); cap.classList.add("off"); };
     const decode = (el, text, ms) => {
@@ -688,7 +699,7 @@
       rects[id] = { x: R.x + clamp(R.w * fx0, 0, R.w - w), y: R.y + clamp(R.h * fy0, 0, Math.max(0, R.h - h)), w, h };
     });
 
-    // ---------- needles: a thread stitched between two pieces, in the background ----------
+    // ---------- a thread stitched between two pieces, in the background ----------
     let seamN = 0;
     const inside = (r, s) => { let x = r.x + r.w * rand(0.25, 0.75), y = r.y + r.h * rand(0.3, 0.7); if (s && s !== 1) { x = vw / 2 + (x - vw / 2) * s; y = vh / 2 + (y - vh / 2) * s; } return [x, y]; };
     const stitch = (A, B, color = pick(THREADS), ms = rand(1100, 1600)) => {
@@ -704,16 +715,10 @@
         <path class="rb-seam-u" stroke="${color}" d="${d}" mask="url(#${id})"/><path class="rb-seam" stroke="${color}" d="${d}" mask="url(#${id})"/>
         <circle r="3" fill="${color}" cx="${x1}" cy="${y1}"/>`;
       sewS.appendChild(g);
-      const nd = document.createElement("div");
-      nd.className = "rb-nd";
-      nd.style.cssText = `offset-path:path("${d}");transition:offset-distance ${ms * sp}ms linear, opacity .3s`;
-      nd.innerHTML = `<svg viewBox="0 0 64 10"><path d="M6 5 L-30 ${rand(-4, 4).toFixed(1)}" stroke="${color}" stroke-width="1.6" fill="none"/><path d="M3 5 Q3 2 8 2.2 L60 4.5 Q64 5 60 5.5 L8 7.8 Q3 8 3 5Z" fill="url(#rbNdG)" stroke="#0f172a" stroke-width=".5"/><ellipse cx="9" cy="5" rx="3.2" ry="1.1" fill="#0b1020"/></svg>`;
-      sewL.appendChild(nd);
-      void nd.offsetWidth; void g.getBoundingClientRect();
-      nd.style.offsetDistance = "100%";
+      void g.getBoundingClientRect();
       g.querySelector("mask path").style.strokeDashoffset = "0";
       blip(rand(500, 700), 0.05, "triangle", 0.04, rand(300, 400));
-      at(ms, () => { nd.classList.add("out"); g.insertAdjacentHTML("beforeend", `<circle r="3" fill="${color}" cx="${x2}" cy="${y2}"/>`); at(400, () => nd.remove()); });
+      at(ms, () => g.insertAdjacentHTML("beforeend", `<circle r="3" fill="${color}" cx="${x2}" cy="${y2}"/>`));
       at(ms + 2600, () => g.classList.add("old"));
       at(ms + (narrow ? 5500 : 9000), () => g.remove());
     };
@@ -863,15 +868,48 @@
         for (let i = 1; i <= n; i++) { const c = pts[i % n], e = m(i); d += ` Q${c[0].toFixed(1)} ${c[1].toFixed(1)} ${e[0].toFixed(1)} ${e[1].toFixed(1)}`; }
         return d + " Z";
       };
-      const blobs = PAL_COLORS.map((c, i) => { const t = ((205 + i * 26.5) * Math.PI) / 180; return { c, cx: 142 + Math.cos(t) * 86, cy: 100 + Math.sin(t) * 62, r: rand(13, 17) }; });
-      return `<svg viewBox="0 0 280 215"><defs><radialGradient id="rbPw" cx="40%" cy="35%" r="80%"><stop offset="0" stop-color="#d9b07a"/><stop offset=".6" stop-color="#b07c48"/><stop offset="1" stop-color="#7d5020"/></radialGradient></defs>
-        <path d="M34 110 C30 52 92 14 152 16 C214 18 258 56 254 110 C250 162 206 200 148 198 C118 197 112 178 96 176 C70 174 38 152 34 110 Z" fill="url(#rbPw)" stroke="#5c3a16" stroke-width="2"/>
-        <path d="M60 64 C120 42 190 46 236 84 M52 120 C100 100 170 106 232 134" stroke="#6b4420" stroke-width="1.5" opacity=".25" fill="none"/>
-        <ellipse cx="66" cy="130" rx="13" ry="11" fill="#2a1a0a" opacity=".92"/>
-        <ellipse cx="150" cy="104" rx="46" ry="30" fill="#9a7a4a" opacity=".55"/><ellipse cx="142" cy="98" rx="30" ry="18" fill="#cfa16b" opacity=".45"/>
-        ${blobs.map(({ c, cx, cy, r }) => `<path class="rb-blob" data-c="${c}" d="${blobPath(cx, cy, r)}" fill="${c}" stroke="rgba(0,0,0,.25)" stroke-width=".6"/><ellipse cx="${(cx - r * 0.3).toFixed(1)}" cy="${(cy - r * 0.35).toFixed(1)}" rx="${(r * 0.32).toFixed(1)}" ry="${(r * 0.2).toFixed(1)}" fill="#fff" opacity=".4"/>`).join("")}
-        <g transform="rotate(-24 150 160)"><rect x="40" y="150" width="170" height="7" rx="3.5" fill="#a2581c"/><rect x="38" y="149" width="40" height="9" rx="3" fill="#7a4414"/><rect x="208" y="149" width="22" height="9" rx="2" fill="#d0d0d0" stroke="#8a8a8a" stroke-width=".6"/><path d="M230 150 l30 2.6 l-30 3.4 z" fill="#2b2b2b"/></g>
-        <g transform="rotate(-12 150 178)"><rect x="60" y="176" width="150" height="6" rx="3" fill="#c8812f"/><rect x="208" y="175" width="20" height="8" rx="2" fill="#d0d0d0" stroke="#8a8a8a" stroke-width=".6"/><path d="M228 176 l26 2 l-26 3.6 z" fill="#3a2a1a"/></g></svg>`;
+      const blobs = PAL_COLORS.map((c, i) => { const t = ((205 + i * 26.5) * Math.PI) / 180; return { c, cx: 142 + Math.cos(t) * 88, cy: 100 + Math.sin(t) * 66, r: rand(16, 21) }; });
+      // old paint already dragged around the board, so the palette looks used before the first dip
+      const OLD = ["#7a3b22", "#a9672f", "#c98a3a", "#5e6f7d", "#8c95a0", "#b5482c", "#d9b45a", "#6d5a3a", "#e4cf9a", "#8a4a2c", "#47606e", "#c7a24a", "#9c3f2a", "#d8c28c"];
+      const smears = OLD.map((c, i) => {
+        const t = (i / OLD.length) * Math.PI * 2 + rand(-0.3, 0.3), rr = rand(0.25, 0.95), x = 145 + Math.cos(t) * 92 * rr, y = 105 + Math.sin(t) * 68 * rr, a = rand(0, Math.PI * 2), l = rand(26, 58);
+        return `<path d="M${(x - Math.cos(a) * l).toFixed(1)} ${(y - Math.sin(a) * l).toFixed(1)} Q${(x + rand(-16, 16)).toFixed(1)} ${(y + rand(-16, 16)).toFixed(1)} ${(x + Math.cos(a) * l).toFixed(1)} ${(y + Math.sin(a) * l).toFixed(1)}" stroke="${c}" stroke-width="${rand(14, 30).toFixed(1)}" opacity="${rand(0.72, 0.98).toFixed(2)}"/>`;
+      }).join("");
+      // each colour has been pulled towards the middle more than once
+      const tails = blobs.flatMap(({ c, cx, cy, r }) => [0, 1].map(() => {
+        const ex = cx + (145 - cx) * rand(0.35, 0.72) + rand(-14, 14), ey = cy + (105 - cy) * rand(0.35, 0.72) + rand(-14, 14);
+        return `<path d="M${cx.toFixed(1)} ${cy.toFixed(1)} Q${((cx + ex) / 2 + rand(-12, 12)).toFixed(1)} ${((cy + ey) / 2 + rand(-12, 12)).toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}" stroke="${c}" stroke-width="${(r * rand(0.5, 0.95)).toFixed(1)}" opacity="${rand(0.6, 0.9).toFixed(2)}"/>`;
+      })).join("");
+      const SHAPE = "M34 110 C30 52 92 14 152 16 C214 18 258 56 254 110 C250 162 206 200 148 198 C118 197 112 178 96 176 C70 174 38 152 34 110 Z";
+      return `<svg viewBox="0 0 280 215"><defs><radialGradient id="rbPw" cx="40%" cy="35%" r="80%"><stop offset="0" stop-color="#b98a55"/><stop offset=".6" stop-color="#8f6236"/><stop offset="1" stop-color="#5f3c18"/></radialGradient>
+          <clipPath id="rbPc"><path d="${SHAPE}"/></clipPath>
+          <filter id="rbPs" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".07 .11" numOctaves="3" seed="${Math.floor(rand(1, 90))}" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="13" xChannelSelector="R" yChannelSelector="G" result="d"/>
+            <feColorMatrix in="n" type="luminanceToAlpha" result="h"/><feSpecularLighting in="h" surfaceScale="4" specularConstant=".7" specularExponent="15" lighting-color="#fff" result="s"><feDistantLight azimuth="235" elevation="52"/></feSpecularLighting>
+            <feComposite in="s" in2="d" operator="in" result="s2"/><feComposite in="d" in2="s2" operator="arithmetic" k1="0" k2="1" k3=".55" k4="0"/></filter></defs>
+        <g transform="rotate(-24 150 160) translate(-44 30)"><rect x="40" y="150" width="170" height="7" rx="3.5" fill="#a2581c"/><rect x="208" y="149" width="22" height="9" rx="2" fill="#d0d0d0"/><path d="M230 150 l30 2.6 l-30 3.4 z" fill="#2b2b2b"/></g>
+        <path d="${SHAPE}" fill="url(#rbPw)" stroke="#3f2810" stroke-width="2"/>
+        <g clip-path="url(#rbPc)"><g filter="url(#rbPs)" fill="none" stroke-linecap="round">${smears}${tails}
+          <ellipse cx="150" cy="108" rx="44" ry="27" fill="#ecd9a4"/><ellipse cx="166" cy="118" rx="24" ry="15" fill="#f4c64f"/><ellipse cx="130" cy="98" rx="20" ry="13" fill="#fff4d6"/>
+          <ellipse class="rb-swirl" cx="148" cy="108" rx="30" ry="18" stroke="#d9852f" stroke-width="7" opacity=".9"/><ellipse class="rb-swirl" cx="148" cy="108" rx="15" ry="9" stroke="#fff4d6" stroke-width="6" opacity=".9"/>
+          <g class="rb-palsm" fill="none" stroke-linecap="round"></g>
+          ${blobs.map(({ c, cx, cy, r }) => `<path class="rb-blob" data-c="${c}" data-x="${cx.toFixed(1)}" data-y="${cy.toFixed(1)}" d="${blobPath(cx, cy, r)}" fill="${c}"/>`).join("")}</g></g>
+        <ellipse cx="66" cy="130" rx="13" ry="11" fill="#140c05"/>
+        <g class="rb-palbr"><path d="M148 108 l9 -7 l6 6 l-7 9 z" fill="#d9852f"/><rect x="158" y="96" width="12" height="8" rx="1.5" transform="rotate(-45 164 100)" fill="#d0d0d0"/><path d="M168 96 L232 32" stroke="#6b3a14" stroke-width="6" stroke-linecap="round"/></g></svg>`;
+    };
+    // a dip leaves its mark: the colour is dragged towards the middle and that blob of paint gets a little smaller
+    const smudgePal = (pal, bl, color, ms) => {
+      const layer = pal.querySelector(".rb-palsm"), x = +bl.dataset.x, y = +bl.dataset.y;
+      const ex = x + (145 - x) * rand(0.45, 0.8) + rand(-12, 12), ey = y + (105 - y) * rand(0.45, 0.8) + rand(-12, 12);
+      const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      p.setAttribute("d", `M${x} ${y} Q${(x + ex) / 2 + rand(-14, 14)} ${(y + ey) / 2 + rand(-14, 14)} ${ex} ${ey}`);
+      p.setAttribute("stroke", color); p.setAttribute("stroke-width", rand(8, 14).toFixed(1)); p.setAttribute("opacity", ".92"); p.setAttribute("pathLength", "1");
+      p.style.strokeDasharray = "1";
+      layer.appendChild(p);
+      p.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: ms, easing: "ease-out", fill: "both" });
+      if (layer.children.length > 14) layer.firstElementChild.remove();
+      const s = +(bl.dataset.s || 1), s2 = Math.max(0.62, s * 0.93);
+      bl.dataset.s = s2; bl.style.transform = `scale(${s2})`;
+      bl.animate([{ transform: `scale(${s})` }, { transform: `scale(${s * 1.2})`, offset: 0.35 }, { transform: `scale(${s2})` }], { duration: ms, easing: "ease-out" });
     };
     const JOKER_SVG = `<svg viewBox="0 0 71 96" preserveAspectRatio="none">
       <path class="f" d="M24 44 Q18 38 13 23 Q22 32 30 36 Q33 24 35.5 7 Q38 24 41 36 Q49 32 58 23 Q53 38 47 44 Z" fill="#d7263d"/>
@@ -889,10 +927,12 @@
     // the Instagram page, every piece of it marked so the swarm can build it
     const igPage = () => `<div class="rb-ig">
       <div class="rb-ig-top"><span class="rb-ig-logo rb-igp">Instagram</span><span class="rb-ig-search rb-igp">Search</span><span class="rb-ig-ico rb-igp">♡</span></div>
-      <div class="rb-ig-head"><div class="rb-ig-avatar rb-igp"><i></i></div>
-        <div class="rb-ig-info"><div class="rb-ig-name"><b class="rb-igp">${esc(IG.handle)}</b><button class="rb-igp">Follow</button><button class="rb-igp">Message</button></div>
-          <div class="rb-ig-stats"><span class="rb-igp"><b>${IG.posts}</b> posts</span><span class="rb-igp"><b>${esc(IG.followers)}</b> followers</span><span class="rb-igp"><b>${IG.following}</b> following</span></div>
-          <div class="rb-ig-bio"><b class="rb-igp">${esc(IG.name)}</b>${IG.bio.map((l) => `<span class="rb-igp">${esc(l)}</span>`).join("")}</div></div></div>
+      <div class="rb-ig-head"><div class="rb-ig-pic"><div class="rb-ig-avatar rb-igp"><i></i></div><div class="rb-ig-note rb-igp">${esc(IG.note)}</div></div>
+        <div class="rb-ig-info"><div class="rb-ig-name rb-igp">${esc(IG.handle)} <small>···</small></div><div class="rb-ig-full rb-igp">${esc(IG.name)}</div>
+          <div class="rb-ig-stats"><span class="rb-igp"><b>${IG.posts}</b> post</span><span class="rb-igp"><b>${IG.followers}</b> followers</span><span class="rb-igp"><b>${IG.following}</b> following</span></div>
+          <div class="rb-ig-bio"><span class="rb-igp">${esc(IG.bio)}</span><span class="rb-ig-th rb-igp">@ ${esc(IG.threads)}</span></div></div></div>
+      <div class="rb-ig-acts"><button class="rb-igp">Following ⌄</button><button class="rb-igp">Message</button><button class="rb-igp">+</button></div>
+      <div class="rb-ig-hl">${IG.highlights.map((h) => `<i class="rb-igp" style="background:${h}"></i>`).join("")}</div>
       <div class="rb-ig-tabs rb-igp"><span>Posts</span><span>Reels</span><span>Tagged</span></div>
       <div class="rb-ig-grid">${IG.tiles.map((t) => `<div class="rb-ig-item rb-igp" style="background-image:${t}"></div>`).join("")}</div></div>`;
     // a dot of paint on the cursor while an agent carries a colour
@@ -902,8 +942,9 @@
     const SPECIAL_OWN = ".card, .mine-grid, .cal-app, .paint-area canvas, .cmd .line input, .msn-bar textarea, .ieview";
     const SPECIAL = {
       // cards: the deck goes down first, then several agents deal from it at once
-      solitaire(rl, base, k) { const ids = deal(rl, base, k) || []; const j = joker(rl, base, k, ids); return j ? [...ids, j] : ids; },
-      // minesweeper: the grid is drawn row by row, then a crate of mines arrives and every mine is carried over and placed by hand
+      solitaire(rl, base, k) { const j = joker(rl, base, k, [base + ":b"]); return j ? [j, ...(deal(rl, base, k, j) || [])] : []; },
+      // minesweeper: the grid is drawn row by row, then a crate of mines arrives, every mine is carried over and placed by hand,
+      // and once all of them are on the board they are hidden under their cells together
       mine(rl, base, k, partIds, win, app) {
         const g = rl.querySelector(".mine-grid"); if (!g?.children.length) return;
         const rowIds = drawRows(g, base, k, "grid"), ids = [...rowIds];
@@ -915,6 +956,7 @@
         app.extras = [crate];
         const crateId = base + ":crate"; ids.push(crateId);
         task(crateId, async (a) => { say(a, "mines"); await go(a, cx, cy + 44); fx.appendChild(crate); flyIn(crate, 0, 70, 320 * k); click(a); await wait(220 * k); }, { deps: [base + ":b"], pri: -1, x: cx, y: cy });
+        const placed = [];
         [0, 1, 2].forEach((n) => { const id = `${base}:mines${n}`; ids.push(id); task(id, async (a) => {
           for (const c of picks.filter((_, j) => j % 3 === n)) {
             say(a, "pick up");
@@ -926,10 +968,20 @@
             m.animate([{ translate: "0 0" }, { translate: `${(tx - a.x) * 0.5}px ${ty - a.y - 44}px`, offset: 0.5 }, { translate: `${tx - a.x}px ${ty - a.y}px` }], { duration: t * sp, easing: "cubic-bezier(.4,0,.6,1)", fill: "forwards" });
             await go(a, tx, ty - 6, t, "cubic-bezier(.4,0,.6,1)");
             click(a); c.animate([{ background: "#ffe08a" }, { background: "#c0c0c0" }], { duration: 420 * sp });
-            at(260 * k, () => { m.classList.add("bury"); at(260, () => m.remove()); });
+            placed.push({ m, c });
             await wait(120 * k);
           }
         }, { deps: [...rowIds, crateId], pri: -1, x: cx, y: cy }); });
+        const hideId = base + ":hide", [gx, gy] = mid(g);
+        task(hideId, async (a) => {
+          say(a, "hide mines");
+          await go(a, gx, gy); await wait(900 * k); click(a);
+          placed.forEach(({ m, c }) => { m.classList.add("bury"); c.animate([{ background: "#ffe08a" }, { background: "#c0c0c0" }], { duration: 420 * sp }); at(300, () => m.remove()); });
+          crate.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 * sp, fill: "forwards" });
+          at(320, () => crate.remove());
+          await wait(420 * k);
+        }, { deps: ids.filter((id) => id.includes(":mines")), pri: -1, x: gx, y: gy });
+        ids.push(hideId);
         return ids;
       },
       // paint: a painter's palette comes in beside the window, and every colour is dipped from it before it goes on the canvas
@@ -938,11 +990,11 @@
         const tools = [...rl.querySelectorAll(".pt-grid button")], fgc = rl.querySelector(".swatch .fgc");
         const r = cv.getBoundingClientRect(), ar = area.getBoundingClientRect(), W = Math.min(r.width, ar.width) - 10, H = Math.min(r.height, ar.height) - 10;
         const ctx = cv.getContext("2d"), sx = cv.width / r.width, sy = cv.height / r.height;
-        const pal = document.createElement("div"), px = clamp(win.x - 110, 6, vw - 290), py = clamp(win.y + win.h - 160, 6, vh - 225);
+        const pal = document.createElement("div"), px = clamp(win.x > 140 ? win.x - 132 : win.x + win.w + 8, 6, vw - 130), py = clamp(win.y + win.h - 104, 6, vh - 101);
         pal.className = "rb-pal"; pal.style.cssText = `left:${px}px;top:${py}px`; pal.innerHTML = paletteSvg();
         app.extras = [pal];
         const palId = base + ":palette";
-        task(palId, async (a) => { say(a, "palette"); await go(a, px + 140, py + 100); fx.appendChild(pal); flyIn(pal, -180, 70, 420 * k); click(a); await wait(280 * k); }, { deps: [base + ":b"], pri: -1, x: px, y: py });
+        task(palId, async (a) => { say(a, "palette"); await go(a, px + 62, py + 48); fx.appendChild(pal); flyIn(pal, -180, 70, 420 * k); click(a); await wait(280 * k); }, { deps: [base + ":b"], pri: -1, x: px, y: py });
         const line = (pts, n = 6) => [pts[0], ...pts.slice(1).flatMap((q, i) => Array.from({ length: n }, (_, j) => [pts[i][0] + ((q[0] - pts[i][0]) * (j + 1)) / n, pts[i][1] + ((q[1] - pts[i][1]) * (j + 1)) / n]))];
         const ring = (cx, cy, rx, ry = rx, n = 24) => Array.from({ length: n + 1 }, (_, i) => [cx + Math.cos((i / n) * Math.PI * 2) * rx, cy + Math.sin((i / n) * Math.PI * 2) * ry]);
         const R0 = Math.min(W, H) * 0.1, sun = [W * 0.16, H * 0.24];
@@ -967,7 +1019,7 @@
           const bl = pal.querySelector(`.rb-blob[data-c="${color}"]`);
           if (bl) {
             say(a, "dip"); const [qx, qy] = mid(bl); await go(a, qx, qy); click(a);
-            bl.animate([{ transform: "scale(1)" }, { transform: "scale(1.22)" }, { transform: "scale(1)" }], { duration: 300 * sp, easing: "ease-out" });
+            smudgePal(pal, bl, color, 380 * sp);
             dip(a, color); if (fgc) fgc.style.background = color;
           }
           say(a, "paint");
@@ -983,59 +1035,104 @@
           undip(a);
         }, { deps: [base + ":b", palId], pri: -1, x: r.left + W * ((n % 4) / 4), y: r.top + H / 2 }); return id; })];
       },
-      // calendar: the month grid is drawn big in the middle of the window, with three dates wrong; the right numbers are launched
-      // from the top of the screen and land on them; then the grid is pushed into its place on the left and the tasks are added
+      // calendar: the grid is drawn almost as big as its window, then the numbers go in with some digits wrong. An agent takes the wrong digits out, the right ones are
+      // flung up from the bottom of the screen in another colour, an agent recolours them to match, and the calendar shrinks to the top left so the tasks can open
       calendar(rl, base, k, partIds, win) {
-        const grid = rl.querySelector(".cal.big"), capp = rl.querySelector(".cal-app"), left = rl.querySelector(".cal-left"); if (!grid?.children.length || !capp) return;
+        const grid = rl.querySelector(".cal.big"), capp = rl.querySelector(".cal-app"), left = rl.querySelector(".cal-left"), right = rl.querySelector(".cal-right"); if (!grid?.children.length || !capp) return;
         const q = (sel) => rl.querySelector(sel);
         [".cal-head", ".ctoday", ".cal-up", ".cal-sync", ".cday", ".cal-add", ".task-list", ".cempty"].map(q).filter(Boolean).forEach((e) => e.classList.add("rb-hide"));
-        const gr = grid.getBoundingClientRect(), ar = capp.getBoundingClientRect(), sc = Math.max(1, Math.min(1.3, (ar.width - 40) / gr.width, (ar.height - 40) / gr.height));
-        const dx = ar.left + ar.width / 2 - (gr.left + gr.width / 2), dy = ar.top + ar.height / 2 - (gr.top + gr.height / 2);
+        const ar = capp.getBoundingClientRect(), wide = !narrow && ar.width >= 460, M = 6, ease = "cubic-bezier(.5,0,.2,1)";
+        // where it ends up: a wider left column than the real app's, so the shrink is only a tad
         if (left) left.style.overflow = "visible";
-        grid.style.cssText += `;position:relative;z-index:2;transform-origin:center;transform:translate(${dx}px,${dy}px) scale(${sc})`;
+        if (wide && left) { left.style.width = `${Math.round(ar.width * 0.58)}px`; grid.style.height = `${clamp(ar.height - 200, 150, 320)}px`; grid.style.gridAutoRows = "1fr"; }
+        const gr = grid.getBoundingClientRect(), T = { left: gr.left - ar.left, top: gr.top - ar.top, width: gr.width, height: gr.height };
+        const hold = document.createElement("div"); hold.style.cssText = `flex:none;height:${gr.height}px`; grid.after(hold);
+        capp.style.position = "relative"; capp.style.background = "#6f8ce0"; if (left) left.style.background = "transparent";
+        rl.__pairs?.get(capp)?.classList.add("rb-wfoff"); // the wireframe of the normal layout would draw over the big grid
+        grid.classList.add("rb-calbig", "rb-callines");
+        grid.style.cssText += `;position:absolute;z-index:2;left:${M}px;top:${M}px;width:${ar.width - M * 2}px;height:${ar.height - M * 2}px;grid-auto-rows:1fr;font-size:${clamp((ar.height - M * 2) / 9, 16, 34)}px`;
         const days = [...grid.querySelectorAll("button[data-d]")];
-        const wrong = days.map((d) => [Math.random(), d]).sort((p, r) => p[0] - r[0]).slice(0, 3).map(([, d]) => {
-          const right = d.textContent; let w; do { w = String(1 + ((Math.random() * 31) | 0)); } while (w === right); d.textContent = w; return [d, right];
+        days.forEach((d) => { d.innerHTML = [...d.textContent].map((c) => `<i class="rb-dg">${c}</i>`).join(""); d.classList.add("rb-nodg"); });
+        const wrong = days.map((d) => [Math.random(), d]).sort((p, r) => p[0] - r[0]).slice(0, 8).map((p) => p[1]).sort((p, r) => days.indexOf(p) - days.indexOf(r)).map((d) => {
+          const dg = pick([...d.querySelectorAll(".rb-dg")]), good = dg.textContent; let w; do { w = String(1 + ((Math.random() * 9) | 0)); } while (w === good); dg.textContent = w; return { dg, good };
         });
         const rowIds = drawRows(grid, base, k, "calendar"), ids = [...rowIds];
-        const fixId = base + ":fix"; ids.push(fixId);
-        task(fixId, async (a) => {
-          for (const [d, right] of wrong) {
-            const [cx, cy, cr] = mid(d);
-            say(a, "wrong date");
-            await go(a, cx, cy, 260 * k); click(a);
-            d.animate([{ background: "#ffb4b4" }, { background: "#ffb4b4" }], { duration: 700 * sp });
-            const sx = clamp(cx + rand(-160, 160), 30, vw - 30), sy = -30, t = 480 * k;
-            const n = document.createElement("div"); n.className = "rb-num"; n.textContent = right; n.style.cssText = `left:${sx}px;top:${sy}px`; fx.appendChild(n);
-            n.animate([{ transform: "translate(-50%,-50%) rotate(0deg)" }, { transform: `translate(calc(-50% + ${(cx - sx) * 0.5}px), calc(-50% + ${(cy - sy) * 0.45}px)) rotate(180deg) scale(1.2)`, offset: 0.5 },
-              { transform: `translate(calc(-50% + ${cx - sx}px), calc(-50% + ${cy - sy}px)) rotate(360deg) scale(${(cr.height / 32).toFixed(2)})` }], { duration: t * sp, easing: "cubic-bezier(.3,0,.6,1)", fill: "forwards" });
-            say(a, "catch");
-            await go(a, cx + 14, cy - 10, t, "linear");
-            n.remove(); d.textContent = right;
-            d.animate([{ scale: "1.5", background: "#c6f0c2" }, { scale: "1", background: "#fff" }], { duration: 320 * sp, easing: "cubic-bezier(.3,1.4,.5,1)" });
-            tick(); click(a);
+        const hint = { pri: -1, x: ar.left + ar.width / 2, y: ar.top + ar.height / 2 };
+        const numsId = base + ":nums", rmId = base + ":rm", flingId = base + ":fling", tintId = base + ":tint", slideId = base + ":slide";
+        ids.push(numsId, rmId, flingId, tintId, slideId);
+        task(numsId, async (a) => {
+          say(a, "numbers");
+          for (const [n, d] of days.entries()) {
+            const [cx, cy] = mid(d);
+            await go(a, cx, cy, 34 * k, "linear");
+            d.classList.remove("rb-nodg");
+            d.querySelectorAll(".rb-dg").forEach((g) => g.animate([{ scale: "0.2", opacity: 0 }, { scale: "1", opacity: 1 }], { duration: 160 * sp, easing: "cubic-bezier(.3,1.4,.5,1)" }));
+            if (n % 4 === 0) tick();
           }
-        }, { deps: rowIds, pri: -1, x: gr.left + dx, y: gr.top + dy });
-        const slideId = base + ":slide"; ids.push(slideId);
+        }, { deps: rowIds, ...hint });
+        // one agent takes out every wrong digit; only the digit goes, its number stays
+        task(rmId, async (a) => {
+          await wait(420 * k);
+          say(a, "remove digit");
+          for (const { dg } of wrong) {
+            const [x, y] = mid(dg);
+            await go(a, x, y, 190 * k); click(a);
+            dg.style.color = "#e11d48";
+            dg.animate([{ scale: "1" }, { scale: "1.7", offset: 0.35 }, { scale: "0" }], { duration: 230 * k * sp, easing: "ease-in" });
+            at(225 * k, () => { dg.classList.add("rb-gap"); dg.style.color = ""; });
+            await wait(90 * k);
+          }
+          await wait(380 * k);
+        }, { deps: [numsId], ...hint });
+        // the right digits are thrown from below the bottom edge of the screen, in a colour that does not belong
+        task(flingId, async (a) => {
+          say(a, "launch");
+          await go(a, ar.left + ar.width / 2, vh - 26, 300 * k); click(a); thud();
+          await Promise.all(wrong.map(({ dg, good }, n) => new Promise((res) => at(n * 110 * k, () => {
+            const [cx, cy, cr] = mid(dg), sx = clamp(cx + rand(-240, 240), 30, vw - 30), sy = vh + 40, t = 560 * k;
+            const e = document.createElement("div"); e.className = "rb-num"; e.textContent = good; e.style.cssText = `left:${sx}px;top:${sy}px;font-size:${Math.round(cr.height)}px`; fx.appendChild(e);
+            e.animate([{ transform: "translate(-50%,-50%) rotate(-50deg)" }, { transform: `translate(calc(-50% + ${(cx - sx) * 0.55}px), calc(-50% + ${(cy - sy) * 0.62}px)) rotate(190deg) scale(1.3)`, offset: 0.55 },
+              { transform: `translate(calc(-50% + ${cx - sx}px), calc(-50% + ${cy - sy}px)) rotate(360deg)` }], { duration: t * sp, easing: "cubic-bezier(.2,.7,.4,1)", fill: "forwards" });
+            at(t, () => { e.remove(); dg.textContent = good; dg.classList.remove("rb-gap"); dg.classList.add("rb-dgnew"); dg.animate([{ scale: "1.5" }, { scale: "1" }], { duration: 220 * sp, easing: "cubic-bezier(.3,1.4,.5,1)" }); tick(); res(); });
+          }))));
+          await wait(420 * k);
+        }, { deps: [rmId], ...hint });
+        task(tintId, async (a) => {
+          say(a, "match colour");
+          for (const { dg } of wrong) { const [x, y] = mid(dg); await go(a, x, y, 200 * k); click(a); dg.classList.remove("rb-dgnew"); await wait(70 * k); }
+          await wait(320 * k);
+        }, { deps: [flingId], ...hint });
         task(slideId, async (a) => {
-          say(a, "push left");
+          say(a, "shrink");
           const r0 = grid.getBoundingClientRect();
-          await go(a, r0.left + 6, r0.top + 6, 240 * k); click(a);
+          await go(a, r0.right - 8, r0.bottom - 8, 260 * k); click(a);
+          grid.classList.remove("rb-callines"); if (left) left.style.background = "";
           const t = 620 * k;
-          grid.style.transition = `transform ${t * sp}ms cubic-bezier(.5,0,.2,1)`; grid.style.transform = "none";
-          await go(a, gr.left + 6, gr.top + 6, t, "cubic-bezier(.5,0,.2,1)");
-          grid.style.transition = ""; grid.style.zIndex = ""; if (left) left.style.overflow = "";
+          grid.style.transition = ["left", "top", "width", "height", "font-size"].map((p) => `${p} ${t * sp}ms ${ease}`).join(", ");
+          Object.assign(grid.style, { left: `${T.left}px`, top: `${T.top}px`, width: `${T.width}px`, height: `${T.height}px`, fontSize: wide ? "13px" : "11px" });
+          await go(a, ar.left + T.left + T.width - 8, ar.top + T.top + T.height - 8, t, ease);
+          Object.assign(grid.style, { transition: "", zIndex: "", position: "", left: "", top: "", width: "", height: wide ? `${T.height}px` : "", gridAutoRows: wide ? "1fr" : "" });
+          hold.remove(); if (left) left.style.overflow = "";
           blip(300, 0.08, "sine", 0.05, 120);
           [".cal-head", ".ctoday", ".cal-up", ".cal-sync"].map(q).filter(Boolean).forEach((e, i) => { reveal(e); flyIn(e, 0, i ? 14 : -14, 260 * k, i * 70); });
           await wait(200 * k);
-        }, { deps: [fixId], pri: -1, x: gr.left + dx, y: gr.top + dy });
+        }, { deps: [tintId], ...hint });
         const dayId = base + ":day"; ids.push(dayId);
         task(dayId, async (a) => {
+          // the tasks pane opens across the blue the calendar left behind
+          if (right) {
+            const rr = right.getBoundingClientRect();
+            say(a, "open tasks"); await go(a, rr.left + 8, rr.top + rr.height / 2, 260 * k); click(a);
+            right.style.background = "#fff";
+            right.animate([{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 380 * sp, easing: ease });
+            await wait(380 * k);
+          }
+          capp.style.background = "";
           const h = q(".cday"); if (h) await typeEl(a, h, k, win.x + win.w - 8);
           const f = q(".cal-add");
           if (f) { const fr = f.getBoundingClientRect(); say(a, "form"); const box = await frame(a, { x: fr.left, y: fr.top, w: fr.width, h: fr.height }, "form.cal-add", 240 * k); reveal(f); f.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 * sp }); unframe(box, 120); }
           [".task-list", ".cempty"].map(q).filter(Boolean).forEach(reveal);
-        }, { deps: [slideId], pri: -1, x: ar.left + ar.width * 0.7, y: ar.top + 20 });
+        }, { deps: [slideId], pri: -1, x: ar.left + ar.width * 0.8, y: ar.top + 20 });
         const ct = q(".ctext"), list = q(".task-list"), empty = q(".cempty");
         if (ct && list) ["ship the visual rebuild", "post it on instagram"].forEach((txt, i) => { const id = `${base}:task${i}`; ids.push(id); task(id, async (a) => {
           const [, cy, cr] = mid(ct);
@@ -1195,33 +1292,60 @@
         return id;
       });
     }
-    function deal(rl, base, k) {
+    // the hand-drawn joker is copied across the table, every copy turns into a different card at the same instant, and those cards are dealt to their places
+    function deal(rl, base, k, jokerId) {
+      const table = rl.querySelector(".sol-table");
       const cards = [...rl.querySelectorAll(".card")].filter((c) => !c.closest(".deck-grid"));
-      if (!cards.length) return;
+      if (!table || !cards.length) return;
       cards.forEach((c) => c.classList.add("rb-hide"));
-      const stock = cards.filter((c) => c.dataset.pile === "s"), rest = cards.filter((c) => c.dataset.pile !== "s");
-      const [ox, oy] = mid(stock[0] || cards[0]);
-      const ids = [base + ":deck"];
-      task(base + ":deck", async (a) => {
-        say(a, "shuffle");
-        await go(a, ox, oy); click(a);
-        stock.forEach((c, n) => { reveal(c); flyIn(c, rand(-40, 40), -60, 280 * k, n * 40); });
-        await wait(320 * k);
-      }, { deps: [base + ":b"], pri: -1, x: ox, y: oy });
-      const per = Math.max(3, Math.ceil(rest.length / 10));
-      for (let b = 0; b * per < rest.length; b++) {
-        const group = rest.slice(b * per, b * per + per), id = `${base}:deal${b}`;
+      const cs = getComputedStyle(table), cw = parseFloat(cs.getPropertyValue("--cw")) || 71, ch = parseFloat(cs.getPropertyValue("--ch")) || 96, tr = table.getBoundingClientRect();
+      const cols = Math.min(13, cards.length), rows = Math.ceil(cards.length / cols), dx = Math.min(cw * 0.7, (tr.width - cw - 16) / Math.max(1, cols - 1)), dy = Math.min(ch * 0.62, (tr.height - ch - 16) / Math.max(1, rows));
+      const x0 = (tr.width - cw - dx * (cols - 1)) / 2, y0 = Math.max(8, tr.height - ch - dy * (rows - 1) - 10);
+      const faces = ["♠", "♥", "♦", "♣"].flatMap((s) => ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"].map((v) => [v, s])).map((f) => [Math.random(), f]).sort((p, q) => p[0] - q[0]).map((p) => p[1]);
+      const spots = cards.map((_, n) => ({ x: x0 + (n % cols) * dx, y: y0 + Math.floor(n / cols) * dy }));
+      const shown = [], copyId = base + ":copy", ids = [copyId], box = (p, z) => `left:${p.x}px;top:${p.y}px;width:${cw}px;height:${ch}px;z-index:${z}`;
+      task(copyId, async (a) => {
+        const jk = table.querySelector(".rb-joker"); if (!jk) return;
+        const jx = parseFloat(jk.style.left), jy = parseFloat(jk.style.top);
+        say(a, "copy");
+        await go(a, tr.left + jx + cw / 2, tr.top + jy + ch / 2); click(a);
+        const copies = spots.map((p, n) => {
+          const c = jk.cloneNode(true); c.style.cssText = box(p, 6 + n);
+          c.style.visibility = "hidden"; table.appendChild(c);
+          at(n * 15 * k, () => { c.style.visibility = ""; flyIn(c, jx - p.x, jy - p.y, 240 * k); if (n % 6 === 0) tick(); });
+          return c;
+        });
+        await wait((copies.length * 15 + 240 + 320) * k);
+        // no in-between: on one frame they are all jokers, on the next they are the deck
+        say(a, "transform"); click(a); chime();
+        copies.forEach((c, n) => {
+          const [v, s] = faces[n % faces.length], f = document.createElement("div");
+          f.className = "card" + (s === "♥" || s === "♦" ? " red" : ""); f.style.cssText = c.style.cssText; f.style.visibility = "";
+          f.innerHTML = `<span class="ci">${v}<br>${s}</span><span class="ci br">${v}<br>${s}</span><span class="cc">${s}</span>`;
+          c.replaceWith(f); shown[n] = f;
+          f.animate([{ filter: "brightness(2.2)" }, { filter: "brightness(1)" }], { duration: 260 * sp, easing: "ease-out" });
+        });
+        await wait(520 * k);
+      }, { deps: [jokerId], pri: -1, x: tr.left + tr.width / 2, y: tr.top + tr.height / 2 });
+      const per = Math.max(3, Math.ceil(cards.length / 10));
+      for (let b = 0; b * per < cards.length; b++) {
+        const first = b * per, group = cards.slice(first, first + per), id = `${base}:deal${b}`;
         ids.push(id);
         task(id, async (a) => {
           say(a, "deal");
-          for (const c of group) {
-            await go(a, ox, oy, 150 * k);
+          for (const [n, c] of group.entries()) {
+            const f = shown[first + n];
+            if (!f) { reveal(c); continue; }
+            const [ox, oy] = mid(f);
+            await go(a, ox, oy, 120 * k);
             const [cx, cy] = mid(c);
-            reveal(c); flyIn(c, ox - cx, oy - cy, 230 * k);
+            f.style.zIndex = 200;
+            f.animate([{ translate: "0 0" }, { translate: `${cx - ox}px ${cy - oy}px` }], { duration: 230 * k * sp, easing: "cubic-bezier(.3,.7,.3,1)", fill: "forwards" });
             await go(a, cx, cy, 230 * k, "cubic-bezier(.3,.7,.3,1)");
+            reveal(c); f.remove();
           }
           tick();
-        }, { deps: [base + ":deck"], pri: -1, x: ox, y: oy });
+        }, { deps: [copyId], pri: -1, x: tr.left + tr.width / 2, y: tr.top + tr.height / 2 });
       }
       return ids;
     }
@@ -1254,13 +1378,15 @@
       }, { deps, pri: -1, x: tr.left + x, y: tr.top + y });
       return id;
     }
+    // a window with another one on top of it (or on its way to the taskbar) loses its selection box and wireframe, which would otherwise draw over the top window
+    const goUnder = (wrap) => { wrap.classList.add("under"); if (wrap.f) { unframe(wrap.f, 0); wrap.f = null; } };
     // a finished window shrinks down into the taskbar, the way XP minimises, so only two or three are ever on screen
     const minimize = (i) => {
       const app = apps[i], wrap = app?.wrap; if (!wrap?.isConnected) return;
       const base = "app:" + app.id;
       for (let n = queue.length - 1; n >= 0; n--) if (queue[n].id === base || queue[n].id.startsWith(base + ":")) queue.splice(n, 1);
       wrap.querySelectorAll(".rb-hide").forEach((e) => e.classList.remove("rb-hide"));
-      if (wrap.f) unframe(wrap.f, 0);
+      goUnder(wrap);
       (app.extras || []).forEach((e) => { e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 * sp, fill: "forwards" }); at(320, () => e.remove()); });
       delete appRects[app.id];
       seamPool = seamPool.filter(([id]) => id !== app.id);
@@ -1280,7 +1406,7 @@
       wrap.style.cssText = `width:${w}px;height:${h}px;transform:translate(${x}px,${y}px);--tb:${app.tb}px`;
       app.rl.classList.add("rb-rl"); app.wf.classList.add("rb-wf");
       wrap.append(app.rl, app.wf);
-      app.wrap = wrap;
+      app.wrap = wrap; app.r = r;
       wrap.insertAdjacentHTML("beforeend", `<div class="rb-scan"></div>`);
       // in the layer straight away, so windows stack in the order they open whichever agent gets to them first
       wrap.style.visibility = "hidden"; appsL.appendChild(wrap);
@@ -1289,6 +1415,7 @@
       task(base, async (a) => {
         say(a, app.id);
         wrap.style.setProperty("--a", a.color);
+        apps.forEach((o) => { if (o?.wrap && o !== app && o.wrap.isConnected && !o.wrap.style.visibility && o.r.x < x + w && x < o.r.x + o.r.w && o.r.y < y + h && y < o.r.y + o.r.h) goUnder(o.wrap); });
         wrap.style.visibility = "";
         focusPt = [x + w / 2, y + h / 2];
         thud();
@@ -1315,7 +1442,7 @@
         });
         // the window is done once every piece is in: the wireframe goes, and the window joins the stitching
         task(base + ":d", async () => {
-          wrap.classList.add("done"); if (wrap.f) unframe(wrap.f, 0);
+          wrap.classList.add("done"); goUnder(wrap);
           appRects[app.id] = r;
           seamPool.push([app.id, APP_LINK[app.id] || "app"]);
           if (!rm) stitch(inside(r), ptOf(APP_LINK[app.id] || "app"), pick(THREADS), 1000);
@@ -1323,7 +1450,7 @@
         }, { deps: [base + ":b", ...partIds, ...tbIds, ...ownIds], pri: -2, x, y });
         const f = await frame(a, r, "win · " + app.title.replace(/ - .*$/, "").replace(/^.* - /, ""), 360 * k);
         wrap.classList.add("wf"); click(a);
-        wrap.f = f;
+        if (wrap.classList.contains("under")) unframe(f, 0); else wrap.f = f;
       }, { pri: -1, x, y });
       task(base + ":t", async (a) => {
         say(a, "titlebar");
@@ -1359,14 +1486,14 @@
     at(650, () => { ov.classList.add("on"); skipBtn.focus({ preventScroll: true }); });
     at(900, () => { decode(q(".rb-intro-t"), "VISUAL REBUILD", 900); q(".rb-intro-bar").classList.add("on"); blip(90, 0.9, "sawtooth", 0.6, 45); });
     at(1150, () => { q(".rb-intro-s").innerHTML = "unmounting render tree · <b>0 nodes remain</b>"; tick(); });
-    at(1900, () => { q(".rb-intro-s").innerHTML = "spawning swarm ▸ <b>8 agents · needle and thread</b>"; tick(); });
+    at(1900, () => { q(".rb-intro-s").innerHTML = "spawning swarm ▸ <b>8 agents · thread</b>"; tick(); });
     at(1000, () => prepAll());
 
     // 2.6-9s: the back end, typed in from the real source and wired up
     at(2600, () => {
       intro.classList.add("off"); hud.classList.remove("off");
       phase("BACK END", "#22d3ee");
-      caption("01 · BACK END", "BACKEND", "Rules, serverless functions, data and a deploy, typed in from the real source.");
+      caption("BACKEND", "Rules, serverless functions, data and a deploy, typed in from the real source.");
       spawn(8); thud();
     });
     at(2700, () => {
@@ -1384,13 +1511,13 @@
       }
     });
 
-    // 9-14.5s: the front end on top of the back end; needles start stitching the two together
+    // 9-14.5s: the front end on top of the back end; threads start stitching the two together
     let sewTimer = 0;
     at(9000, () => {
       beL.classList.add("under");
       pace = 1.05;
       phase("FRONT END", "#f472b6");
-      caption("02 · FRONT END", "INTERFACE", "Shell, runtime, sound, data and styles, on top of the back end.");
+      caption("INTERFACE", "Shell, runtime, sound, data and styles, on top of the back end.");
       thud();
       ["index", "app", "sound", "data", "style", "games", "extras"].forEach((id) => buildBox(feL, id, FE[id], "fe"));
       wire(feL, ["index", "r", 0.5], ["app", "l", 0.3], "boot");
@@ -1416,9 +1543,12 @@
         return;
       }
       if (apps[nextApp] === undefined || now - lastOpen < 1500 * sp) return;
+      // these windows open on top of the one named: let the set piece underneath finish first
+      const heldBy = { snake: "solitaire", solitaire: "calendar" }[APP_IDS[nextApp]];
+      if (heldBy && busyWith("app:" + heldBy) && now - lastOpen < 18000 * sp) return;
       if (onScreen.length >= 3) {
         const old = apps[onScreen[0]];
-        if (busyWith("app:" + old.id) && now - old.openedAt < 10000 * sp) return;
+        if (busyWith("app:" + old.id) && now - old.openedAt < (old.id === "calendar" ? 22000 : 10000) * sp) return;
         minimize(onScreen.shift());
       }
       const i = nextApp++;
@@ -1428,13 +1558,13 @@
       feL.classList.add("under"); beL.classList.add("under2");
       pace = 1;
       phase("APPS", "#fbbf24");
-      caption("03 · APPS", "PROGRAMS", "Every window rebuilt live, piece by piece, two or three at a time.");
+      caption("PROGRAMS", "Every window rebuilt live, piece by piece, two or three at a time.");
       const edges = [[-30, vh * 0.3], [vw + 30, vh * 0.5], [vw * 0.5, vh + 30], [-30, vh * 0.8], [vw + 30, vh * 0.2], [vw * 0.3, -30]];
       spawn(6, (k) => edges[k]); thud();
       appTimer = every(150, appTick);
     });
     at(18000, capOff);
-    at(47000, endSeq);
+    at(62000, endSeq);
 
     // the ending: the windows fly away and the desktop is built, then the taskbar, then the swarm flies home
     function endSeq() {
@@ -1443,8 +1573,8 @@
       progLock = true; progEl.style.transition = `width ${6.6 * sp}s linear`; progEl.style.width = "100%";
       at(400, () => {
         queue.length = 0; focusPt = null;
-        phase("DESKTOP", "#a3e635");
-        caption("04 · DESKTOP", "DESKTOP", "Wallpaper, icons and taskbar, then the live desktop takes over.");
+        phase("FINAL TOUCHES", "#a3e635");
+        caption("FINAL TOUCHES", "Wallpaper, icons and taskbar, then the live desktop takes over.");
         appsL.querySelectorAll(".rb-hide").forEach((e) => e.classList.remove("rb-hide"));
         [...appsL.children].reverse().forEach((w, k) => at(k * 45, () => {
           const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(w.style.transform) || [0, 0, 0];
