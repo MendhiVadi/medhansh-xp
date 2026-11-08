@@ -4,9 +4,11 @@
 //           collections, a vercel deploy, the mailer) and wires them up across the whole screen
 // 9-14.5s   02 FRONT END: the modules (index.html, app.js, sound.js, data.js, style.css, the lazy chunks) are built on top of
 //           the dimmed back end, and needles start stitching threads between the two layers
-// 14.5-43s  03 APPS: real app windows, two or three at a time, each outlined as a wireframe, painted top to bottom and filled in
-//           piece by piece with a job for every agent; a window is minimised once its swarm is done with it
-// 43-50s    04 DESKTOP: the windows fly away, the wallpaper opens from the first click, icons, taskbar and tray are placed, the
+// 14.5-47s  03 APPS: real app windows, two or three at a time, each outlined as a wireframe, painted top to bottom and filled in
+//           piece by piece with a job for every agent (mines carried from a crate, a joker drawn by hand, the calendar fixed and
+//           pushed into place, paints dipped from a palette, Internet Explorer opening the Instagram profile); a window is
+//           minimised once its swarm is done with it
+// 47-54s    04 DESKTOP: the windows fly away, the wallpaper opens from the first click, icons, taskbar and tray are placed, the
 //           swarm flies home into the Start button and the live desktop takes over
 // A HUD at the top keeps the phase, the swarm size and the clock, and a caption names each phase as it starts. Space or Esc skips.
 // It is all theatre: nothing here writes data or touches the network. Loaded on demand by app.js.
@@ -110,6 +112,38 @@
 .rb-mine::after { transform: rotate(90deg); }
 .rb-mine.bury { transform: scale(0); opacity: 0; transition: transform .25s ease-in, opacity .25s; }
 @keyframes rbMine { from { transform: scale(0); } to { transform: scale(1); } }
+/* props the swarm brings along: a crate of mines, a painter's palette, a hand-drawn joker, numbers thrown at the calendar */
+.rb-crate, .rb-pal { position: absolute; pointer-events: none; }
+.rb-crate { width: 84px; height: 64px; filter: drop-shadow(0 6px 10px rgba(0,0,0,.5)); } .rb-crate svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.rb-pal { width: 280px; height: 215px; filter: drop-shadow(0 12px 22px rgba(0,0,0,.55)); } .rb-pal svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.rb-pal .rb-blob { transform-box: fill-box; transform-origin: center; }
+.rb-ag .rb-dip { position: absolute; left: 11px; top: -5px; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+.rb-joker { position: absolute; background: #fff; border: 1px solid #333; border-radius: 5px; box-shadow: 1px 1px 2px rgba(0,0,0,.35); overflow: hidden; z-index: 5; }
+.rb-joker svg { display: block; width: 100%; height: 100%; }
+.rb-joker path.l { fill: none; stroke: #1f1f1f; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.rb-joker .f { fill-opacity: 0; transition: fill-opacity .5s; } .rb-joker.fill .f { fill-opacity: .92; }
+.rb-joker text { font: bold 8px Arial, sans-serif; fill: #1f1f1f; opacity: 0; transition: opacity .3s; } .rb-joker.txt text { opacity: 1; }
+.rb-num { position: absolute; width: 26px; height: 32px; border-radius: 4px; background: #fff; border: 1px solid #7a96df; box-shadow: 0 6px 14px rgba(0,0,0,.4);
+  font: bold 15px Tahoma, sans-serif; color: #000; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+/* the Instagram page Internet Explorer opens */
+.rb-ig { position: absolute; inset: 0; overflow: hidden; background: #fff; color: #262626; font: 12px/1.4 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; text-align: left; }
+.rb-ig-top { height: 42px; border-bottom: 1px solid #dbdbdb; display: flex; align-items: center; gap: 14px; padding: 0 18px; }
+.rb-ig-logo { font: italic 700 21px "Segoe Script", "Brush Script MT", "Snell Roundhand", cursive; }
+.rb-ig-search { margin-left: auto; width: 170px; height: 26px; border-radius: 7px; background: #efefef; color: #8e8e8e; padding: 0 10px; line-height: 26px; box-sizing: border-box; }
+.rb-ig-ico { font-size: 18px; }
+.rb-ig-head { display: flex; gap: 26px; padding: 16px 26px 10px; align-items: flex-start; }
+.rb-ig-avatar { width: 92px; height: 92px; border-radius: 50%; padding: 3px; box-sizing: border-box; background: conic-gradient(#f9ce34, #ee2a7b, #6228d7, #f9ce34); flex: none; }
+.rb-ig-avatar i { display: block; width: 100%; height: 100%; border-radius: 50%; border: 3px solid #fff; box-sizing: border-box; background: url(photo.jpg?v=40) center / cover; }
+.rb-ig-info { flex: 1; min-width: 0; }
+.rb-ig-name { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 400; }
+.rb-ig-name button { font: 600 12px "Segoe UI", system-ui, sans-serif; padding: 5px 14px; border-radius: 8px; border: 0; background: #0095f6; color: #fff; }
+.rb-ig-name button + button { background: #efefef; color: #262626; }
+.rb-ig-stats { display: flex; gap: 24px; margin: 9px 0 7px; font-size: 13px; } .rb-ig-stats b { font-weight: 600; }
+.rb-ig-bio { font-size: 12.5px; line-height: 1.45; } .rb-ig-bio span { display: block; } .rb-ig-bio span:last-child { color: #00376b; font-weight: 600; }
+.rb-ig-tabs { border-top: 1px solid #dbdbdb; display: flex; justify-content: center; gap: 44px; font: 600 11px "Segoe UI", system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #8e8e8e; padding: 9px 0 8px; margin-top: 4px; }
+.rb-ig-tabs span:first-child { color: #262626; }
+.rb-ig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 0 26px; }
+.rb-ig-item { aspect-ratio: 1; background: #ddd center / cover; }
 
 /* the desktop copy that is built last */
 .rb-wall { position: absolute; inset: 0; clip-path: circle(0 at var(--x, 50%) var(--y, 50%)); transition: clip-path 1.2s cubic-bezier(.6,0,.2,1); }
@@ -290,10 +324,18 @@
     extras: { t: "EXTRAS.JS", tag: "lazy chunk", lines: [["calculator", ""], ["media player", "indexeddb"], ["my pictures", ""], ["task manager", ""]] },
   };
   // real apps, in build order (none that need the network)
-  const APP_IDS = ["cmd", "paint", "projects", "msn", "calendar", "mine", "solitaire", "spider", "snake", "about"];
-  const APP_SPOT = [[.3, .4], [.7, .36], [.22, .62], [.78, .62], [.56, .4], [.4, .62], [.62, .34], [.34, .46], [.66, .56], [.5, .5]];
+  const APP_IDS = ["cmd", "paint", "projects", "msn", "calendar", "mine", "solitaire", "ie", "snake", "about"];
+  // where each window goes: left and right alternate, so a small window on one side is never hidden by the next one
+  const APP_SPOT = [[.28, .42], [.72, .36], [.26, .64], [.78, .62], [.7, .38], [.3, .6], [.74, .36], [.26, .5], [.74, .6], [.58, .5]];
   // which module each finished app is stitched to underneath
-  const APP_LINK = { cmd: "app", paint: "app", projects: "data", msn: "otp", calendar: "db", mine: "games", solitaire: "games", spider: "games", snake: "games", about: "data" };
+  const APP_LINK = { cmd: "app", paint: "app", projects: "data", msn: "otp", calendar: "db", mine: "games", solitaire: "games", ie: "app", snake: "games", about: "data" };
+  // the Instagram profile Internet Explorer opens. Instagram refuses to be framed and the show never touches the network,
+  // so this is a drawing of the page: the handle, name and bio are real, the counts and tiles are stand-ins.
+  const IG = { handle: "mendhi_vadi", name: "Medhansh Khattar", posts: 12, followers: "1,204", following: 318,
+    bio: ["AI/ML engineer · Founder & CEO, Yap-less", "CS @ VIT Bhopal · Navi Mumbai", "medhansh-xp.vercel.app"],
+    tiles: ["url(photo.jpg?v=40)", "linear-gradient(135deg,#f58529,#dd2a7b)", "linear-gradient(135deg,#515bd4,#8134af)", "linear-gradient(135deg,#43e97b,#38f9d7)", "url(photo-full.jpg?v=40)", "linear-gradient(135deg,#fdf497,#fd5949)"] };
+  // the paints on the palette the swarm dips into for Paint
+  const PAL_COLORS = ["#ff8040", "#ff0000", "#ffff00", "#008000", "#0080ff", "#0000ff", "#800080", "#804000", "#800000", "#ffffff", "#000000"];
 
   let running = false;
 
@@ -390,7 +432,7 @@
     skipBtn.addEventListener("click", () => finish(true));
     const t0 = performance.now();
     const clockEl = q(".rb-clock"), progEl = q(".rb-prog i");
-    const TOTAL = 49000;
+    const TOTAL = 53000;
     let progLock = false;
     every(60, () => {
       const e = (performance.now() - t0) / sp;
@@ -805,43 +847,106 @@
     const mid = (e) => { const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, r]; };
     const flyIn = (e, dx, dy, t, delay = 0) => e.animate([{ translate: `${dx}px ${dy}px`, scale: "0.85", opacity: 0 }, { opacity: 1, offset: 0.15 }, { translate: "0px 0px", scale: "1", opacity: 1 }],
       { duration: t * sp, delay: delay * sp, easing: "cubic-bezier(.3,.7,.3,1)", fill: "backwards" });
+    // the props: a crate of mines, a painter's palette (blobs placed round the rim, drawn fresh each time), a joker card to draw
+    const CRATE_SVG = `<svg viewBox="0 0 84 64"><defs><linearGradient id="rbWd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c79a62"/><stop offset="1" stop-color="#8a5a2b"/></linearGradient></defs>
+      <g stroke="#111" stroke-width="2" stroke-linecap="round"><path d="M24 12v24M12 24h24M42 7v26M29 20h26M60 13v24M48 25h24"/></g>
+      <g fill="#111"><circle cx="24" cy="24" r="8"/><circle cx="42" cy="20" r="9"/><circle cx="60" cy="25" r="8"/><circle cx="33" cy="31" r="7"/><circle cx="51" cy="31" r="7"/></g>
+      <g fill="#fff" opacity=".7"><circle cx="21" cy="21" r="2"/><circle cx="39" cy="17" r="2.2"/><circle cx="57" cy="22" r="2"/></g>
+      <path d="M6 28h72v30a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z" fill="url(#rbWd)" stroke="#5a3a1a" stroke-width="1.5"/>
+      <path d="M6 40h72M6 51h72" stroke="#5a3a1a" stroke-width="1" opacity=".6"/><path d="M10 28v34M74 28v34" stroke="#5a3a1a" stroke-width="1.5"/>
+      <text x="42" y="49" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="9" fill="#3b2410">MINES</text></svg>`;
+    const paletteSvg = () => {
+      const blobPath = (cx, cy, r) => {
+        const n = 9, pts = Array.from({ length: n }, (_, i) => { const t = (i / n) * Math.PI * 2, rr = r * rand(0.8, 1.18); return [cx + Math.cos(t) * rr, cy + Math.sin(t) * rr]; });
+        const m = (i) => { const a = pts[i % n], b = pts[(i + 1) % n]; return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; };
+        let d = `M${m(0).map((v) => v.toFixed(1)).join(" ")}`;
+        for (let i = 1; i <= n; i++) { const c = pts[i % n], e = m(i); d += ` Q${c[0].toFixed(1)} ${c[1].toFixed(1)} ${e[0].toFixed(1)} ${e[1].toFixed(1)}`; }
+        return d + " Z";
+      };
+      const blobs = PAL_COLORS.map((c, i) => { const t = ((205 + i * 26.5) * Math.PI) / 180; return { c, cx: 142 + Math.cos(t) * 86, cy: 100 + Math.sin(t) * 62, r: rand(13, 17) }; });
+      return `<svg viewBox="0 0 280 215"><defs><radialGradient id="rbPw" cx="40%" cy="35%" r="80%"><stop offset="0" stop-color="#d9b07a"/><stop offset=".6" stop-color="#b07c48"/><stop offset="1" stop-color="#7d5020"/></radialGradient></defs>
+        <path d="M34 110 C30 52 92 14 152 16 C214 18 258 56 254 110 C250 162 206 200 148 198 C118 197 112 178 96 176 C70 174 38 152 34 110 Z" fill="url(#rbPw)" stroke="#5c3a16" stroke-width="2"/>
+        <path d="M60 64 C120 42 190 46 236 84 M52 120 C100 100 170 106 232 134" stroke="#6b4420" stroke-width="1.5" opacity=".25" fill="none"/>
+        <ellipse cx="66" cy="130" rx="13" ry="11" fill="#2a1a0a" opacity=".92"/>
+        <ellipse cx="150" cy="104" rx="46" ry="30" fill="#9a7a4a" opacity=".55"/><ellipse cx="142" cy="98" rx="30" ry="18" fill="#cfa16b" opacity=".45"/>
+        ${blobs.map(({ c, cx, cy, r }) => `<path class="rb-blob" data-c="${c}" d="${blobPath(cx, cy, r)}" fill="${c}" stroke="rgba(0,0,0,.25)" stroke-width=".6"/><ellipse cx="${(cx - r * 0.3).toFixed(1)}" cy="${(cy - r * 0.35).toFixed(1)}" rx="${(r * 0.32).toFixed(1)}" ry="${(r * 0.2).toFixed(1)}" fill="#fff" opacity=".4"/>`).join("")}
+        <g transform="rotate(-24 150 160)"><rect x="40" y="150" width="170" height="7" rx="3.5" fill="#a2581c"/><rect x="38" y="149" width="40" height="9" rx="3" fill="#7a4414"/><rect x="208" y="149" width="22" height="9" rx="2" fill="#d0d0d0" stroke="#8a8a8a" stroke-width=".6"/><path d="M230 150 l30 2.6 l-30 3.4 z" fill="#2b2b2b"/></g>
+        <g transform="rotate(-12 150 178)"><rect x="60" y="176" width="150" height="6" rx="3" fill="#c8812f"/><rect x="208" y="175" width="20" height="8" rx="2" fill="#d0d0d0" stroke="#8a8a8a" stroke-width=".6"/><path d="M228 176 l26 2 l-26 3.6 z" fill="#3a2a1a"/></g></svg>`;
+    };
+    const JOKER_SVG = `<svg viewBox="0 0 71 96" preserveAspectRatio="none">
+      <path class="f" d="M24 44 Q18 38 13 23 Q22 32 30 36 Q33 24 35.5 7 Q38 24 41 36 Q49 32 58 23 Q53 38 47 44 Z" fill="#d7263d"/>
+      <path class="f" d="M22 66 l4 -5 l4 5 l4 -5 l4 5 l4 -5 l4 5 l4 -5 l4 5 l-2 5 H24 Z" fill="#ffd34d"/>
+      <path class="f" d="M25 70 L22 90 H49 L46 70 Z" fill="#6f3fbf"/>
+      <circle class="f" cx="13" cy="23" r="2.6" fill="#f2b705"/><circle class="f" cx="35.5" cy="7" r="2.6" fill="#f2b705"/><circle class="f" cx="58" cy="23" r="2.6" fill="#f2b705"/>
+      <path class="l" d="M24 44 Q18 38 13 23 Q22 32 30 36 Q33 24 35.5 7 Q38 24 41 36 Q49 32 58 23 Q53 38 47 44"/>
+      <path class="l" d="M10.4 23 a2.6 2.6 0 1 0 5.2 0 a2.6 2.6 0 1 0 -5.2 0 M32.9 7 a2.6 2.6 0 1 0 5.2 0 a2.6 2.6 0 1 0 -5.2 0 M55.4 23 a2.6 2.6 0 1 0 5.2 0 a2.6 2.6 0 1 0 -5.2 0"/>
+      <path class="l" d="M24.5 52 a11 11 0 1 0 22 0 a11 11 0 1 0 -22 0"/>
+      <path class="l" d="M30 50 q2 -2.5 4 0 M37 50 q2 -2.5 4 0 M35.5 52.5 l-1.5 4 h3"/>
+      <path class="l" d="M30 59 q5.5 5 11 0"/>
+      <path class="l" d="M22 66 l4 -5 l4 5 l4 -5 l4 5 l4 -5 l4 5 l4 -5 l4 5"/>
+      <path class="l" d="M25 70 L22 90 H49 L46 70"/>
+      <text x="4" y="11">J</text><text x="67" y="85" transform="rotate(180 67 85)">J</text><text x="35.5" y="82" font-size="5.5" text-anchor="middle" style="fill:#fff">JOKER</text></svg>`;
+    // the Instagram page, every piece of it marked so the swarm can build it
+    const igPage = () => `<div class="rb-ig">
+      <div class="rb-ig-top"><span class="rb-ig-logo rb-igp">Instagram</span><span class="rb-ig-search rb-igp">Search</span><span class="rb-ig-ico rb-igp">♡</span></div>
+      <div class="rb-ig-head"><div class="rb-ig-avatar rb-igp"><i></i></div>
+        <div class="rb-ig-info"><div class="rb-ig-name"><b class="rb-igp">${esc(IG.handle)}</b><button class="rb-igp">Follow</button><button class="rb-igp">Message</button></div>
+          <div class="rb-ig-stats"><span class="rb-igp"><b>${IG.posts}</b> posts</span><span class="rb-igp"><b>${esc(IG.followers)}</b> followers</span><span class="rb-igp"><b>${IG.following}</b> following</span></div>
+          <div class="rb-ig-bio"><b class="rb-igp">${esc(IG.name)}</b>${IG.bio.map((l) => `<span class="rb-igp">${esc(l)}</span>`).join("")}</div></div></div>
+      <div class="rb-ig-tabs rb-igp"><span>Posts</span><span>Reels</span><span>Tagged</span></div>
+      <div class="rb-ig-grid">${IG.tiles.map((t) => `<div class="rb-ig-item rb-igp" style="background-image:${t}"></div>`).join("")}</div></div>`;
+    // a dot of paint on the cursor while an agent carries a colour
+    const dip = (a, c) => { let d = a.el.querySelector(".rb-dip"); if (!d) { d = document.createElement("i"); d.className = "rb-dip"; a.el.appendChild(d); } d.style.background = c; };
+    const undip = (a) => a.el.querySelector(".rb-dip")?.remove();
     // the bits each app builds its own way, so the agents look like they are using the apps
-    const SPECIAL_OWN = ".card, .mine-grid, .cal.big, .paint-area canvas, .cmd .line input, .msn-bar textarea";
+    const SPECIAL_OWN = ".card, .mine-grid, .cal-app, .paint-area canvas, .cmd .line input, .msn-bar textarea, .ieview";
     const SPECIAL = {
       // cards: the deck goes down first, then several agents deal from it at once
-      solitaire: (rl, base, k) => deal(rl, base, k),
-      spider: (rl, base, k) => deal(rl, base, k),
-      // minesweeper: the grid is drawn row by row
-      mine(rl, base, k) {
+      solitaire(rl, base, k) { const ids = deal(rl, base, k) || []; const j = joker(rl, base, k, ids); return j ? [...ids, j] : ids; },
+      // minesweeper: the grid is drawn row by row, then a crate of mines arrives and every mine is carried over and placed by hand
+      mine(rl, base, k, partIds, win, app) {
         const g = rl.querySelector(".mine-grid"); if (!g?.children.length) return;
-        const rowIds = drawRows(g, base, k, "grid");
+        const rowIds = drawRows(g, base, k, "grid"), ids = [...rowIds];
         const cells = [...g.children];
         const picks = cells.map((c) => [Math.random(), c]).sort((p, q) => p[0] - q[0]).slice(0, 10).map((p) => p[1]);
-        [0, 1, 2].forEach((n) => task(`${base}:mines${n}`, async (a) => {
-          say(a, "mines");
+        const cx = win.x > 120 ? win.x - 60 : Math.min(vw - 60, win.x + win.w + 60), cy = Math.min(vh - 50, win.y + win.h - 40);
+        const crate = document.createElement("div");
+        crate.className = "rb-crate"; crate.style.cssText = `left:${cx - 42}px;top:${cy - 32}px`; crate.innerHTML = CRATE_SVG;
+        app.extras = [crate];
+        const crateId = base + ":crate"; ids.push(crateId);
+        task(crateId, async (a) => { say(a, "mines"); await go(a, cx, cy + 44); fx.appendChild(crate); flyIn(crate, 0, 70, 320 * k); click(a); await wait(220 * k); }, { deps: [base + ":b"], pri: -1, x: cx, y: cy });
+        [0, 1, 2].forEach((n) => { const id = `${base}:mines${n}`; ids.push(id); task(id, async (a) => {
           for (const c of picks.filter((_, j) => j % 3 === n)) {
-            const [cx, cy, cr] = mid(c);
-            await go(a, cx, cy, 200 * k); click(a);
-            const m = document.createElement("div");
-            m.className = "rb-mine";
-            m.style.cssText = `left:${cx}px;top:${cy}px;--s:${Math.max(8, cr.width * 0.55)}px`;
+            say(a, "pick up");
+            await go(a, cx + rand(-14, 14), cy + rand(-10, 6), 260 * k); click(a);
+            const [tx, ty, cr] = mid(c), m = document.createElement("div"), t = 340 * k;
+            m.className = "rb-mine"; m.style.cssText = `left:${a.x}px;top:${a.y}px;--s:${Math.max(8, cr.width * 0.55)}px`;
             fx.appendChild(m);
-            at(650 * k, () => { m.classList.add("bury"); at(260, () => m.remove()); });
+            say(a, "place mine");
+            m.animate([{ translate: "0 0" }, { translate: `${(tx - a.x) * 0.5}px ${ty - a.y - 44}px`, offset: 0.5 }, { translate: `${tx - a.x}px ${ty - a.y}px` }], { duration: t * sp, easing: "cubic-bezier(.4,0,.6,1)", fill: "forwards" });
+            await go(a, tx, ty - 6, t, "cubic-bezier(.4,0,.6,1)");
+            click(a); c.animate([{ background: "#ffe08a" }, { background: "#c0c0c0" }], { duration: 420 * sp });
+            at(260 * k, () => { m.classList.add("bury"); at(260, () => m.remove()); });
             await wait(120 * k);
           }
-        }, { deps: rowIds, pri: -1, x: g.getBoundingClientRect().left, y: g.getBoundingClientRect().top }));
-        return rowIds;
+        }, { deps: [...rowIds, crateId], pri: -1, x: cx, y: cy }); });
+        return ids;
       },
-      // paint: three agents draw on the canvas at once
-      paint(rl, base, k) {
+      // paint: a painter's palette comes in beside the window, and every colour is dipped from it before it goes on the canvas
+      paint(rl, base, k, partIds, win, app) {
         const cv = rl.querySelector(".paint-area canvas"), area = rl.querySelector(".paint-area"); if (!cv || !area) return;
-        const tools = [...rl.querySelectorAll(".pt-grid button")], swatches = [...rl.querySelectorAll(".palette i[data-c]")], fgc = rl.querySelector(".swatch .fgc");
+        const tools = [...rl.querySelectorAll(".pt-grid button")], fgc = rl.querySelector(".swatch .fgc");
         const r = cv.getBoundingClientRect(), ar = area.getBoundingClientRect(), W = Math.min(r.width, ar.width) - 10, H = Math.min(r.height, ar.height) - 10;
         const ctx = cv.getContext("2d"), sx = cv.width / r.width, sy = cv.height / r.height;
+        const pal = document.createElement("div"), px = clamp(win.x - 110, 6, vw - 290), py = clamp(win.y + win.h - 160, 6, vh - 225);
+        pal.className = "rb-pal"; pal.style.cssText = `left:${px}px;top:${py}px`; pal.innerHTML = paletteSvg();
+        app.extras = [pal];
+        const palId = base + ":palette";
+        task(palId, async (a) => { say(a, "palette"); await go(a, px + 140, py + 100); fx.appendChild(pal); flyIn(pal, -180, 70, 420 * k); click(a); await wait(280 * k); }, { deps: [base + ":b"], pri: -1, x: px, y: py });
         const line = (pts, n = 6) => [pts[0], ...pts.slice(1).flatMap((q, i) => Array.from({ length: n }, (_, j) => [pts[i][0] + ((q[0] - pts[i][0]) * (j + 1)) / n, pts[i][1] + ((q[1] - pts[i][1]) * (j + 1)) / n]))];
         const ring = (cx, cy, rx, ry = rx, n = 24) => Array.from({ length: n + 1 }, (_, i) => [cx + Math.cos((i / n) * Math.PI * 2) * rx, cy + Math.sin((i / n) * Math.PI * 2) * ry]);
         const R0 = Math.min(W, H) * 0.1, sun = [W * 0.16, H * 0.24];
-        // [colour from the palette, tool, strokes]: each one is one agent's drawing
+        // [colour on the palette, tool, strokes]: each one is one agent's drawing
         const ART = [
           ["#ff8040", "brush", [ring(sun[0], sun[1], R0)]],
           ["#ff8040", "pencil", Array.from({ length: 8 }, (_, i) => { const t = (i / 8) * Math.PI * 2; return line([[sun[0] + Math.cos(t) * R0 * 1.35, sun[1] + Math.sin(t) * R0 * 1.35], [sun[0] + Math.cos(t) * R0 * 1.85, sun[1] + Math.sin(t) * R0 * 1.85]], 2); })],
@@ -855,73 +960,96 @@
           ["#008000", "brush", [Array.from({ length: 30 }, (_, i) => [W * 0.04 + (W * 0.92 * i) / 29, H * 0.93 + Math.sin(i * 1.3) * 4])]],
           ["#ff0000", "pencil", [line([[W * 0.88, H * 0.1], [W * 0.88, H * 0.3]], 4), line([[W * 0.88, H * 0.22], [W * 0.9, H * 0.19], [W * 0.92, H * 0.22], [W * 0.92, H * 0.3]], 3), line([[W * 0.955, H * 0.21], [W * 0.955, H * 0.3]], 3), [[W * 0.955, H * 0.15], [W * 0.957, H * 0.155]]]],
         ];
-        return ART.map(([color, tool, strokes], n) => { const id = `${base}:draw${n}`; task(id, async (a) => {
-          // pick the tool, then the colour, then draw
+        return [palId, ...ART.map(([color, tool, strokes], n) => { const id = `${base}:draw${n}`; task(id, async (a) => {
+          // pick the tool, dip into the colour, then draw
           const tb = tools.find((bt) => bt.dataset.t === tool);
           if (tb) { say(a, tool); const [tx, ty] = mid(tb); await go(a, tx, ty); click(a); tools.forEach((bt) => bt.setAttribute("aria-pressed", bt === tb ? "true" : "false")); }
-          const sw = swatches.find((q) => q.dataset.c === color);
-          if (sw) { say(a, "colour"); const [qx, qy] = mid(sw); await go(a, qx, qy); click(a); if (fgc) fgc.style.background = color; }
-          say(a, "draw");
+          const bl = pal.querySelector(`.rb-blob[data-c="${color}"]`);
+          if (bl) {
+            say(a, "dip"); const [qx, qy] = mid(bl); await go(a, qx, qy); click(a);
+            bl.animate([{ transform: "scale(1)" }, { transform: "scale(1.22)" }, { transform: "scale(1)" }], { duration: 300 * sp, easing: "ease-out" });
+            dip(a, color); if (fgc) fgc.style.background = color;
+          }
+          say(a, "paint");
           ctx.strokeStyle = color; ctx.lineWidth = (tool === "brush" ? 6 : 3) * sx; ctx.lineCap = ctx.lineJoin = "round";
           for (const st of strokes) {
-            const P = st.map(([px, py]) => [r.left + 5 + px, r.top + 5 + py]);
+            const P = st.map(([qx, qy]) => [r.left + 5 + qx, r.top + 5 + qy]);
             await go(a, P[0][0], P[0][1]); click(a);
             for (let i = 1; i < P.length; i++) {
               await go(a, P[i][0], P[i][1], 30 * k, "linear");
               ctx.beginPath(); ctx.moveTo((P[i - 1][0] - r.left) * sx, (P[i - 1][1] - r.top) * sy); ctx.lineTo((P[i][0] - r.left) * sx, (P[i][1] - r.top) * sy); ctx.stroke();
             }
           }
-        }, { deps: [base + ":b"], pri: -1, x: r.left + W * ((n % 4) / 4), y: r.top + H / 2 }); return id; });
+          undip(a);
+        }, { deps: [base + ":b", palId], pri: -1, x: r.left + W * ((n % 4) / 4), y: r.top + H / 2 }); return id; })];
       },
-      // calendar: the month is drawn row by row while two agents throw photos up from the bottom of the screen onto the days
-      calendar(rl, base, k, partIds) {
-        const g = rl.querySelector(".cal.big"); if (!g?.children.length) return;
-        const rowIds = drawRows(g, base, k, "calendar"), ids = [...rowIds];
-        const days = [...g.querySelectorAll("button[data-d]")].map((d) => [Math.random(), d]).sort((p, q) => p[0] - q[0]).slice(0, 6).map((p) => p[1]);
-        const PICS = ["url(photo.jpg)", "linear-gradient(160deg,#ffb347,#ff5f6d)", "linear-gradient(160deg,#4facfe,#00f2fe)", "url(photo.jpg)", "linear-gradient(160deg,#43e97b,#38f9d7)", "linear-gradient(160deg,#a18cd1,#fbc2eb)"];
-        [0, 1].forEach((n) => { const id = `${base}:throw${n}`; ids.push(id); task(id, async (a) => {
-          say(a, "photos");
-          for (const [j, d] of days.entries()) {
-            if (j % 2 !== n) continue;
-            const [dx, dy, dr] = mid(d), sx = clamp(dx + rand(-220, 220), 30, vw - 30), sy = vh - 26, pic = PICS[j];
-            await go(a, sx, sy, 320 * k); click(a);
-            const im = document.createElement("div");
-            im.className = "rb-throw";
-            im.style.cssText = `left:${sx}px;top:${sy}px;background-image:${pic}`;
-            fx.appendChild(im);
-            const tx = dx - sx, ty = dy - sy, t = 640 * k;
-            im.animate([{ transform: "translate(-50%,-50%) rotate(0deg) scale(1)" },
-              { transform: `translate(calc(-50% + ${tx * 0.5}px), calc(-50% + ${ty * 0.5 - 130}px)) rotate(200deg) scale(1.15)`, offset: 0.5 },
-              { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) rotate(360deg) scale(${((dr.width * 0.6) / 46).toFixed(2)})` }],
-              { duration: t * sp, easing: "cubic-bezier(.3,0,.6,1)", fill: "forwards" });
-            at(t, () => {
-              im.remove();
-              const st = document.createElement("i");
-              st.className = "rb-stick"; st.style.backgroundImage = pic;
-              d.appendChild(st);
-              st.animate([{ scale: "1.4" }, { scale: "1" }], { duration: 200 * sp, easing: "cubic-bezier(.3,1.5,.5,1)" });
-              tick();
-            });
-            await wait(220 * k);
+      // calendar: the month grid is drawn big in the middle of the window, with three dates wrong; the right numbers are launched
+      // from the top of the screen and land on them; then the grid is pushed into its place on the left and the tasks are added
+      calendar(rl, base, k, partIds, win) {
+        const grid = rl.querySelector(".cal.big"), capp = rl.querySelector(".cal-app"), left = rl.querySelector(".cal-left"); if (!grid?.children.length || !capp) return;
+        const q = (sel) => rl.querySelector(sel);
+        [".cal-head", ".ctoday", ".cal-up", ".cal-sync", ".cday", ".cal-add", ".task-list", ".cempty"].map(q).filter(Boolean).forEach((e) => e.classList.add("rb-hide"));
+        const gr = grid.getBoundingClientRect(), ar = capp.getBoundingClientRect(), sc = Math.max(1, Math.min(1.3, (ar.width - 40) / gr.width, (ar.height - 40) / gr.height));
+        const dx = ar.left + ar.width / 2 - (gr.left + gr.width / 2), dy = ar.top + ar.height / 2 - (gr.top + gr.height / 2);
+        if (left) left.style.overflow = "visible";
+        grid.style.cssText += `;position:relative;z-index:2;transform-origin:center;transform:translate(${dx}px,${dy}px) scale(${sc})`;
+        const days = [...grid.querySelectorAll("button[data-d]")];
+        const wrong = days.map((d) => [Math.random(), d]).sort((p, r) => p[0] - r[0]).slice(0, 3).map(([, d]) => {
+          const right = d.textContent; let w; do { w = String(1 + ((Math.random() * 31) | 0)); } while (w === right); d.textContent = w; return [d, right];
+        });
+        const rowIds = drawRows(grid, base, k, "calendar"), ids = [...rowIds];
+        const fixId = base + ":fix"; ids.push(fixId);
+        task(fixId, async (a) => {
+          for (const [d, right] of wrong) {
+            const [cx, cy, cr] = mid(d);
+            say(a, "wrong date");
+            await go(a, cx, cy, 260 * k); click(a);
+            d.animate([{ background: "#ffb4b4" }, { background: "#ffb4b4" }], { duration: 700 * sp });
+            const sx = clamp(cx + rand(-160, 160), 30, vw - 30), sy = -30, t = 480 * k;
+            const n = document.createElement("div"); n.className = "rb-num"; n.textContent = right; n.style.cssText = `left:${sx}px;top:${sy}px`; fx.appendChild(n);
+            n.animate([{ transform: "translate(-50%,-50%) rotate(0deg)" }, { transform: `translate(calc(-50% + ${(cx - sx) * 0.5}px), calc(-50% + ${(cy - sy) * 0.45}px)) rotate(180deg) scale(1.2)`, offset: 0.5 },
+              { transform: `translate(calc(-50% + ${cx - sx}px), calc(-50% + ${cy - sy}px)) rotate(360deg) scale(${(cr.height / 32).toFixed(2)})` }], { duration: t * sp, easing: "cubic-bezier(.3,0,.6,1)", fill: "forwards" });
+            say(a, "catch");
+            await go(a, cx + 14, cy - 10, t, "linear");
+            n.remove(); d.textContent = right;
+            d.animate([{ scale: "1.5", background: "#c6f0c2" }, { scale: "1", background: "#fff" }], { duration: 320 * sp, easing: "cubic-bezier(.3,1.4,.5,1)" });
+            tick(); click(a);
           }
-        }, { deps: rowIds, pri: -1, x: vw / 2, y: vh - 30 }); });
-        // and someone adds a task and ticks it off
-        const ct = rl.querySelector(".cal-add .ctext"), list = rl.querySelector(".task-list");
-        if (ct && list) { const id = `${base}:task`; ids.push(id); task(id, async (a) => {
-          const [, cy, cr] = mid(ct), txt = "ship the visual rebuild";
+        }, { deps: rowIds, pri: -1, x: gr.left + dx, y: gr.top + dy });
+        const slideId = base + ":slide"; ids.push(slideId);
+        task(slideId, async (a) => {
+          say(a, "push left");
+          const r0 = grid.getBoundingClientRect();
+          await go(a, r0.left + 6, r0.top + 6, 240 * k); click(a);
+          const t = 620 * k;
+          grid.style.transition = `transform ${t * sp}ms cubic-bezier(.5,0,.2,1)`; grid.style.transform = "none";
+          await go(a, gr.left + 6, gr.top + 6, t, "cubic-bezier(.5,0,.2,1)");
+          grid.style.transition = ""; grid.style.zIndex = ""; if (left) left.style.overflow = "";
+          blip(300, 0.08, "sine", 0.05, 120);
+          [".cal-head", ".ctoday", ".cal-up", ".cal-sync"].map(q).filter(Boolean).forEach((e, i) => { reveal(e); flyIn(e, 0, i ? 14 : -14, 260 * k, i * 70); });
+          await wait(200 * k);
+        }, { deps: [fixId], pri: -1, x: gr.left + dx, y: gr.top + dy });
+        const dayId = base + ":day"; ids.push(dayId);
+        task(dayId, async (a) => {
+          const h = q(".cday"); if (h) await typeEl(a, h, k, win.x + win.w - 8);
+          const f = q(".cal-add");
+          if (f) { const fr = f.getBoundingClientRect(); say(a, "form"); const box = await frame(a, { x: fr.left, y: fr.top, w: fr.width, h: fr.height }, "form.cal-add", 240 * k); reveal(f); f.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 * sp }); unframe(box, 120); }
+          [".task-list", ".cempty"].map(q).filter(Boolean).forEach(reveal);
+        }, { deps: [slideId], pri: -1, x: ar.left + ar.width * 0.7, y: ar.top + 20 });
+        const ct = q(".ctext"), list = q(".task-list"), empty = q(".cempty");
+        if (ct && list) ["ship the visual rebuild", "post it on instagram"].forEach((txt, i) => { const id = `${base}:task${i}`; ids.push(id); task(id, async (a) => {
+          const [, cy, cr] = mid(ct);
           say(a, "add task");
           await go(a, cr.left + 6, cy); click(a);
           for (let n = 2; n <= txt.length; n += 2) { ct.value = txt.slice(0, n); if (n % 6 === 0) tick(); await go(a, cr.left + 6 + Math.min(cr.width - 16, n * 6.2), cy, 55 * k, "linear"); }
           ct.value = txt; await wait(160); ct.value = "";
+          empty?.classList.add("rb-gone");
           const li = document.createElement("li");
           li.innerHTML = `<input type="checkbox" class="tdone" tabindex="-1"><span class="ttext">${esc(txt)}</span>`;
-          list.prepend(li);
+          list.appendChild(li);
           li.animate([{ opacity: 0, translate: "0 -6px" }, { opacity: 1, translate: "0 0" }], { duration: 240 * sp });
-          const cb = li.querySelector("input"), [bx, by] = mid(cb);
-          say(a, "done");
-          await go(a, bx, by, 300 * k); click(a);
-          cb.checked = true; li.classList.add("done");
-        }, { deps: [base + ":b", ...partIds], pri: -1, x: ct.getBoundingClientRect().left, y: ct.getBoundingClientRect().top }); }
+          if (i === 0) { const cb = li.querySelector("input"), [bx, by] = mid(cb); say(a, "done"); await go(a, bx, by, 300 * k); click(a); cb.checked = true; li.classList.add("done"); }
+        }, { deps: [i ? `${base}:task0` : dayId], pri: -1, x: ct.getBoundingClientRect().left, y: ct.getBoundingClientRect().top }); });
         return ids;
       },
       // command prompt: three commands typed in, and the swarm types each answer
@@ -987,6 +1115,35 @@
           }
         }, { deps: [base + ":b", ...partIds], pri: -1, x: ta.getBoundingClientRect().left, y: ta.getBoundingClientRect().top });
         return [id];
+      },
+      // internet explorer: the address is typed in and the page loads, then the Instagram profile is built piece by piece
+      ie(rl, base, k, partIds, win) {
+        const url = rl.querySelector(".ieurl"), home = rl.querySelector(".iehomepage"), stat = rl.querySelector(".iestat"), prog = rl.querySelector(".ieprog"), throb = rl.querySelector(".iethrob"), goBtn = rl.querySelector(".ieaddr .xpbtn"), ttl = rl.querySelector(".ttl");
+        if (!url || !home) return;
+        const html = igPage(), n = (html.match(/rb-igp/g) || []).length;
+        const urlId = base + ":url", doneId = base + ":igdone", pieceIds = Array.from({ length: n }, (_, j) => `${base}:ig${j}`);
+        task(urlId, async (a) => {
+          const [, uy, ur] = mid(url), addr = "instagram.com/" + IG.handle;
+          say(a, "address");
+          await go(a, ur.left + 6, uy); click(a);
+          url.value = "";
+          for (let i = 1; i <= addr.length; i++) { url.value = addr.slice(0, i); if (i % 3 === 0) tick(); await go(a, ur.left + 6 + Math.min(ur.width - 12, i * 6.6), uy, 42 * k, "linear"); }
+          if (goBtn) { const [gx, gy] = mid(goBtn); say(a, "go"); await go(a, gx, gy, 220 * k); click(a); }
+          url.value = "https://www.instagram.com/" + IG.handle + "/";
+          if (stat) stat.textContent = "Opening https://www.instagram.com/" + IG.handle + "/...";
+          prog?.classList.remove("hidden"); throb?.classList.add("on");
+          home.innerHTML = "";
+          await wait(700 * k);
+          prog?.classList.add("hidden"); throb?.classList.remove("on");
+          if (stat) stat.textContent = "Done";
+          if (ttl) ttl.textContent = `${IG.name} (@${IG.handle}) • Instagram - Internet Explorer`;
+          home.innerHTML = html;
+          const parts = [...home.querySelectorAll(".rb-igp")];
+          parts.forEach((e) => e.classList.add("rb-hide"));
+          parts.forEach((e, j) => { const pr = e.getBoundingClientRect(); task(pieceIds[j], (b) => buildPiece(b, e, k, win), { pri: -1, x: pr.left + pr.width / 2, y: pr.top + pr.height / 2 }); });
+        }, { deps: [base + ":b", ...partIds], pri: -1, x: url.getBoundingClientRect().left, y: url.getBoundingClientRect().top });
+        task(doneId, async () => {}, { deps: [urlId, ...pieceIds], pri: -1, x: win.x + win.w / 2, y: win.y + win.h / 2 });
+        return [urlId, doneId];
       },
       // about me: once the top is built, the page is scrolled a screen at a time and each new section is built as it comes into view
       about(rl, base, k, partIds, win) {
@@ -1068,6 +1225,35 @@
       }
       return ids;
     }
+    // a joker card drawn by hand on the empty slot between the waste and the foundations, outlines first, then the colours
+    function joker(rl, base, k, deps) {
+      const table = rl.querySelector(".sol-table"); if (!table) return null;
+      const cs = getComputedStyle(table), cw = parseFloat(cs.getPropertyValue("--cw")) || 71, ch = parseFloat(cs.getPropertyValue("--ch")) || 96;
+      const tr = table.getBoundingClientRect(), gap = Math.max(4, Math.min(12, tr.width * 0.015)), x = gap + 2 * (cw + gap), y = gap;
+      const card = document.createElement("div");
+      card.className = "rb-joker"; card.style.cssText = `left:${x}px;top:${y}px;width:${cw}px;height:${ch}px`; card.innerHTML = JOKER_SVG;
+      const id = base + ":joker";
+      task(id, async (a) => {
+        say(a, "joker");
+        await go(a, tr.left + x, tr.top + y); click(a);
+        table.appendChild(card);
+        card.animate([{ opacity: 0, scale: "0.8" }, { opacity: 1, scale: "1" }], { duration: 200 * sp });
+        const r0 = card.getBoundingClientRect(), sx = r0.width / 71, sy = r0.height / 96, paths = [...card.querySelectorAll("path.l")];
+        for (const [i, p] of paths.entries()) {
+          const L = p.getTotalLength(), t = clamp(L * 9, 180, 520) * k;
+          p.style.strokeDasharray = L; p.style.strokeDashoffset = L; void p.getBoundingClientRect();
+          const p0 = p.getPointAtLength(0);
+          await go(a, r0.left + p0.x * sx, r0.top + p0.y * sy, 150 * k);
+          p.style.transition = `stroke-dashoffset ${t * sp}ms linear`; p.style.strokeDashoffset = 0;
+          const steps = Math.max(3, Math.round(L / 12));
+          for (let s2 = 1; s2 <= steps; s2++) { const q = p.getPointAtLength((L * s2) / steps); await go(a, r0.left + q.x * sx, r0.top + q.y * sy, t / steps, "linear"); }
+          if (i % 2 === 0) tick();
+        }
+        say(a, "colour"); card.classList.add("fill"); await wait(320 * k);
+        say(a, "JOKER"); card.classList.add("txt"); click(a);
+      }, { deps, pri: -1, x: tr.left + x, y: tr.top + y });
+      return id;
+    }
     // a finished window shrinks down into the taskbar, the way XP minimises, so only two or three are ever on screen
     const minimize = (i) => {
       const app = apps[i], wrap = app?.wrap; if (!wrap?.isConnected) return;
@@ -1075,6 +1261,7 @@
       for (let n = queue.length - 1; n >= 0; n--) if (queue[n].id === base || queue[n].id.startsWith(base + ":")) queue.splice(n, 1);
       wrap.querySelectorAll(".rb-hide").forEach((e) => e.classList.remove("rb-hide"));
       if (wrap.f) unframe(wrap.f, 0);
+      (app.extras || []).forEach((e) => { e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 * sp, fill: "forwards" }); at(320, () => e.remove()); });
       delete appRects[app.id];
       seamPool = seamPool.filter(([id]) => id !== app.id);
       wrap.style.transformOrigin = "0 0";
@@ -1095,12 +1282,14 @@
       wrap.append(app.rl, app.wf);
       app.wrap = wrap;
       wrap.insertAdjacentHTML("beforeend", `<div class="rb-scan"></div>`);
+      // in the layer straight away, so windows stack in the order they open whichever agent gets to them first
+      wrap.style.visibility = "hidden"; appsL.appendChild(wrap);
       const k = clamp(1 - i * 0.04, 0.68, 1); // later apps build faster: the crescendo
       const base = "app:" + app.id;
       task(base, async (a) => {
         say(a, app.id);
         wrap.style.setProperty("--a", a.color);
-        appsL.appendChild(wrap);
+        wrap.style.visibility = "";
         focusPt = [x + w / 2, y + h / 2];
         thud();
         const parts = pickParts(app.rl, w, h);
@@ -1110,7 +1299,7 @@
           e.classList.add("rb-hide");
           task(partIds[j], (b) => buildPiece(b, e, k, win), { deps: [base + ":b"], pri: -1, x: pr.left + pr.width / 2, y: pr.top + pr.height / 2 });
         });
-        const ownIds = SPECIAL[app.id]?.(app.rl, base, k, partIds, win) || [];
+        const ownIds = SPECIAL[app.id]?.(app.rl, base, k, partIds, win, app) || [];
         const NAMES = { min: "minimize", max: "maximize", close: "close", fs: "full screen" };
         const tbIds = [...app.rl.querySelectorAll(".titlebar .tbtn")].map((bt, n) => {
           bt.classList.add("rb-hide");
@@ -1226,10 +1415,10 @@
         if ((onScreen.every((i) => !busyWith("app:" + apps[i].id)) && now - lastOpen > 1500 * sp) || now - lastOpen > 11000 * sp) { stop(appTimer); at(700, endSeq); }
         return;
       }
-      if (apps[nextApp] === undefined || now - lastOpen < 1700 * sp) return;
+      if (apps[nextApp] === undefined || now - lastOpen < 1500 * sp) return;
       if (onScreen.length >= 3) {
         const old = apps[onScreen[0]];
-        if (busyWith("app:" + old.id) && now - old.openedAt < 7500 * sp) return;
+        if (busyWith("app:" + old.id) && now - old.openedAt < 10000 * sp) return;
         minimize(onScreen.shift());
       }
       const i = nextApp++;
@@ -1245,7 +1434,7 @@
       appTimer = every(150, appTick);
     });
     at(18000, capOff);
-    at(43000, endSeq);
+    at(47000, endSeq);
 
     // the ending: the windows fly away and the desktop is built, then the taskbar, then the swarm flies home
     function endSeq() {
@@ -1264,6 +1453,7 @@
           w.classList.add("fly");
         }));
         fx.querySelectorAll(".rb-fr").forEach((f) => f.classList.add("gone"));
+        fx.querySelectorAll(".rb-crate, .rb-pal, .rb-num, .rb-mine").forEach((e) => e.remove());
         sewL.style.opacity = "0";
         blip(55, 1.0, "sawtooth", 0.4, 140);
       });

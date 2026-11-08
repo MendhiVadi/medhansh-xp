@@ -246,7 +246,7 @@
   });
   // Visual Rebuild (rebuild.js): a purely visual, full-screen rebuild of the site, fetched on first use.
   // Mark 1 (rebuild-mk1.js) is kept so it can still be replayed from Run: "rebuild mk1".
-  const REBUILDS = { cur: ["rebuild.js?v=48", "REBUILD"], mk1: ["rebuild-mk1.js?v=1", "REBUILD_MK1"] };
+  const REBUILDS = { cur: ["rebuild.js?v=49", "REBUILD"], mk1: ["rebuild-mk1.js?v=1", "REBUILD_MK1"] };
   const rebuildReady = {};
   const loadRebuild = (m) => rebuildReady[m] ||= new Promise((ok, fail) => {
     const s = document.createElement("script"); s.src = REBUILDS[m][0]; s.onload = ok; s.onerror = () => { rebuildReady[m] = null; fail(); };
@@ -2082,7 +2082,7 @@ TERMS
     const times = [];
     for (let i = 0; i < 3; i++) {
       const t0 = performance.now();
-      try { await fetch(`${location.origin}/vercel.json?ping=${Date.now()}${i}`, { method: "HEAD", cache: "no-store" }); times.push(performance.now() - t0); } catch {}
+      try { await fetch(`${location.origin}/robots.txt?ping=${Date.now()}${i}`, { method: "HEAD", cache: "no-store" }); times.push(performance.now() - t0); } catch {}
     }
     net.ping = times.length ? Math.round(Math.min(...times)) : null; net.testing = false;
     paintTray(); if (trayOpen === "net") renderPop();
