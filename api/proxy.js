@@ -108,7 +108,7 @@ const frameable = (h) => {
       if (!got) return check ? res.status(200).json({ frameable: false, blocked: true }) : res.status(400).send("That address can't be opened.");
       const { r, url } = got;
       // the check only needs the headers
-      if (check) { r.destroy(); return res.status(200).json({ frameable: r.statusCode >= 200 && r.statusCode < 300 && frameable(r.headers) && !ALWAYS_PROXY.test(new URL(url).hostname), challenge: challengeHeader(r.headers), url }); }
+      if (check) { r.destroy(); return res.status(200).json({ frameable: r.statusCode >= 200 && r.statusCode < 300 && (frameable(r.headers) || new URL(url).host === req.headers.host) && !ALWAYS_PROXY.test(new URL(url).hostname), challenge: challengeHeader(r.headers), url }); }
       const type = r.headers["content-type"] || "";
       if (!/text\/html|application\/xhtml/i.test(type)) { r.destroy(); res.setHeader("Location", url); return res.status(302).end(); }
       const buf = await readBody(r, until);

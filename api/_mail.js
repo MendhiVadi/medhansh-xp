@@ -13,6 +13,8 @@ const secret = () => createHmac("sha256", "xp-otp").update(process.env.GMAIL_APP
 let transport;
 export const mailer = () => (transport ||= nodemailer.createTransport({ service: "gmail", auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD } }));
 
+// a browser calling from another site (a copy of this one, say); this site's own pages are always same-origin
+export const foreign = (req) => { const s = req.headers?.["sec-fetch-site"]; return !!s && s !== "same-origin"; };
 export const send = (res, status, body) => { res.setHeader("Cache-Control", "no-store"); res.status(status).json(body); };
 export const body = (req) => (req.body && typeof req.body === "object" ? req.body : (() => { try { return JSON.parse(req.body || "{}"); } catch { return {}; } })());
 export const str = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : "");

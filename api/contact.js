@@ -1,9 +1,10 @@
 // POST { token, code, name, email, phone, via, subject, message, website }
 // Checks the 4-digit code, then emails the message to the site owner. "website" is a hidden honeypot field.
-import { configured, mailer, send, body, str, esc, EMAIL, PHONE, verify, digest, throttled, overLimit, visitor, claimAttempt, markUsed } from "./_mail.js";
+import { foreign, configured, mailer, send, body, str, esc, EMAIL, PHONE, verify, digest, throttled, overLimit, visitor, claimAttempt, markUsed } from "./_mail.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") { res.setHeader("Allow", "POST"); return send(res, 405, { error: "Method not allowed" }); }
+  if (foreign(req)) return send(res, 403, { error: "This form only works on the portfolio itself." });
   if (!configured()) return send(res, 503, { error: "Contact email isn't set up yet." });
   const b = body(req);
   if (str(b.website, 200)) return send(res, 200, { ok: true });

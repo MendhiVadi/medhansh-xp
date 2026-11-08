@@ -1,10 +1,11 @@
 // POST { email, via, phone, subject, message } -> emails a random 4-digit code (bound to this message) and returns { token } to send back with the message.
 // GET -> { enabled } so the site knows whether verified contact is available.
-import { configured, mailer, send, body, str, EMAIL, issue, digest, throttled, limited, overLimit, visitor } from "./_mail.js";
+import { foreign, configured, mailer, send, body, str, EMAIL, issue, digest, throttled, limited, overLimit, visitor } from "./_mail.js";
 
 export default async function handler(req, res) {
   if (req.method === "GET") return send(res, 200, { enabled: configured() });
   if (req.method !== "POST") { res.setHeader("Allow", "GET, POST"); return send(res, 405, { error: "Method not allowed" }); }
+  if (foreign(req)) return send(res, 403, { error: "This form only works on the portfolio itself." });
   if (!configured()) return send(res, 503, { error: "Verification email isn't set up yet." });
   const b = body(req), email = str(b.email, 120);
   const m = { via: b.via === "phone" ? "phone" : "email", phone: str(b.phone, 20), subject: str(b.subject, 140), message: str(b.message, 4000) };

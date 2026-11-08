@@ -1,6 +1,10 @@
 {
   "name": "medhansh-xp",
   "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
   "type": "module",
   "description": "Medhansh Khattar's Windows XP-style portfolio: static site plus small Vercel functions for verified contact messages and the in-site browser proxy.",
   "engines": {
@@ -8,5 +12,8 @@
   },
   "dependencies": {
     "nodemailer": "^10.3.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }
