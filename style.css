@@ -383,6 +383,7 @@ button { font: inherit; }
 /* ---------- Games ---------- */
 .game-body { display: flex; flex-direction: column; background: #000; overflow: hidden; }
 .game-hud { display: flex; justify-content: space-around; gap: 8px; padding: 4px 6px; background: #ece9d8; border-bottom: 1px solid #aca899; flex-shrink: 0; }
+.game-hud span { white-space: nowrap; }
 .game-stage { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; }
 .game-stage canvas { display: block; image-rendering: pixelated; }
 .game-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; color: #fff; font: 15px/1.5 "Lucida Console", Consolas, monospace; background: rgba(0,0,0,.45); pointer-events: none; }
@@ -902,7 +903,7 @@ html.busy, html.busy * { cursor: var(--cur-busy) !important; }
 .game-msg { color: #000; font: 12px/1.5 Tahoma, sans-serif; background: rgba(0,0,0,.34); padding: 8px; }
 .game-msg b { font-size: inherit; color: inherit; }
 .game-msg.light { background: none; align-items: flex-end; padding-bottom: 14%; }
-.gm-box { max-width: min(330px, 92%); max-height: 96%; overflow: auto; padding: 0 14px 10px; text-align: center; background: #ece9d8; border: 3px solid #0831d9; border-top: 0; border-radius: 7px 7px 0 0; box-shadow: 2px 3px 10px rgba(0,0,0,.55); animation: winopen .14s ease-out; }
+.gm-box { max-width: min(340px, 94%); max-height: 96%; overflow: auto; padding: 0 14px 10px; text-align: center; background: #ece9d8; border: 3px solid #0831d9; border-top: 0; border-radius: 7px 7px 0 0; box-shadow: 2px 3px 10px rgba(0,0,0,.55); animation: winopen .14s ease-out; }
 .gm-box > b:first-child, .sol-win > b:first-child { display: block; margin: 0 -14px 8px; padding: 4px 8px; color: #fff; text-align: left; font: bold 13px "Trebuchet MS", Tahoma, sans-serif; text-shadow: 1px 1px #0f1089; border-radius: 5px 5px 0 0; background: linear-gradient(#0997ff, #0053ee 12%, #0050ee 45%, #06f 88%, #003dd7); }
 .gm-box small { color: #333; line-height: 1.5; }
 .gm-box .wl { margin: 2px 0; }
@@ -974,6 +975,6 @@ html.busy, html.busy * { cursor: var(--cur-busy) !important; }
 .xpbar i { display: block; height: 100%; min-width: 1px; background: repeating-linear-gradient(90deg, #39c639 0 6px, transparent 6px 8px); }
 .trophy { color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .trophy.got { color: #8a6500; font-weight: bold; }
-.gstats { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 11px; }
+.gstats { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 12px; }
 .gstats th { text-align: left; padding: 2px 6px; font-weight: normal; background: linear-gradient(#fff, #ece9d8); border: 1px solid #d6d3c3; border-width: 0 1px 1px 0; }
 .gstats td { padding: 2px 6px; border-bottom: 1px solid #f0efe6; }

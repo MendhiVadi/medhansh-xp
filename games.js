@@ -298,12 +298,12 @@
       startCascade();
     }
     function showWin(first = true) {
-      const o = overlay(`<b>You Won!</b>Score ${score} in ${secs}s<div class="wl" style="min-width:230px"></div><button class="xpbtn">Deal again</button>`);
+      const o = overlay(`<b>You Won!</b>Score ${score} in ${secs}s<div class="wl" style="min-width:min(230px,90%)"></div><button class="xpbtn">Deal again</button>`);
       o.querySelector("button").onclick = deal;
       if (first) wb.post(o.querySelector(".wl"), score, { time: secs, mode: modeStr() }); else wb.view(o.querySelector(".wl"));
     }
     function showWorld() {
-      const o = overlay(`<b>World top 10</b><div class="wl sol-lb" style="min-width:230px"></div><button class="xpbtn">Close</button>`);
+      const o = overlay(`<b>World Top 10</b><div class="wl sol-lb" style="min-width:min(230px,90%)"></div><button class="xpbtn">Close</button>`);
       o.querySelector("button").onclick = () => { if (won && !casc) showWin(false); else o.remove(); };
       wb.view(o.querySelector(".wl"));
     }
@@ -632,7 +632,7 @@
     }
     function showWorld() {
       if (state === "run") pause();
-      say(`<b>World top 10</b><div class="wl"></div><small>Press Space or tap to continue</small>`);
+      say(`<b>World Top 10</b><div class="wl"></div><small>Press Space or tap to continue</small>`);
       wb.view(msg.querySelector(".wl"));
     }
     function die() {
@@ -813,7 +813,7 @@
       ["The Cross", ["....SSSS....", "....BBBB....", "....BBBB....", "SBBBBBBBBBBS", "SBBBB**BBBBS", "SBBBBBBBBBBS", "....BBBB....", "....BBBB....", "....SSSS...."]],
       ["The Wall", ["FFFFFFFFFFFF", "SSSSSSSSSSSS", "EEEEEEEEEEEE", "S*SS*SS*SS*S", "DDDDDDDDDDDD", "CCCC????CCCC", "BBBBBBBBBBBB", "AAAAAAAAAAAA"]],
     ];
-    body.innerHTML = BAR + `<div class="game-hud"><span>Score: <b class="sc">0</b></span><span>Lives: <b class="lv li"></b></span><span>Level: <b class="lvl">1</b></span><span>Best: <b class="bst">0</b></span></div><div class="game-stage"><canvas width="${W}" height="${H}"></canvas><div class="game-msg"></div></div>`;
+    body.innerHTML = BAR + `<div class="game-hud"><span>Score: <b class="sc">0</b></span><span>Level: <b class="lvl">1</b></span><span>Lives: <b class="lv li"></b></span><span>Best: <b class="bst">0</b></span></div><div class="game-stage"><canvas width="${W}" height="${H}"></canvas><div class="game-msg"></div></div>`;
     body.classList.add("game-body");
     const cv = body.querySelector("canvas"), g = cv.getContext("2d"), msg = body.querySelector(".game-msg"), stage = cv.parentElement;
     const $ = (s) => body.querySelector(s);
@@ -891,7 +891,7 @@
       if (state === "run") pause();
       if (state !== "board") beforeBoard = { state, msg: msg.innerHTML, light: msg.classList.contains("light") };
       state = "board";
-      say(`<b>World top 10</b><div class="wl"></div><small>Click or Space to continue</small>`);
+      say(`<b>World Top 10</b><div class="wl"></div><small>Click or Space to continue</small>`);
       wb.view(msg.querySelector(".wl"));
     }
     ctx.onClose(() => { if (score > best) ctx.store.lset("xp-breakout-best", score); });
@@ -1156,7 +1156,7 @@
     // each rank has one mission; a mission's count grows every time it comes around again
     const MISSIONS = [["Hit the bumpers", "bump", 8], ["Spin the gate", "spin", 8], ["Hit the drop targets", "target", 3], ["Enter the black hole", "hole", 1], ["Fire the slingshots", "sling", 6], ["Light the top lanes", "lanes", 1]];
     const LEFT = ["KeyZ", "ShiftLeft", "ArrowLeft"], RIGHT = ["Slash", "ShiftRight", "KeyM", "ArrowRight"], PLUNGE = ["Space", "ArrowDown"], NUDGE = { KeyX: [70, -30], Period: [-70, -30], ArrowUp: [0, -90] };
-    body.innerHTML = BAR + `<div class="game-hud"><span>Score: <b class="sc">0</b></span><span>Ball: <b class="bl">1/3</b></span><span>Multiplier: <b class="mu">x1</b></span><span>Best: <b class="bs">0</b></span></div><div class="pb-led"><span class="pb-rank">CADET</span><span class="pb-mis"></span></div><div class="game-stage"><canvas width="${W}" height="${H}"></canvas><div class="game-msg"></div><button class="xpbtn pb-launch" style="position:absolute;right:8px;bottom:8px;width:84px;height:84px;border-radius:50%;font:bold 14px Tahoma,sans-serif;z-index:5;display:none;touch-action:none">LAUNCH</button></div>`;
+    body.innerHTML = BAR + `<div class="game-hud"><span>Score: <b class="sc">0</b></span><span>Ball: <b class="bl">1/3</b></span><span>Multiplier: <b class="mu">×1</b></span><span>Best: <b class="bs">0</b></span></div><div class="pb-led"><span class="pb-rank">CADET</span><span class="pb-mis"></span></div><div class="game-stage"><canvas width="${W}" height="${H}"></canvas><div class="game-msg"></div><button class="xpbtn pb-launch" style="position:absolute;right:8px;bottom:8px;width:84px;height:84px;border-radius:50%;font:bold 14px Tahoma,sans-serif;z-index:5;display:none;touch-action:none">LAUNCH</button></div>`;
     body.classList.add("game-body", "pb-body");
     const cv = body.querySelector("canvas"), g = cv.getContext("2d"), msg = body.querySelector(".game-msg"), stage = cv.parentElement, btn = body.querySelector(".pb-launch");
     cv.style.imageRendering = "auto";
@@ -1301,7 +1301,7 @@
     }
     function showWorld() {
       if (state === "play" || state === "ready") pause();
-      say(`<b>World top 10</b><div class="wl"></div><small>Click or P to continue</small>`);
+      say(`<b>World Top 10</b><div class="wl"></div><small>Click or P to continue</small>`);
       wb.view(msg.querySelector(".wl"));
     }
     function help() {
@@ -1593,7 +1593,7 @@
     function setSuits(n) { nS = n; ctx.store.lset("xp-spider-suits", String(n)); deal(); }
     function askDifficulty() {
       dealing = true; dealRun++;
-      const o = overlay(`<b>Difficulty</b><div class="diff-list">${[[1, "Easy: One Suit"], [2, "Medium: Two Suits"], [4, "Difficult: Four Suits"]].map(([n, t]) => `<label><input type="radio" name="spd" value="${n}" ${n === nS ? "checked" : ""}> ${t}</label>`).join("")}</div><button class="xpbtn">OK</button>`, "text-align:left");
+      const o = overlay(`<b>Difficulty</b><div class="diff-list">${[[1, "Easy: One Suit"], [2, "Medium: Two Suits"], [4, "Hard: Four Suits"]].map(([n, t]) => `<label><input type="radio" name="spd" value="${n}" ${n === nS ? "checked" : ""}> ${t}</label>`).join("")}</div><button class="xpbtn">OK</button>`, "text-align:left");
       o.querySelector("button").onclick = () => { dealing = false; setSuits(+o.querySelector("input:checked").value); };
     }
     function help() {
@@ -1682,12 +1682,12 @@
       startCascade();
     }
     function showWin(first = true) {
-      const o = overlay(`<b>You Won!</b>Score ${score} in ${secs}s<div class="wl" style="min-width:230px"></div><button class="xpbtn">Deal again</button>`);
+      const o = overlay(`<b>You Won!</b>Score ${score} in ${secs}s<div class="wl" style="min-width:min(230px,90%)"></div><button class="xpbtn">Deal again</button>`);
       o.querySelector("button").onclick = () => deal();
       if (first) wb.post(o.querySelector(".wl"), score, { time: secs, mode: modeStr() }); else wb.view(o.querySelector(".wl"));
     }
     function showWorld() {
-      const o = overlay(`<b>World top 10</b><div class="wl sol-lb" style="min-width:230px"></div><button class="xpbtn">Close</button>`);
+      const o = overlay(`<b>World Top 10</b><div class="wl sol-lb" style="min-width:min(230px,90%)"></div><button class="xpbtn">Close</button>`);
       o.querySelector("button").onclick = () => { if (won && !casc) showWin(false); else o.remove(); };
       wb.view(o.querySelector(".wl"));
     }
