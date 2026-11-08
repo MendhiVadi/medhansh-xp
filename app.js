@@ -65,7 +65,7 @@
         const j = await r.json().catch(() => ({}));
         if (r.status === 404 && method === "GET") { this.set(true); return null; }
         if (r.status >= 500) { this.set(false); throw Object.assign(new Error("Server unavailable"), { status: r.status }); }
-        if (!r.ok) { this.set(true); throw Object.assign(new Error(r.status === 429 ? "Too many changes. Wait a moment." : r.status === 403 ? "That change isn't allowed." : j.error?.message || r.statusText), { status: r.status }); }
+        if (!r.ok) { this.set(true); throw Object.assign(new Error(r.status === 429 ? "Too many changes. Wait a moment." : r.status === 403 ? "That change isn't allowed." + (j.error?.message ? " (" + j.error.message + ")" : "") : j.error?.message || r.statusText), { status: r.status }); }
         this.set(true); return j;
       } catch (e) { if (!e.status) this.set(false); throw e; } finally { clearTimeout(t); }
     },
@@ -167,7 +167,7 @@
     taskmgr: `<svg viewBox="0 0 32 32"><rect x="3" y="5" width="26" height="22" rx="1" fill="#000" stroke="#777"/><rect x="3" y="5" width="26" height="4" fill="#2f71cd"/><path d="M6 22l4-5 3 3 4-8 3 6 3-3 3 2" fill="none" stroke="#3f3" stroke-width="1.6"/></svg>`,
     control: `<svg viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="3" fill="#dfe8f7" stroke="#4a6fa0"/><circle cx="12" cy="12" r="4" fill="#f2a900"/><rect x="18" y="9" width="7" height="6" fill="#5aa83a"/><rect x="7" y="18" width="7" height="7" fill="#1e7ae6"/><path d="M18 22h7M21.5 18.5v7" stroke="#d0362f" stroke-width="2.4"/></svg>`,
     run: `<svg viewBox="0 0 32 32"><rect x="4" y="7" width="24" height="18" rx="2" fill="#fff" stroke="#555"/><rect x="4" y="7" width="24" height="4" fill="#2f71cd"/><path d="M9 20h10M15 16l4 4-4 4" stroke="#215dc6" stroke-width="1.8" fill="none"/></svg>`,
-    search: `<svg viewBox="0 0 32 32"><circle cx="13" cy="13" r="8" fill="#dbeeff" stroke="#215dc6" stroke-width="2.5"/><path d="M19 19l8 8" stroke="#8a6d3b" stroke-width="4" stroke-linecap="round"/></svg>`,
+    search: `<svg viewBox="0 0 32 32"><circle cx="13" cy="13" r="9" fill="#fff" stroke="#215dc6" stroke-width="3.5"/><circle cx="13" cy="13" r="5" fill="#bfe0ff"/><path d="M20 20l8 8" stroke="#8a6d3b" stroke-width="5" stroke-linecap="round"/></svg>`,
     privacy: `<svg viewBox="0 0 32 32"><path d="M16 3l11 4v8c0 7-5 12-11 14C10 27 5 22 5 15V7z" fill="#5aa83a" stroke="#2e6a12"/><path d="M11 16l4 4 7-8" stroke="#fff" stroke-width="2.6" fill="none"/></svg>`,
     pinball: `<svg viewBox="0 0 32 32"><rect x="6" y="2" width="20" height="28" rx="4" fill="#1a1450" stroke="#888"/><circle cx="12" cy="10" r="3" fill="#e5410c"/><circle cx="20" cy="9" r="3" fill="#f2a900"/><circle cx="16" cy="15" r="3" fill="#1e7ae6"/><path d="M9 25l5 2M23 25l-5 2" stroke="#ddd" stroke-width="2" stroke-linecap="round"/><circle cx="17" cy="21" r="1.6" fill="#fff"/></svg>`,
     spider: `<svg viewBox="0 0 32 32"><rect x="4" y="6" width="15" height="21" rx="2" fill="#2f5fd0" stroke="#123" transform="rotate(-12 11 16)"/><rect x="12" y="5" width="15" height="21" rx="2" fill="#fff" stroke="#333"/><circle cx="19.5" cy="15.5" r="3" fill="#111"/><path d="M15 12l2 2M24 12l-2 2M14.5 16h2M24.5 16h-2M15 20l2-2M24 20l-2-2" stroke="#111"/></svg>`,
@@ -241,7 +241,7 @@
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=43"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=44"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   // Visual Rebuild (rebuild.js): a purely visual, full-screen rebuild of the site, fetched on first use.
@@ -312,6 +312,7 @@
     task.className = "task";
     task.innerHTML = `${I[app.icon]}<span>${esc(app.title)}</span>`;
     $("#tasks").appendChild(task);
+    if (app.dialog) task.style.display = "none"; // XP dialogs have no taskbar button
     const rec = { el, task, app, cleanups: [] };
     wins.set(key, rec);
 
@@ -944,7 +945,7 @@
       date: () => "Current date is: " + new Date().toLocaleDateString(),
       time: () => "Current time is: " + new Date().toLocaleTimeString(),
       ver: () => "Microsoft Windows XP [Version 5.1.2600] - Portfolio Edition",
-      dir: () => ` Volume in drive C has no label.\n\n Directory of C:\\Documents and Settings\\${P.name.split(" ")[0]}\n\n` + ["About Me.txt", "Resume.doc", "My Projects"].map((f, i) => `${new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })}  09:${String(10 + i).padStart(2, "0")} AM    ${f.includes(".") ? "         4,096" : "<DIR>         "} ${f}`).join("\n"),
+      dir: () => ` Volume in drive C has no label.\n\n Directory of C:\\Documents and Settings\\${P.name.split(" ")[0]}\n\n` + ["About Me.txt", "Resume.doc", "My Projects"].map((f, i) => `${new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })}  09:${String(10 + i).padStart(2, "0")} AM    ${f.includes(".") ? "         4,096" : "         <DIR>"} ${f}`).join("\n"),
       tree: () => `Folder PATH listing for Volume C\nC:.\n├── My Documents\n│   ├── About Me.txt\n│   ├── Resume.doc\n│   └── My Projects\n${P.projects.map((p, i) => `│       ${i === P.projects.length - 1 ? "└" : "├"}── ${p.name}`).join("\n")}\n└── Program Files\n    ├── Calendar\n    ├── Games\n    │   ├── Solitaire\n    │   ├── Minesweeper\n    │   ├── Snake\n    │   ├── Brick Breaker\n    │   ├── 3D Pinball\n    │   └── Spider Solitaire\n    ├── Calculator\n    ├── MSN Messenger\n    ├── Notepad\n    ├── Paint\n    ├── Task Manager\n    └── Windows Media Player`,
       ping: (arg) => {
         const host = (arg || location.host).replace(/^https?:\/\//, "").split(/[/?#\s]/)[0];

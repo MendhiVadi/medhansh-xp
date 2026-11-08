@@ -838,16 +838,17 @@
     }
 
     // ---- real-ish measurement: main-thread load from rAF frame-time jitter ----
-    const recent = []; let extra = 0, total = 0, lastSample = performance.now(), drift = 0;
+    const recent = []; let extra = 0, total = 0, lastSample = performance.now(), drift = 0, warm = true;
     loop(ctx, (dt, raw) => {
       if (raw > 1000) return;
       recent.push(raw); if (recent.length > 90) recent.shift();
       const base = Math.max(4, Math.min(...recent));
-      extra += Math.max(0, raw - base); total += raw;
+      extra += Math.max(0, Math.min(raw, 250) - base); total += Math.min(raw, 250);
     });
     function sample() {
       if (!ctx.isVisible()) return;
-      const load = total > 0 ? extra / total * 100 : 0;
+      // the first sample covers the window opening itself, so it is not counted
+      const load = !warm && total > 0 ? extra / total * 100 : 0; warm = false;
       cpuNow = clamp(load * 1.5 + 1 + Math.random() * 2, 0, 100); extra = total = 0; lastSample = performance.now();
       const pm = performance.memory;
       if (pm && pm.usedJSHeapSize) { commit = pm.usedJSHeapSize / 1024; limit = pm.jsHeapSizeLimit / 1024; pfH.push(clamp(pm.usedJSHeapSize / pm.totalJSHeapSize * 100, 0, 100)); }

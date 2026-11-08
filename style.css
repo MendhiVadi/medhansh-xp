@@ -242,7 +242,8 @@ button { font: inherit; }
 /* IE favourites */
 .ie-home { padding: 20px; background: linear-gradient(#fff, #e5eefb); min-height: 100%; }
 .ie-home h1 { font: bold 20px Trebuchet MS, sans-serif; color: #0a246a; margin: 0 0 4px; }
-.link-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-top: 14px; }
+.link-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.link-cards > :last-child:nth-child(odd) { grid-column: 1 / -1; }
 .link-card { display: flex; align-items: center; gap: 10px; padding: 10px; background: #fff; border: 1px solid #a8b8d0; border-radius: 4px; color: #0a246a; text-decoration: none; }
 .link-card:hover { border-color: #316ac5; box-shadow: 0 0 0 2px #c6d3f7; }
 .link-card svg { width: 32px; height: 32px; flex-shrink: 0; }
