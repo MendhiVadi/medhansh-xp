@@ -199,7 +199,8 @@ button { font: inherit; }
 .fitem:hover { border-color: #c9d8f1; background: #eef3fc; }
 .fitem.sel { background: #316ac5; color: #fff; }
 .fitem small { color: #888; }
-.fitem > span { min-height: 3.6em; }
+.grid-items.proj .fitem { width: 118px; }
+.grid-items.proj .fitem > span { height: 2.5em; }
 .fitem.sel small { color: #dde; }
 
 /* ---------- Content styles ---------- */

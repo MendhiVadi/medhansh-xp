@@ -635,7 +635,7 @@
         ["Other Places", ext(links.github, "All repositories", "github") + appLink("about", "About Me") + appLink("resume", "Resume")],
         ["Details", `<span><b>My Projects</b><br>File Folder<br>${P.projects.length} objects</span>`],
       ])}
-      <div class="ex-main"><div class="grid-items">${P.projects.map((p, i) => `<div class="fitem" data-i="${i}">${I.project}<span>${esc(p.name)}</span><small>${esc(p.year)}</small></div>`).join("")}</div></div></div>`;
+      <div class="ex-main"><div class="grid-items proj">${P.projects.map((p, i) => `<div class="fitem" data-i="${i}">${I.project}<span>${esc(p.name)}</span><small>${esc(p.year)}</small></div>`).join("")}</div></div></div>`;
     const items = inner.querySelectorAll(".fitem");
     items.forEach((it) => {
       it.addEventListener("click", () => { items.forEach((x) => x.classList.remove("sel")); it.classList.add("sel"); });
