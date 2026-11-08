@@ -1,10 +1,9 @@
-// Visual Rebuild, Mark 2: a ~45 second, purely visual rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
-// 0-10s   the screen is wiped and the swarm opens the back end as windows and types its real source into them
-// 10-20s  the front end is built on top of it (index.html, app.js, sound.js, data.js, style.css, the lazy chunks)
-// 8-38s   knitting needles keep knitting little sweater patches over everything, for texture
-// 20-38s  real app windows open and get built one on top of another, faster and faster, until several build at once
-// 38-42s  the windows fly away and the desktop (wallpaper, icons) is built
-// 42-45s  the taskbar, start button and tray icons, then it hands back to the live desktop underneath
+// Visual Rebuild, Mark 2: a ~41 second, purely visual rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
+// 3-12s   the foundation: back-end windows (real source, data, a deploy) and front-end modules, built side by side
+// 7-34s   needles keep making single stitches into everything: in, out, and the thread is cut away
+// 12-34s  real app windows open and get built one on top of another, faster and faster, until several build at once
+// 34-38s  the windows fly away and the desktop (wallpaper, icons) is built
+// 38-41s  the taskbar, start button and tray icons, then it hands back to the live desktop underneath
 // It is all theatre: nothing here writes data or touches the network. Loaded on demand by app.js.
 (() => {
   const CSS = `
@@ -93,11 +92,8 @@
 /* needles and thread */
 .rb-sew { position: absolute; inset: 0; pointer-events: none; transition: opacity .8s; }
 .rb-sew > svg { position: absolute; left: 0; top: 0; overflow: visible; }
-.rb-nd { position: absolute; left: 0; top: 0; width: 58px; height: 9px; offset-rotate: auto; offset-anchor: 100% 50%; offset-distance: 0%; }
-.rb-nd svg { display: block; width: 58px; height: 9px; overflow: visible; animation: rbPierce var(--sp, 70ms) linear infinite; }
-@keyframes rbPierce { 0%, 100% { clip-path: inset(-8px 0 -8px -60px); transform: translateX(-5px); }
-  50% { clip-path: inset(-8px 46% -8px -60px); transform: translateX(7px); } }
-.rb-nd.out { opacity: 0 !important; transition: opacity .25s; }
+.rb-th { fill: none; stroke-width: 1.1; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: .9; }
+.rb-th.on { stroke-dashoffset: 0; transition: stroke-dashoffset var(--t) linear; }
 
 /* swarm */
 .rb-fx, .rb-ags { position: absolute; inset: 0; pointer-events: none; transition: opacity .4s; }
@@ -159,11 +155,6 @@
 .rb-dr.on i { width: var(--w); }
 .rb-dr u { text-decoration: none; text-align: right; color: #94a3b8; }
 
-/* knitting */
-.rb-kn { transition: opacity 1s; } .rb-kn.old { opacity: .4; }
-.rb-kn g { opacity: 0; transform-box: fill-box; transform-origin: 50% 0; animation: rbKnit .16s ease-out both; }
-.rb-kn ellipse { stroke: rgba(0,0,0,.45); stroke-width: .7; }
-@keyframes rbKnit { from { opacity: 0; transform: scaleY(.15); } to { opacity: 1; transform: none; } }
 .rb-vig { position: absolute; inset: 0; pointer-events: none; transition: opacity 1s;
   background: radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,.65) 100%), repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px); }
 .rb-vig.off { opacity: 0; }
@@ -202,7 +193,7 @@
 
   const AGENTS = [["nova", "#f472b6"], ["atlas", "#22d3ee"], ["pixel", "#a3e635"], ["echo", "#fbbf24"], ["flux", "#a78bfa"], ["orbit", "#fb7185"], ["vega", "#34d399"], ["juno", "#60a5fa"],
     ["kite", "#f59e0b"], ["ion", "#2dd4bf"], ["lumen", "#e879f9"], ["quill", "#facc15"], ["rho", "#38bdf8"], ["zed", "#4ade80"]];
-  const YARN = ["#f43f5e", "#fbbf24", "#22d3ee", "#e879f9", "#a3e635", "#fb923c", "#f8fafc"];
+  const YARN = ["#f43f5e", "#fbbf24", "#22d3ee", "#e879f9", "#a3e635", "#fb923c", "#f8fafc"]; // thread colours
   const CHECKS = ["lint ✓", "tests ✓", "types ✓", "200 OK", "gzip 38 kB", "cache hit", "a11y ✓", "0 warnings", "hydrated", "diff +12 −3", "p95 41ms", "snapshot ✓"];
 
   // the back end, as real source (condensed): each one is a window the swarm opens and types into
@@ -237,35 +228,6 @@
       "    subject: `${code} is your verification code` });",
       "  return send(res, 200, { token });",
       "}"] },
-    contact: { title: "api/contact.js", kind: "code", lines: [
-      "// Checks the 4-digit code, then emails the message.",
-      "export default async function handler(req, res) {",
-      "  const b = body(req);",
-      "  if (str(b.website, 200)) return send(res, 200, { ok: true });",
-      "  const claim = await claimAttempt(b.token);",
-      "  const bad = verify(b.token, m.email, b.code, digest(m));",
-      "  if (bad) return send(res, 400, { error: bad });",
-      "  await mailer().sendMail({",
-      "    to: process.env.CONTACT_TO || process.env.GMAIL_USER,",
-      "    replyTo: { name: m.name, address: m.email },",
-      "    subject: `[Portfolio] ${m.subject}` });",
-      "  return send(res, 200, { ok: true });",
-      "}"] },
-    vercel: { title: "vercel.json", kind: "code", lines: [
-      "{",
-      "  \"cleanUrls\": false,",
-      "  \"headers\": [",
-      "    { \"source\": \"/(.*)\", \"headers\": [",
-      "      { \"key\": \"X-Content-Type-Options\", \"value\": \"nosniff\" },",
-      "      { \"key\": \"Referrer-Policy\", \"value\": \"strict-origin\" },",
-      "      { \"key\": \"Permissions-Policy\", \"value\": \"camera=()\" }",
-      "    ] },",
-      "    { \"source\": \"/(.*)\\\\.(js|css|jpg|png)\", \"headers\": [",
-      "      { \"key\": \"Cache-Control\",",
-      "        \"value\": \"public, max-age=31536000, immutable\" }",
-      "    ] }",
-      "  ]",
-      "}"] },
     db: { title: "Firestore · resume-41921", kind: "db", lines: [
       ["shared/notepad", "read · write", 1], ["tasks", "validated", 38], ["pictures", "add · delete", 12], ["scores", "add-only", 214],
       ["board", "add-only", 57], ["stats", "+1 max", 6], ["otp", "5 attempts", 19], ["limits", "hashed keys", 44]] },
@@ -283,18 +245,15 @@
   };
   // the front end, built on top of it
   const FE = {
-    index: { t: "INDEX.HTML", tag: "shell", lines: [["doctype", "html"], ["#desktop", "mount"], ["#windows", "layer"], ["taskbar", "toolbar"]] },
     app: { t: "APP.JS", tag: "runtime", lines: [["window manager", "z-order"], ["desktop grid", "snap"], ["start menu", ""], ["taskbar + tray", "live"], ["explorer · cmd · msn", ""], ["paint · notepad", ""]] },
     sound: { t: "SOUND.JS", tag: "webaudio", wave: true, lines: [["xp scheme", "synth"], ["files", "0"]] },
     data: { t: "DATA.JS", tag: "profile", lines: [["name", "Medhansh Khattar"], ["role", "AI/ML engineer"], ["based", "Navi Mumbai"], ["host", "MK-PC"]] },
     style: { t: "STYLE.CSS", tag: "luna", swatch: ["#0058ee", "#3c8f3c", "#ece9d8", "#4c9b2d", "#d6dff7", "#1941a5"], lines: [["titlebar", "#0058ee"], ["start", "#3c8f3c"]] },
-    games: { t: "GAMES.JS", tag: "lazy chunk", lines: [["solitaire · spider", ""], ["minesweeper", ""], ["snake · bricks", ""], ["3d pinball", ""]] },
-    extras: { t: "EXTRAS.JS", tag: "lazy chunk", lines: [["calculator", ""], ["media player", "indexeddb"], ["my pictures", ""], ["task manager", ""]] },
   };
   // real apps, in build order (none that need the network)
-  const APP_IDS = ["about", "cmd", "mine", "paint", "projects", "solitaire", "msn", "calc", "resume", "spider", "wmp", "snake", "notepad"];
-  const APP_AT = [20000, 22300, 24300, 26000, 27400, 28600, 29600, 30500, 31300, 32000, 32600, 33200, 33700];
-  const APP_SPOT = [[.3, .4], [.7, .36], [.46, .6], [.2, .64], [.78, .62], [.54, .32], [.34, .5], [.64, .5], [.16, .4], [.84, .42], [.42, .66], [.58, .44], [.5, .52]];
+  const APP_IDS = ["about", "cmd", "mine", "paint", "projects", "solitaire", "msn", "taskmgr", "calc", "resume", "spider", "breakout", "wmp", "computer", "snake", "games", "notepad", "control"];
+  const APP_AT = [12000, 14200, 16200, 18000, 19600, 21000, 22250, 23350, 24350, 25250, 26100, 26900, 27650, 28350, 29000, 29600, 30150, 30650];
+  const APP_SPOT = [[.3, .4], [.7, .36], [.46, .6], [.2, .64], [.78, .62], [.54, .32], [.34, .5], [.64, .5], [.16, .4], [.84, .42], [.42, .66], [.58, .44], [.5, .52], [.26, .3], [.74, .68], [.6, .6], [.4, .38], [.5, .45]];
 
   let running = false;
 
@@ -564,21 +523,23 @@
     // ---------- the back end: windows with the real source, typed in by the swarm ----------
     const LH = narrow ? 14 : 17, CW = narrow ? 6 : 6.9, TB = 26, GUT = 26;
     ov.style.setProperty("--clh", LH + "px"); ov.style.setProperty("--cfs", narrow ? "10px" : "11.5px");
-    const shown = (p) => p.lines.slice(0, narrow ? 9 : 14);
+    const shown = (p) => p.lines.slice(0, narrow ? 6 : 8);
     const panelH = (p) => TB + 16 + shown(p).length * LH + 2;
+    // ---------- one foundation: back-end windows and front-end modules, side by side ----------
+    const heightOf = (id) => (PANELS[id] ? panelH(PANELS[id]) : boxH(FE[id]));
     if (narrow) {
-      const order = ["rules", "otp", "contact", "vercel", "db", "deploy"], hs = order.map((id) => panelH(PANELS[id]));
+      const order = ["rules", "app", "sound", "deploy", "style", "db", "otp", "data"], hs = order.map(heightOf);
       const step = Math.min(hs[0] + 10, (R.h - hs.at(-1)) / (order.length - 1));
       order.forEach((id, k) => (rects[id] = { x: R.x + (k % 2 ? 8 : 0), y: R.y + k * step, w: R.w - 8, h: hs[k] }));
     } else {
-      const gap = 28, colW = Math.min(500, (R.w - 2 * gap) / 3), grid = [["rules", "otp", "vercel"], ["deploy", "contact", "db"]];
-      const rowH = grid.map((row) => Math.max(...row.map((id) => panelH(PANELS[id]))));
-      const tot = rowH[0] + gap + rowH[1], y0 = R.y + Math.max(0, (R.h - tot) / 2), lift = Math.min(0, R.h - tot), x0 = R.x + (R.w - 3 * colW - 2 * gap) / 2;
+      const gap = 26, n = 4, colW = Math.min(390, (R.w - (n - 1) * gap) / n), grid = [["rules", "app", "sound", "db"], ["deploy", "style", "otp", "data"]];
+      const rowH = grid.map((row) => Math.max(...row.map(heightOf)));
+      const tot = rowH[0] + gap + rowH[1], y0 = R.y + Math.max(0, (R.h - tot) / 2), lift = Math.min(0, R.h - tot), x0 = R.x + (R.w - n * colW - (n - 1) * gap) / 2;
       grid.forEach((row, ri) => row.forEach((id, ci) => {
-        const h = panelH(PANELS[id]);
-        rects[id] = { x: clamp(x0 + ci * (colW + gap) + (ri ? colW * 0.08 : -colW * 0.03) + rand(-8, 8), 6, vw - colW - 6), y: y0 + (ri ? rowH[0] + gap + lift : 0) + rand(-8, 8), w: colW, h };
+        rects[id] = { x: clamp(x0 + ci * (colW + gap) + (ri ? colW * 0.06 : -colW * 0.03) + rand(-8, 8), 6, vw - colW - 6), y: y0 + (ri ? rowH[0] + gap + lift : 0) + rand(-8, 8), w: colW, h: heightOf(id) };
       }));
     }
+
     const hl = (line) => {
       const re = /(\/\/.*$)|('[^']*'|"[^"]*"|`[^`]*`)|(\b\d[\d_.]*\b)|(\b(?:import|from|export|default|async|function|return|if|const|await|allow|match|read|write|create|update|delete|service|true|false|rules_version)\b)/g;
       let out = "", i = 0, m;
@@ -627,51 +588,38 @@
       }, { deps: [id], pri: Math.floor(k / 4) * 0.01, x: r.x, y: r.y + TB + k * LH }));
     };
 
-    // front-end modules are laid over the back end, offset so both stay readable
-    const FE_SPOT = narrow
-      ? { index: [0, 0, .58], sound: [.62, .03, .38], app: [.16, .2, .68], data: [0, .5, .52], style: [.55, .52, .45], games: [0, .74, .48], extras: [.52, .78, .48] }
-      : { index: [.02, .03, .2], sound: [.62, 0, .19], app: [.3, .15, .26], data: [.75, .3, .23], style: [.05, .5, .19], games: [.33, .64, .21], extras: [.63, .68, .21] };
-    Object.entries(FE_SPOT).forEach(([id, [fx0, fy0, fw]]) => {
-      const w = Math.min(R.w, Math.max(narrow ? 140 : 210, R.w * fw)), h = boxH(FE[id]);
-      rects[id] = { x: R.x + clamp(R.w * fx0, 0, R.w - w), y: R.y + clamp(R.h * fy0, 0, Math.max(0, R.h - h)), w, h };
-    });
-
-    // ---------- needles: knitting little sweater patches over anything, purely for texture ----------
-    // rows of V stitches, back and forth like a sweater; the needle dips into the fabric and out again on every stitch
-    const STEP = narrow ? 8 : 10, ROWH = narrow ? 8 : 10, SPD = 50;
-    const knit = (cx, cy, color = pick(YARN)) => {
-      const per = (rand(5, 10) | 0), rows = (rand(3, 5) | 0), x0 = cx - (per * STEP) / 2, y0 = cy - (rows * ROWH) / 2, pts = [];
-      let vs = "";
-      for (let r = 0; r < rows; r++) for (let k = 0; k < per; k++) {
-        const x = x0 + (r % 2 ? per - 1 - k : k) * STEP + STEP / 2, y = y0 + r * ROWH + ROWH / 2, i = r * per + k;
-        pts.push([x, y]);
-        const lx = (x - STEP * 0.23).toFixed(1), rx = (x + STEP * 0.23).toFixed(1), cy = y.toFixed(1), ex = (STEP * 0.2).toFixed(1), ey = (ROWH * 0.55).toFixed(1);
-        vs += `<g style="animation-delay:${Math.round(i * SPD * sp)}ms"><ellipse cx="${lx}" cy="${cy}" rx="${ex}" ry="${ey}" transform="rotate(-34 ${lx} ${cy})"/><ellipse cx="${rx}" cy="${cy}" rx="${ex}" ry="${ey}" transform="rotate(34 ${rx} ${cy})"/></g>`;
-      }
+    // ---------- needles: one stitch at a time, anywhere, purely for texture ----------
+    // The needle slides in on the surface pulling a thin thread, dives into the fabric at P, travels under it and comes
+    // back out at Q, pulls through, and the thread is cut: the whole stitch vanishes and leaves no mark.
+    // The "under the fabric" stretch is a mask band between P and Q that hides the needle and the thread as they pass it.
+    let stN = 0;
+    const NEEDLE = `<path d="M0 0 L-7 -1.2 L-42 -1 Q-45 0 -42 1 L-7 1.2 Z" fill="url(#rbNdG)" stroke="#0f172a" stroke-width=".35"/><ellipse cx="-38" cy="0" rx="2.4" ry=".55" fill="#0b1020"/>`;
+    const stitch = (px, py, color = pick(YARN)) => {
+      const ang = rand(0, Math.PI * 2), ux = Math.cos(ang), uy = Math.sin(ang);
+      const inL = rand(22, 34), under = rand(14, 22), outL = 50, L = inL + under + outL;
+      const ax = px - ux * inL, ay = py - uy * inL, qx = px + ux * under, qy = py + uy * under, ex = qx + ux * outL, ey = qy + uy * outL;
+      const d = `M${ax.toFixed(1)} ${ay.toFixed(1)} L${ex.toFixed(1)} ${ey.toFixed(1)}`, id = "rbS" + stN++, ms = L * 3.4;
+      const deg = (ang * 180) / Math.PI;
       const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.setAttribute("class", "rb-kn"); g.setAttribute("fill", color); g.innerHTML = vs;
+      g.innerHTML = `<mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="${vw}" height="${vh}"><rect width="${vw}" height="${vh}" fill="#fff"/>` +
+        `<rect x="${px.toFixed(1)}" y="${(py - 6).toFixed(1)}" width="${under.toFixed(1)}" height="12" fill="#000" transform="rotate(${deg.toFixed(1)} ${px.toFixed(1)} ${py.toFixed(1)})"/></mask>` +
+        `<g mask="url(#${id})"><path class="rb-th" pathLength="1" stroke="${color}" d="${d}" style="--t:${ms * sp}ms"/>` +
+        `<g>${NEEDLE}<animateMotion dur="${(ms * sp) / 1000}s" begin="indefinite" fill="freeze" rotate="auto" path="${d}"/></g></g>`;
       sewS.appendChild(g);
-      const ms = pts.length * SPD, d = "M" + pts.map((p) => p.map((v) => v.toFixed(1)).join(" ")).join(" L");
-      const nd = document.createElement("div");
-      nd.className = "rb-nd";
-      nd.style.cssText = `offset-path:path("${d}");transition:offset-distance ${ms * sp}ms linear;--sp:${SPD * sp}ms`;
-      nd.innerHTML = `<svg viewBox="0 0 58 9"><path d="M6 4.5 C-8 4.5 -14 ${rand(-6, 14).toFixed(1)} -34 ${rand(-4, 12).toFixed(1)}" stroke="${color}" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M3 4.5 Q3 2 7 2 L54 4 Q58 4.5 54 5 L7 7 Q3 7 3 4.5Z" fill="url(#rbNdG)" stroke="#0f172a" stroke-width=".5"/><ellipse cx="8" cy="4.5" rx="2.8" ry="1" fill="#0b1020"/></svg>`;
-      sewL.appendChild(nd);
-      void nd.offsetWidth; nd.style.offsetDistance = "100%";
-      blip(rand(900, 1300), 0.03, "triangle", 0.03, rand(500, 700));
-      at(ms, () => { nd.classList.add("out"); at(300, () => nd.remove()); });
-      at(ms + 1800, () => g.classList.add("old"));
-      at(ms + (narrow ? 4000 : 5500), () => g.remove());
+      const th = g.querySelector(".rb-th"); void th.getBoundingClientRect(); th.classList.add("on");
+      try { g.querySelector("animateMotion").beginElement(); } catch {}
+      blip(rand(900, 1300), 0.02, "triangle", 0.025, rand(500, 700));
+      at(ms, () => g.remove()); // pulled through: cut the thread, gone
     };
-    // anything that has been built can be knitted onto, along its edges
+    // anything that has been built can be stitched into, near its edges
     const appRects = {};
     let chores = true;
     const scaled = (r, f) => (f === 1 ? r : { x: vw / 2 + (r.x - vw / 2) * f, y: vh / 2 + (r.y - vh / 2) * f, w: r.w * f, h: r.h * f });
     const pieces = () => [
-      ...Object.keys(boxes).filter((id) => rects[id]).map((id) => scaled(rects[id], FE[id] ? (feL.classList.contains("under") ? 0.985 : 1) : (beL.classList.contains("under") ? 0.965 : 1))),
+      ...Object.keys(boxes).filter((id) => rects[id]).map((id) => scaled(rects[id], beL.classList.contains("under") ? 0.965 : 1)),
       ...Object.values(appRects)];
     const onEdge = (r) => { const e = (Math.random() * 4) | 0, t = rand(0.12, 0.88); return e === 0 ? [r.x + r.w * t, r.y] : e === 1 ? [r.x + r.w, r.y + r.h * t] : e === 2 ? [r.x + r.w * t, r.y + r.h] : [r.x, r.y + r.h * t]; };
-    const knitOne = () => { const ps = pieces(); if (!ps.length) return; const [x, y] = onEdge(pick(ps)); knit(clamp(x, 50, vw - 50), clamp(y, 24, vh - 24)); };
+    const stitchOne = () => { const ps = pieces(); if (!ps.length) return; const [x, y] = onEdge(pick(ps)); stitch(clamp(x, 40, vw - 40), clamp(y, 24, vh - 24)); };
     // an idle agent never waits around: it checks something that is already built
     const chore = async (a, r) => {
       const h = rand(16, 24), sub = { x: r.x + rand(4, r.w * 0.3), y: r.y + rand(r.h * 0.15, Math.max(r.h * 0.15, r.h - h - 6)), w: r.w * rand(0.3, 0.6), h };
@@ -760,7 +708,7 @@
       task(base + ":d", async () => {
         wrap.classList.add("done"); if (wrap.f) unframe(wrap.f, 0);
         appRects[app.id] = r;
-        if (!rm) for (let n = 0; n < 2; n++) { const [kx, ky] = onEdge(r); knit(clamp(kx, 50, vw - 50), clamp(ky, 24, vh - 24)); }
+        if (!rm) for (let n = 0; n < 2; n++) { const [kx, ky] = onEdge(r); stitch(clamp(kx, 40, vw - 40), clamp(ky, 24, vh - 24)); }
         chime();
       }, { deps: [base + ":b"], pri: -2, x, y });
     };
@@ -772,39 +720,35 @@
     at(650, () => { ov.classList.add("on"); skipBtn.focus({ preventScroll: true }); });
     at(900, () => { decode(q(".rb-intro-t"), "VISUAL REBUILD", 900); q(".rb-intro-bar").classList.add("on"); blip(90, 0.9, "sawtooth", 0.6, 45); });
     at(1150, () => { q(".rb-intro-s").innerHTML = "unmounting render tree · <b>0 nodes remain</b>"; tick(); });
-    at(1900, () => { q(".rb-intro-s").innerHTML = "spawning swarm ▸ <b>10 agents · knitting needles</b>"; tick(); });
+    at(1900, () => { q(".rb-intro-s").innerHTML = "spawning swarm ▸ <b>10 agents · needle and thread</b>"; tick(); });
     at(1000, () => prepAll());
 
-    // 2.6-10s: the back end, as its real source files
+    // 2.6-12s: the foundation, back end and front end built together
     at(2600, () => { intro.classList.add("off"); spawn(10); thud(); });
-    [["rules", 2700], ["otp", 3250], ["contact", 3800], ["vercel", 4400], ["db", 5000], ["deploy", 5600]].forEach(([id, t]) => at(t, () => buildPanel(id)));
-    // needles start knitting once there is something to knit onto
-    let sewTimer = 0;
-    at(8200, () => { if (!rm) sewTimer = every(narrow ? 650 : 340, knitOne); });
-
-    // 10-20s: the front end on top of the back end; needles start stitching the two together
-    at(10000, () => {
-      beL.classList.add("under");
-      pace = 1.1;
-      thud();
-      ["index", "app", "sound", "data", "style", "games", "extras"].forEach((id) => buildBox(feL, id, FE[id], "fe"));
-      wire(feL, ["index", "r", 0.5], ["app", "l", 0.3], "boot");
-      wire(feL, ["app", "b", 0.3], ["games", "t", 0.5], "import()");
-      wire(feL, ["app", narrow ? "b" : "r", narrow ? 0.75 : 0.8], ["extras", "t", 0.4], "import()");
+    [["rules", 2700], ["app", 3150], ["sound", 3600], ["db", 4050], ["deploy", 4500], ["style", 4950], ["otp", 5400], ["data", 5850]]
+      .forEach(([id, t]) => at(t, () => (PANELS[id] ? buildPanel(id) : buildBox(beL, id, FE[id], "fe"))));
+    if (!narrow) at(6400, () => {
+      wire(beL, ["rules", "r", 0.5], ["app", "l", 0.35], "allow");
+      wire(beL, ["app", "r", 0.3], ["sound", "l", 0.5], "play()");
+      wire(beL, ["app", "b", 0.5], ["style", "t", 0.5], "paint");
+      wire(beL, ["otp", "r", 0.5], ["data", "l", 0.5], "send");
     });
+    // needles start stitching once there is something to stitch into
+    let sewTimer = 0;
+    at(7000, () => { if (!rm) sewTimer = every(narrow ? 260 : 150, stitchOne); });
 
-    // 20-38s: the real apps, stacking on top of each other and speeding up
-    at(19500, () => {
-      feL.classList.add("under"); beL.classList.add("under2");
-      pace = 1;
+    // 12-34s: the real apps, stacking on top of each other and speeding up
+    at(11500, () => {
+      beL.classList.add("under");
       const edges = [[-30, vh * 0.3], [vw + 30, vh * 0.5], [vw * 0.5, vh + 30], [-30, vh * 0.8], [vw + 30, vh * 0.2], [vw * 0.3, -30]];
       spawn(4, (k) => edges[k]); thud();
     });
+    at(18000, () => beL.classList.add("under2"));
     APP_AT.forEach((t, i) => at(t, () => { if (apps[i]) buildApp(apps[i], i); }));
 
-    // 38-42s: the windows fly away and the desktop is built
-    at(37600, () => stop(sewTimer));
-    at(38000, () => {
+    // 34-38s: the windows fly away and the desktop is built
+    at(33600, () => stop(sewTimer));
+    at(34000, () => {
       queue.length = 0; chores = false;
       [...appsL.children].reverse().forEach((w, k) => at(k * 45, () => {
         const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(w.style.transform) || [0, 0, 0];
@@ -816,7 +760,7 @@
       sewL.style.opacity = "0";
       blip(55, 1.0, "sawtooth", 0.4, 140);
     });
-    at(38500, () => {
+    at(34500, () => {
       clone.classList.add("on");
       q(".rb-vig").classList.add("off");
       pace = 0.7;
@@ -844,8 +788,8 @@
       }, { x: p.r.x, y: p.r.y }));
     });
 
-    // 42-45s: taskbar, start button, tray: wifi, battery, volume, clock
-    at(41900, () => {
+    // 38-41s: taskbar, start button, tray: wifi, battery, volume, clock
+    at(37900, () => {
       focusPt = [vw / 2, vh - 70];
       D.bar.forEach((p) => task("bar", async (a) => {
         say(a, "taskbar");
@@ -868,7 +812,7 @@
     });
 
     // outro: the swarm flies home into the start button and the live desktop takes over
-    at(44000, () => {
+    at(40000, () => {
       queue.length = 0;
       const home = D.start[0]?.r || { x: 20, y: vh - 30, w: 60, h: 30 };
       ags.forEach((a, k) => { a.home = true; at(k * 35, () => { place(a, home.x + home.w / 2, home.y + home.h / 2, 520, "cubic-bezier(.6,0,.8,.4)"); at(480, () => a.el.classList.remove("on")); }); });
@@ -876,8 +820,8 @@
       // anything the swarm did not reach in time is simply shown
       clone.querySelectorAll(".rb-h").forEach((e) => e.classList.add("rb-on"));
     });
-    at(44450, () => { flash.classList.add("go"); real.classList.remove("rb-glitch"); play("startup"); });
-    at(45000, () => finish(false));
+    at(40450, () => { flash.classList.add("go"); real.classList.remove("rb-glitch"); play("startup"); });
+    at(41000, () => finish(false));
 
     // ---------- skip + exit ----------
     const onKey = (e) => {

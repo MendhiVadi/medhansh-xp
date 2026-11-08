@@ -246,7 +246,7 @@
   });
   // Visual Rebuild (rebuild.js): a purely visual, full-screen rebuild of the site, fetched on first use.
   // Mark 1 (rebuild-mk1.js) is kept so it can still be replayed from Run: "rebuild mk1".
-  const REBUILDS = { cur: ["rebuild.js?v=42", "REBUILD"], mk1: ["rebuild-mk1.js?v=1", "REBUILD_MK1"] };
+  const REBUILDS = { cur: ["rebuild.js?v=43", "REBUILD"], mk1: ["rebuild-mk1.js?v=1", "REBUILD_MK1"] };
   const rebuildReady = {};
   const loadRebuild = (m) => rebuildReady[m] ||= new Promise((ok, fail) => {
     const s = document.createElement("script"); s.src = REBUILDS[m][0]; s.onload = ok; s.onerror = () => { rebuildReady[m] = null; fail(); };
@@ -2443,8 +2443,8 @@ TERMS
     for (let i = 1; i <= 10; i++) { const s = await pauseStep(55, run); if (s === null) return; if (s) return toLogin(run); out.textContent = lines.join("\n") + `\nMemory Testing : ${String(Math.round(kb * i / 10)).padStart(7)}K${i === 10 ? " OK" : ""}`; }
     XPS.play("post");
     lines.push(`Memory Testing : ${String(kb).padStart(7)}K OK`, "");
-    for (const l of ["Detecting Primary Master ... PORTFOLIO-XP HDD", "Detecting Primary Slave  ... None", "Detecting Keyboard ....... OK", "Detecting Mouse .......... OK"]) { const s = await pauseStep(130, run); if (s === null) return; if (s) return toLogin(run); lines.push(l); out.textContent = lines.join("\n"); }
-    const s0 = await pauseStep(1850, run); if (s0 === null) return; if (s0) return toLogin(run); // the BIOS screen stays up a moment after the last line
+    for (const l of ["Detecting Primary Master ... PORTFOLIO-XP HDD", "Detecting Primary Slave  ... None", "Detecting Keyboard ....... OK", "Detecting Mouse .......... OK", "Detecting USB Devices .... 2 found", "Verifying DMI Pool Data .. OK", "Boot from Hard Disk ...... PORTFOLIO-XP"]) { const s = await pauseStep(130, run); if (s === null) return; if (s) return toLogin(run); lines.push(l); out.textContent = lines.join("\n"); }
+    const s0 = await pauseStep(460, run); if (s0 === null) return; if (s0) return toLogin(run); // the BIOS screen stays up a moment after the last line
     show("#boot");
     const s1 = await pauseStep(2800, run); if (s1 === null) return;
     toLogin(run);

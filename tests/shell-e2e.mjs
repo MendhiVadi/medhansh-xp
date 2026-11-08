@@ -304,7 +304,7 @@ await test("resume page and real boot flow", async () => {
   await send("Page.navigate", { url: `http://127.0.0.1:${PORT}/resume.html` }); await sleep(800);
   ok("resume lists six games", await ev(`document.body.innerText.includes("six games")`));
   await ev(`sessionStorage.removeItem("xp-logged")`); const loggedOut = (await send("Page.addScriptToEvaluateOnNewDocument", { source: `try{sessionStorage.removeItem("xp-logged")}catch{}` })).identifier;
-  await load(); await sleep(6500); // BIOS 2.9s + XP logo 2.8s
+  await load(); await sleep(5500); // BIOS 1.9s + XP logo 2.8s
   const hidden = await ev(`document.querySelector("#login").classList.contains("hidden")`);
   ok("boot reaches the log-on screen", !hidden);
   await click("#userTile"); await sleep(2300);
