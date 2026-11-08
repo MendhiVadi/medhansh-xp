@@ -1,10 +1,10 @@
 // Visual Rebuild, Mark 2: a purely visual, roughly 55 second rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
-// 0-1.75s   the live desktop glitches out and the title decodes
-// 1.75-8s   01 BACK END: the swarm types the real source into blueprint panels (firestore.rules, api/otp.js, the Firestore
+// 0-2.2s    the live desktop glitches out and the title decodes
+// 2.2-8.4s  01 BACK END: the swarm types the real source into blueprint panels (firestore.rules, api/otp.js, the Firestore
 //           collections, a vercel deploy, the mailer) and wires them up across the whole screen
-// 8-13.2s   02 FRONT END: the modules (index.html, app.js, sound.js, data.js, style.css, the lazy chunks) are built on top of
+// 8.4-13.6s 02 FRONT END: the modules (index.html, app.js, sound.js, data.js, style.css, the lazy chunks) are built on top of
 //           the dimmed back end
-// 13.2-61s  03 APPS (ends sooner if the swarm finishes): real app windows, two or three at a time, each outlined as a wireframe, painted top to bottom and filled in
+// 13.6-61s  03 APPS (ends sooner if the swarm finishes): real app windows, two or three at a time, each outlined as a wireframe, painted top to bottom and filled in
 //           piece by piece with a job for every agent (mines carried from a crate, a joker drawn by hand, wrong calendar digits
 //           replaced by numbers flung from below, colours carried from a palette to Paint's colour bar and a pixel picture painted, Internet Explorer opening the Instagram profile); a window is
 //           minimised once its swarm is done with it
@@ -479,7 +479,7 @@
     skipBtn.addEventListener("click", () => finish(true));
     const t0 = performance.now();
     const clockEl = q(".rb-clock"), progEl = q(".rb-prog i");
-    const TOTAL = 56000;
+    const TOTAL = 56500;
     let progLock = false;
     every(60, () => {
       const e = (performance.now() - t0) / sp;
@@ -1406,18 +1406,18 @@
     // intro: the live desktop glitches out and the title decodes
     real.classList.add("rb-glitch");
     if (!rm) { q(".rb-glitch-bars").classList.add("go"); play("tilt"); }
-    at(380, () => { ov.classList.add("on"); skipBtn.focus({ preventScroll: true }); });
-    at(500, () => { decode(q(".rb-intro-t"), "VISUAL REBUILD", 720); q(".rb-intro-bar").classList.add("on"); blip(90, 0.9, "sawtooth", 0.6, 45); });
-    at(850, () => prepAll());
+    at(480, () => { ov.classList.add("on"); skipBtn.focus({ preventScroll: true }); });
+    at(640, () => { decode(q(".rb-intro-t"), "VISUAL REBUILD", 900); q(".rb-intro-bar").classList.add("on"); blip(90, 0.9, "sawtooth", 0.6, 45); });
+    at(1050, () => prepAll());
 
-    // 1.75-8s: the back end, typed in from the real source and wired up
-    at(1750, () => {
+    // 2.2-8.4s: the back end, typed in from the real source and wired up
+    at(2200, () => {
       intro.classList.add("off"); hud.classList.remove("off");
       phase("BACK END", "#22d3ee");
       caption("BACKEND", "Rules, serverless functions, data and a deploy, typed in from the real source.");
       spawn(8); thud();
     });
-    at(1850, () => {
+    at(2300, () => {
       ["deploy", "otp", "rules", "db"].forEach(buildPanel);
       buildBox(beL, "mail", BE.mail, "");
       if (narrow) {
@@ -1432,8 +1432,8 @@
       }
     });
 
-    // 8-13.2s: the front end on top of the back end
-    at(7950, () => {
+    // 8.4-13.6s: the front end on top of the back end
+    at(8400, () => {
       beL.classList.add("under");
       pace = 0.99;
       phase("FRONT END", "#f472b6");
@@ -1474,7 +1474,7 @@
       const i = nextApp++;
       buildApp(apps[i], i); apps[i].openedAt = now; onScreen.push(i); lastOpen = now;
     };
-    at(13150, () => {
+    at(13600, () => {
       feL.classList.add("under"); beL.classList.add("under2");
       pace = 1;
       phase("APPS", "#fbbf24");
@@ -1483,8 +1483,8 @@
       spawn(6, (k) => edges[k]); thud();
       appTimer = every(150, appTick);
     });
-    at(16650, capOff);
-    at(60650, endSeq);
+    at(17100, capOff);
+    at(61100, endSeq);
 
     // the ending: the windows fly away and the desktop is built, then the taskbar, then the swarm flies home
     function endSeq() {
