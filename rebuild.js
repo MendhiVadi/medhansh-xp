@@ -1,9 +1,9 @@
-// Visual Rebuild, Mark 2: a ~36 second, purely visual rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
+// Visual Rebuild, Mark 2: a ~37 second, purely visual rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
 // 3-12s   the foundation: back-end windows (real source, data, a deploy) and front-end modules, built side by side
-// 7-29s   needles drop in from above, go under the page, come back out and the thread is snipped: no mark is left
-// 12-27s  a handful of real app windows are built one on top of another, the games last and About Me on top
-// 29-33s  the windows fly away and the desktop (wallpaper, icons) is built
-// 33-36s  the taskbar, start button and tray icons, then it hands back to the live desktop underneath
+// 7-30s   needles drop in from above, go under the page, come back out and the thread is snipped: no mark is left
+// 12-29s  a handful of real app windows are built one on top of another, the games last and About Me on top
+// 30-34s  the windows fly away and the desktop (wallpaper, icons) is built
+// 34-37s  the taskbar, start button and tray icons, then it hands back to the live desktop underneath
 // It is all theatre: nothing here writes data or touches the network. Loaded on demand by app.js.
 (() => {
   const CSS = `
@@ -75,6 +75,8 @@
 @keyframes rbScan { from { top: var(--tb); } to { top: 100%; } }
 .rb-app.done .rb-scan { opacity: 0; }
 .rb-app.fly { opacity: 0; }
+.rb-app .rb-hide { opacity: 0; }
+.rb-app .rb-tl { display: block; width: fit-content; }
 
 /* the desktop copy that is built last */
 .rb-wall { position: absolute; inset: 0; clip-path: circle(0 at var(--x, 50%) var(--y, 50%)); transition: clip-path 1.2s cubic-bezier(.6,0,.2,1); }
@@ -200,7 +202,6 @@
   const AGENTS = [["nova", "#f472b6"], ["atlas", "#22d3ee"], ["pixel", "#a3e635"], ["echo", "#fbbf24"], ["flux", "#a78bfa"], ["orbit", "#fb7185"], ["vega", "#34d399"], ["juno", "#60a5fa"],
     ["kite", "#f59e0b"], ["ion", "#2dd4bf"], ["lumen", "#e879f9"], ["quill", "#facc15"], ["rho", "#38bdf8"], ["zed", "#4ade80"]];
   const YARN = ["#f43f5e", "#fbbf24", "#22d3ee", "#e879f9", "#a3e635", "#fb923c", "#f8fafc"]; // thread colours
-  const CHECKS = ["lint ✓", "tests ✓", "types ✓", "200 OK", "gzip 38 kB", "cache hit", "a11y ✓", "0 warnings", "hydrated", "diff +12 −3", "p95 41ms", "snapshot ✓"];
 
   // the back end, as real source (condensed): each one is a window the swarm opens and types into
   const PANELS = {
@@ -395,8 +396,6 @@
       while (!done && !a.home) {
         const ready = queue.filter((t) => t.deps.every((d) => doneIds.has(d)));
         if (!ready.length) {
-          const ps = chores ? pieces() : [];
-          if (ps.length && Math.random() < 0.75) { await chore(a, pick(ps)); continue; }
           const x = focusPt ? focusPt[0] + rand(-150, 150) : a.x + rand(-90, 90), y = focusPt ? focusPt[1] + rand(-90, 90) : a.y + rand(-70, 70);
           say(a); await go(a, clamp(x, 16, vw - 90), clamp(y, 60, vh - 50), rand(500, 800)); await wait(rand(40, 160)); continue;
         }
@@ -639,21 +638,12 @@
     };
     // anything that has been built can be stitched into, near its edges
     const appRects = {};
-    let chores = true;
     const scaled = (r, f) => (f === 1 ? r : { x: vw / 2 + (r.x - vw / 2) * f, y: vh / 2 + (r.y - vh / 2) * f, w: r.w * f, h: r.h * f });
     const pieces = () => [
       ...Object.keys(boxes).filter((id) => rects[id]).map((id) => scaled(rects[id], beL.classList.contains("under") ? 0.965 : 1)),
       ...Object.values(appRects)];
     const onEdge = (r) => { const e = (Math.random() * 4) | 0, t = rand(0.12, 0.88); return e === 0 ? [r.x + r.w * t, r.y] : e === 1 ? [r.x + r.w, r.y + r.h * t] : e === 2 ? [r.x + r.w * t, r.y + r.h] : [r.x, r.y + r.h * t]; };
     const stitchOne = () => { const ps = pieces(); if (!ps.length) return; const [x, y] = onEdge(pick(ps)); stitch(clamp(x, 40, vw - 40), clamp(y, 24, vh - 24)); };
-    // an idle agent never waits around: it checks something that is already built
-    const chore = async (a, r) => {
-      const h = rand(16, 24), sub = { x: r.x + rand(4, r.w * 0.3), y: r.y + rand(r.h * 0.15, Math.max(r.h * 0.15, r.h - h - 6)), w: r.w * rand(0.3, 0.6), h };
-      say(a, "check");
-      const f = await frame(a, sub, pick(CHECKS), 220, false);
-      tick(); await wait(rand(180, 320)); unframe(f, 0);
-    };
-
     // ---------- real apps: opened hidden behind the overlay, copied, closed again ----------
     const opened = new Set(), apps = [];
     const prepApp = async (id) => {
@@ -685,6 +675,30 @@
     };
     const prepAll = async () => { for (const id of APP_IDS) apps.push(await prepApp(id)); };
 
+    // the pieces of a window the swarm builds one by one: text gets typed, everything else is dragged into place.
+    // A long run of identical siblings (card stacks, minesweeper cells) is placed as one block.
+    const PART_SEL = "button, input, textarea, select, img, canvas, svg, h1, h2, h3, h4, p, pre, li, a, label, td, [class*='card'], [class*='icon'], [class*='folder'], [class*='item'], [class*='btn'], [class*='tool']";
+    const isText = (e) => !e.children.length && e.textContent.trim().length > 2 && !/^(button|input|textarea|select|img|canvas|svg)$/i.test(e.tagName);
+    const pickParts = (rl, w, h) => {
+      const box = rl.getBoundingClientRect(), tb = rl.querySelector(".titlebar");
+      // multi-line text blocks (the command prompt's output) are typed one line at a time
+      rl.querySelectorAll("div, pre").forEach((e) => {
+        if (e.children.length || tb?.contains(e)) return;
+        const lines = e.textContent.split("\n");
+        if (lines.length < 3) return;
+        e.textContent = "";
+        lines.forEach((l) => { const sp = document.createElement("span"); sp.className = "rb-tl"; sp.textContent = l || " "; e.appendChild(sp); });
+      });
+      const ok = (r) => r.width >= 8 && r.height >= 8 && r.width <= w * 0.7 && r.height <= h * 0.6 && r.top >= box.top + 24 && r.top <= box.bottom - 6 && r.left <= box.right - 6 && r.right >= box.left + 6;
+      let c = [...rl.querySelectorAll(PART_SEL + ", .rb-tl")].filter((e) => !tb?.contains(e) && !e.closest("svg *") && !(e.classList.contains("rb-tl") && !e.textContent.trim()));
+      // a long run of identical siblings is placed as one block, if that block is a sensible size
+      c = c.map((e) => { const par = e.parentElement; return par && par !== rl && par.children.length > 12 && ok(par.getBoundingClientRect()) ? par : e; });
+      // containers too big to move as one give way to the pieces inside them
+      let o = [...new Set(c)].map((e) => ({ e, r: e.getBoundingClientRect() })).filter((p) => ok(p.r));
+      o = o.filter((p) => !o.some((q) => q !== p && q.e.contains(p.e)));
+      const max = 14, step = Math.max(1, o.length / max);
+      return Array.from({ length: Math.min(max, o.length) }, (_, n) => o[Math.floor(n * step)]);
+    };
     const buildApp = (app, i) => {
       const [fx0, fy0] = APP_SPOT[i % APP_SPOT.length];
       const top = 16, bottom = vh - 16, w = app.w, h = app.h;
@@ -696,25 +710,50 @@
       app.wf.classList.add("rb-wf"); app.rl.classList.add("rb-rl");
       wrap.append(app.wf, app.rl);
       wrap.insertAdjacentHTML("beforeend", `<div class="rb-scan"></div>`);
-      const k = clamp(1.15 - i * 0.05, 0.6, 1.15); // later apps build faster: the crescendo
+      const k = clamp(1 - i * 0.04, 0.68, 1); // later apps build faster: the crescendo
       const base = "app:" + app.id;
       task(base, async (a) => {
         say(a, app.id);
         wrap.style.setProperty("--a", a.color);
         appsL.appendChild(wrap);
+        focusPt = [x + w / 2, y + h / 2];
         thud();
-        const f = await frame(a, r, "win · " + app.title.replace(/ - .*$/, "").replace(/^.* - /, ""), 480 * k);
+        pickParts(app.rl, w, h).forEach(({ e, r: pr }, j) => {
+          e.classList.add("rb-hide");
+          const cx = pr.left + pr.width / 2, cy = pr.top + pr.height / 2;
+          task(`${base}:p${j}`, async (b) => {
+            if (isText(e)) {
+              // typed in, the cursor running along the line
+              const n = Math.min(40, e.textContent.trim().length), t = clamp(n * 20, 220, 700) * k;
+              say(b, "type");
+              await go(b, pr.left, cy);
+              e.classList.remove("rb-hide");
+              e.animate([{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: t * sp, easing: `steps(${Math.max(4, n)})`, fill: "backwards" });
+              await go(b, Math.min(pr.right, x + w - 8), cy, t, "linear");
+            } else {
+              // picked up nearby and dragged into place
+              const ox = clamp(rand(-150, 150), x + 12 - cx, x + w - 12 - cx), oy = clamp(rand(-110, 110), y + app.tb + 12 - cy, y + h - 12 - cy), t = 440 * k;
+              say(b, "place");
+              await go(b, cx + ox, cy + oy); click(b);
+              e.classList.remove("rb-hide");
+              e.animate([{ translate: `${ox}px ${oy}px`, scale: "0.6", opacity: 0 }, { opacity: 1, offset: 0.25 }, { translate: "0px 0px", scale: "1", opacity: 1 }],
+                { duration: t * sp, easing: "cubic-bezier(.2,.75,.25,1.15)", fill: "backwards" });
+              await go(b, cx, cy, t, "cubic-bezier(.2,.75,.25,1.15)");
+            }
+          }, { deps: [base + ":b"], pri: -1, x: cx, y: cy });
+        });
+        const f = await frame(a, r, "win · " + app.title.replace(/ - .*$/, "").replace(/^.* - /, ""), 360 * k);
         wrap.classList.add("wf"); click(a);
         wrap.f = f;
       }, { pri: -1, x, y });
       task(base + ":t", async (a) => {
         say(a, "titlebar");
         await go(a, x + 8, y + app.tb / 2);
-        app.rl.style.setProperty("--t", 380 * k * sp + "ms");
+        app.rl.style.setProperty("--t", 300 * k * sp + "ms");
         app.rl.classList.add("t"); click(a);
-        await go(a, x + w - 10, y + app.tb / 2, 380 * k, "linear");
+        await go(a, x + w - 10, y + app.tb / 2, 300 * k, "linear");
       }, { deps: [base], pri: -1, x, y });
-      const bodyMs = clamp(h * 3.2, 900, 1900) * k;
+      const bodyMs = clamp(h * 1.7, 600, 1000) * k;
       // two agents raster the body down like a print head; the first one drives the reveal
       task(base + ":b", async (a) => {
         say(a, "paint");
@@ -722,15 +761,15 @@
         app.rl.style.setProperty("--t", bodyMs * sp + "ms");
         wrap.style.setProperty("--t", bodyMs * sp + "ms");
         app.rl.classList.add("b"); wrap.classList.add("scan"); click(a);
-        const rows = 5;
+        const rows = 3;
         for (let s = 1; s <= rows; s++) await go(a, s % 2 ? x + w - 12 : x + 12, y + app.tb + ((h - app.tb) * s) / rows, bodyMs / rows, "linear");
       }, { deps: [base + ":t"], pri: -1, x, y: y + app.tb });
-      task(base + ":b2", async (a) => {
-        say(a, "layout");
-        await go(a, x + w - 12, y + app.tb + 4);
-        const rows = 4;
-        for (let s = 1; s <= rows; s++) await go(a, s % 2 ? x + 14 : x + w - 14, y + app.tb + ((h - app.tb) * s) / rows - 6, bodyMs / rows, "linear");
-      }, { deps: [base + ":t"], pri: -1, x: x + w, y: y + app.tb });
+      // helpers line up along the scan line and ride it down: the swarm pulls the paint down the window together
+      [0.22, 0.42, 0.62, 0.82].forEach((f, n) => task(base + ":h" + n, async (a) => {
+        say(a, "paint");
+        await go(a, x + w * f, y + app.tb + 6);
+        await go(a, x + w * f + rand(-20, 20), y + h - 8, bodyMs * 0.9, "linear");
+      }, { deps: [base + ":t"], pri: -1, x: x + w * f, y: y + app.tb }));
       task(base + ":d", async () => {
         wrap.classList.add("done"); if (wrap.f) unframe(wrap.f, 0);
         appRects[app.id] = r;
@@ -751,9 +790,9 @@
 
     // 2.6-12s: the foundation, back end and front end built together
     at(2600, () => { intro.classList.add("off"); spawn(10); thud(); });
-    [["rules", 2700], ["app", 3150], ["sound", 3600], ["db", 4050], ["deploy", 4500], ["style", 4950], ["otp", 5400], ["data", 5850]]
+    [["rules", 2700], ["app", 3500], ["sound", 4300], ["db", 5100], ["deploy", 5900], ["style", 6700], ["otp", 7500], ["data", 8300]]
       .forEach(([id, t]) => at(t, () => (PANELS[id] ? buildPanel(id) : buildBox(beL, id, FE[id], "fe"))));
-    if (!narrow) at(6400, () => {
+    if (!narrow) at(8800, () => {
       wire(beL, ["rules", "r", 0.5], ["app", "l", 0.35], "allow");
       wire(beL, ["app", "r", 0.3], ["sound", "l", 0.5], "play()");
       wire(beL, ["app", "b", 0.5], ["style", "t", 0.5], "paint");
@@ -763,7 +802,7 @@
     let sewTimer = 0;
     at(7000, () => { if (!rm) sewTimer = every(narrow ? 320 : 190, stitchOne); });
 
-    // 12-27s: the real apps, stacking on top of each other, the games last and About Me on top
+    // 12-29s: the real apps, stacking on top of each other, the games last and About Me on top
     at(11500, () => {
       beL.classList.add("under");
       const edges = [[-30, vh * 0.3], [vw + 30, vh * 0.5], [vw * 0.5, vh + 30], [-30, vh * 0.8], [vw + 30, vh * 0.2], [vw * 0.3, -30]];
@@ -772,10 +811,11 @@
     at(18000, () => beL.classList.add("under2"));
     APP_AT.forEach((t, i) => at(t, () => { if (apps[i]) buildApp(apps[i], i); }));
 
-    // 29-33s: the windows fly away and the desktop is built
-    at(28600, () => stop(sewTimer));
-    at(29000, () => {
-      queue.length = 0; chores = false;
+    // 30-34s: the windows fly away and the desktop is built
+    at(29600, () => stop(sewTimer));
+    at(30000, () => {
+      queue.length = 0; focusPt = null;
+      appsL.querySelectorAll(".rb-hide").forEach((e) => e.classList.remove("rb-hide"));
       [...appsL.children].reverse().forEach((w, k) => at(k * 45, () => {
         const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(w.style.transform) || [0, 0, 0];
         const x = +m[1], y = +m[2], dx = x + w.offsetWidth / 2 - vw / 2, dy = y + w.offsetHeight / 2 - vh / 2, L = Math.hypot(dx, dy) || 1, far = Math.max(vw, vh) * 0.95;
@@ -786,7 +826,7 @@
       sewL.style.opacity = "0";
       blip(55, 1.0, "sawtooth", 0.4, 140);
     });
-    at(29500, () => {
+    at(30500, () => {
       clone.classList.add("on");
       q(".rb-vig").classList.add("off");
       pace = 0.7;
@@ -814,8 +854,8 @@
       }, { x: p.r.x, y: p.r.y }));
     });
 
-    // 33-36s: taskbar, start button, tray: wifi, battery, volume, clock
-    at(32900, () => {
+    // 34-37s: taskbar, start button, tray: wifi, battery, volume, clock
+    at(33900, () => {
       focusPt = [vw / 2, vh - 70];
       D.bar.forEach((p) => task("bar", async (a) => {
         say(a, "taskbar");
@@ -838,7 +878,7 @@
     });
 
     // outro: the swarm flies home into the start button and the live desktop takes over
-    at(35000, () => {
+    at(36000, () => {
       queue.length = 0;
       const home = D.start[0]?.r || { x: 20, y: vh - 30, w: 60, h: 30 };
       ags.forEach((a, k) => { a.home = true; at(k * 35, () => { place(a, home.x + home.w / 2, home.y + home.h / 2, 520, "cubic-bezier(.6,0,.8,.4)"); at(480, () => a.el.classList.remove("on")); }); });
@@ -846,8 +886,8 @@
       // anything the swarm did not reach in time is simply shown
       clone.querySelectorAll(".rb-h").forEach((e) => e.classList.add("rb-on"));
     });
-    at(35450, () => { flash.classList.add("go"); real.classList.remove("rb-glitch"); play("startup"); });
-    at(36000, () => finish(false));
+    at(36450, () => { flash.classList.add("go"); real.classList.remove("rb-glitch"); play("startup"); });
+    at(37000, () => finish(false));
 
     // ---------- skip + exit ----------
     const onKey = (e) => {
