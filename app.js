@@ -241,7 +241,7 @@
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=41"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=42"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   // Visual Rebuild (rebuild.js): a purely visual, full-screen rebuild of the site, fetched on first use.

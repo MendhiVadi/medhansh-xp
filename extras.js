@@ -47,7 +47,7 @@
 .x-wmp .pl .rm{margin-left:auto;padding:0 5px;min-width:0;border:0;background:none;color:#cfe0ff;font-size:13px;line-height:1;cursor:pointer}.x-wmp .pl .rm:hover{color:#fff;background:#c4351f}
 .x-wmp .pl .note{margin:6px;font-size:10px;color:#9fb7e6;white-space:normal}
 .x-wmp.drop{outline:3px dashed #8ec5ff;outline-offset:-6px}
-.x-wmp .addm{padding:0 8px}
+.x-wmp .btns button.addm{width:auto;height:24px;border-radius:12px;padding:0 10px;font:bold 11px Tahoma,sans-serif;white-space:nowrap}
 .x-wmp .pl div:hover{background:#244a8f}.x-wmp .pl div.on{background:#3b78d8;color:#fff;font-weight:bold}
 .x-wmp .np{flex:0 0 auto;padding:3px 8px;background:linear-gradient(#0f2b5c,#0a1f44);border-top:1px solid #1d3f7a;color:#8fd0ff;font:bold 12px Tahoma,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .x-wmp .ctl{flex:0 0 auto;min-width:0;padding:4px 8px 6px;background:linear-gradient(#5d8fd8,#2b5aa8 45%,#1a3f86);border-top:1px solid #9dc1f5}
