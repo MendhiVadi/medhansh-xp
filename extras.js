@@ -32,7 +32,11 @@
 .x-calc .disp{background:#fff;border:2px inset #fff;border-color:#7f9db9 #fff #fff #7f9db9;text-align:right;font:18px "Lucida Console",monospace;padding:3px 5px;height:26px;line-height:26px;overflow:hidden;white-space:nowrap}
 .x-calc .row0{display:flex;gap:4px;align-items:stretch}
 .x-calc .mind{width:34px;border:1px solid #7f9db9;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold}
-.x-calc .row0 button{flex:1}
+.x-calc .row0{display:grid;grid-template-columns:repeat(6,1fr)}
+.x-calc .row0 button{flex:none}
+.x-calc [data-a=back]{grid-column:2/4}
+.x-calc [data-a=ce]{grid-column:4/6}
+.x-calc [data-a=c]{grid-column:6}
 .x-calc .grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(4,1fr);gap:4px}
 .x-calc button{font:bold 11px Tahoma,sans-serif;padding:0;min-width:0;border:1px solid #003c74;border-radius:3px;background:linear-gradient(#fff,#ecebe6 86%,#d6d0c5);cursor:pointer}
 .x-calc button:hover{box-shadow:inset 0 0 0 2px #f8b330}.x-calc button:active{background:#e3e3db}
@@ -47,7 +51,7 @@
 .x-wmp .pl .rm{margin-left:auto;padding:0 5px;min-width:0;border:0;background:none;color:#cfe0ff;font-size:13px;line-height:1;cursor:pointer}.x-wmp .pl .rm:hover{color:#fff;background:#c4351f}
 .x-wmp .pl .note{margin:6px;font-size:10px;color:#9fb7e6;white-space:normal}
 .x-wmp.drop{outline:3px dashed #8ec5ff;outline-offset:-6px}
-.x-wmp .btns button.addm{width:auto;height:24px;border-radius:12px;padding:0 10px;font:bold 11px Tahoma,sans-serif;white-space:nowrap}
+.x-wmp .btns button.addm{width:auto;height:26px;border-radius:12px;padding:0 10px;font:bold 11px Tahoma,sans-serif;white-space:nowrap}
 .x-wmp .pl div:hover{background:#244a8f}.x-wmp .pl div.on{background:#3b78d8;color:#fff;font-weight:bold}
 .x-wmp .np{flex:0 0 auto;padding:3px 8px;background:linear-gradient(#0f2b5c,#0a1f44);border-top:1px solid #1d3f7a;color:#8fd0ff;font:bold 12px Tahoma,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .x-wmp .ctl{flex:0 0 auto;min-width:0;padding:4px 8px 6px;background:linear-gradient(#5d8fd8,#2b5aa8 45%,#1a3f86);border-top:1px solid #9dc1f5}
@@ -59,7 +63,7 @@
 .x-wmp .btns button.big{width:36px;height:36px;font-size:15px}
 .x-wmp .btns button.on{background:radial-gradient(circle at 50% 30%,#fff7c8,#ffd35a 60%,#e8a010)}
 .x-wmp .btns button:active{filter:brightness(.85)}
-.x-wmp .btns button.plt{display:none;width:auto;height:24px;border-radius:12px;padding:0 10px;font:bold 11px Tahoma,sans-serif}
+.x-wmp .btns button.plt{display:none;width:auto;height:26px;border-radius:12px;padding:0 10px;font:bold 11px Tahoma,sans-serif}
 .x-wmp .sp{flex:1 1 0;min-width:0}
 .x-wmp .vg{flex:0 1 auto;display:flex;align-items:center;gap:4px;margin-left:auto}
 .x-wmp .vol{width:70px;min-width:40px;flex:0 1 70px;margin:0}
@@ -93,6 +97,7 @@
 .x-tm table{width:100%;border-collapse:collapse}
 .x-tm th{text-align:left;font-weight:normal;padding:2px 6px;background:linear-gradient(#fff,#ece9d8);border:1px solid #d6d3c3;position:sticky;top:0}
 .x-tm td{padding:2px 6px;white-space:nowrap}
+.x-tm td:first-child{max-width:0;overflow:hidden;text-overflow:ellipsis}
 .x-tm tr.sel td{background:#316ac5;color:#fff}
 .x-tm .acts{display:flex;gap:6px;justify-content:flex-end}
 .x-tm .acts button{min-width:80px}
@@ -102,6 +107,7 @@
 .x-tm canvas{background:#000;border:1px inset #888;display:block}
 .x-tm .nums{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px}
 .x-tm .nums div{display:flex;justify-content:space-between}
+.x-tm .nums span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .x-tm .foot{flex-shrink:0}
 `;
     document.head.appendChild(st);
@@ -123,7 +129,7 @@
       if (n !== 0 && (Math.abs(n) >= 1e21 || Math.abs(n) < 1e-7)) s = n.toExponential();
       return s;
     };
-    const show = () => { dispEl.textContent = disp; dispEl.style.fontSize = disp.length > 14 && !err ? "13px" : err ? "12px" : "18px"; mind.textContent = hasMem ? "M" : ""; };
+    const show = () => { dispEl.textContent = disp; dispEl.style.fontSize = err ? "13px" : disp.length > 14 ? "13px" : "18px"; mind.textContent = hasMem ? "M" : ""; };
     const setErr = (m) => { disp = m; err = true; acc = null; op = null; lastOp = null; fresh = true; show(); };
     const clr = () => { disp = "0"; acc = null; op = null; fresh = true; err = false; lastOp = null; show(); };
     const calc = (a, o, b) => {
@@ -230,7 +236,7 @@
     body.style.display = "flex"; body.style.flexDirection = "column"; body.style.overflow = "hidden";
     body.innerHTML = BAR + `<div class="x-root" style="flex:1;height:auto;min-height:0;min-width:0"><div class="x-wmp"><div class="main"><div class="vis"><canvas aria-label="Visualization"></canvas></div><div class="pl" role="list" aria-label="Playlist"></div></div>
       <div class="np" aria-live="polite"></div>
-      <div class="ctl"><div class="srow"><input class="seek" type="range" min="0" max="1000" value="0" aria-label="Seek"><span class="tm">00:00 / 0:00</span></div><div class="btns">
+      <div class="ctl"><div class="srow"><input class="seek" type="range" min="0" max="1000" value="0" aria-label="Seek"><span class="tm">0:00 / 0:00</span></div><div class="btns">
       <button class="prev" title="Previous" aria-label="Previous">&#9198;</button><button class="stop" title="Stop" aria-label="Stop">&#9632;</button><button class="play big" title="Play" aria-label="Play">&#9654;</button><button class="next" title="Next" aria-label="Next">&#9197;</button>
       <button class="shuf" title="Shuffle" aria-label="Shuffle" aria-pressed="false">&#8644;</button><button class="rep" title="Repeat" aria-label="Repeat" aria-pressed="false">&#8635;</button>
       <button class="plt" title="Playlist" aria-label="Toggle playlist" aria-pressed="false">Playlist</button><button class="addm" title="Add your own music (it stays in this browser)">+ Add music</button><input class="mfile" type="file" accept="audio/*,.mp3,.m4a,.aac,.ogg,.oga,.opus,.wav,.flac,.webm" multiple hidden>
@@ -365,7 +371,7 @@
     function tick() {
       const e = elapsed(), T = tr();
       if (isFile() && au && isFinite(au.duration) && au.duration > 0 && T.total !== au.duration) { T.total = au.duration; renderList(); }
-      tmEl.textContent = `${String(Math.floor(e / 60)).padStart(2, "0")}:${String(Math.floor(e % 60)).padStart(2, "0")} / ${mmss(T.total)}`;
+      tmEl.textContent = `${mmss(e)} / ${mmss(T.total)}`;
       if (!dragging) seek.value = started && T.total ? Math.round(e / T.total * 1000) : 0;
       if (ctx.store.lget("xp-mute") === "1" !== muted) { muted = !muted; applyVol(); }
       const rawVol = ctx.store.lget("xp-vol"), sv = rawVol == null || rawVol === "" ? NaN : Number(rawVol); if (sv >= 0 && sv <= 100 && sv !== vol) { vol = sv; volEl.value = vol; applyVol(); }

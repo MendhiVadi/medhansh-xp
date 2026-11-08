@@ -241,7 +241,7 @@
   });
   let extrasReady;
   const loadExtras = () => extrasReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "extras.js?v=44"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "extras.js?v=45"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
   // Visual Rebuild (rebuild.js): a purely visual, full-screen rebuild of the site, fetched on first use.
@@ -1463,11 +1463,11 @@ Approximate round trip times in milli-seconds:
 
   function renderRecycle(body) {
     const inner = chrome(body, { addr: "Recycle Bin", addrIcon: "recycle", menus: [
-      { label: "File", items: [{ label: "Restore all", act: () => [...trash].forEach((id) => addToDesktop(id)) }, { label: "Empty Recycle Bin", act: emptyBin }] },
+      { label: "File", items: [{ label: "Restore all items", act: () => [...trash].forEach((id) => addToDesktop(id)) }, { label: "Empty Recycle Bin", act: emptyBin }] },
       { label: "Help", items: [{ label: "About Recycle Bin", act: () => msgBox("Recycle Bin", "Drag desktop icons or folder items here to delete their shortcuts. Drag them back out, or click Restore, to undo.") }] },
     ] });
     const junk = [["old_resume_FINAL_v7.doc", "doc"], ["bugs_i_fixed_at_3am.txt", "notepad"], ["hackathon_sleep_schedule", "folder"], ["tabs_vs_spaces_debate.txt", "notepad"]];
-    inner.innerHTML = `<div class="explorer">${taskPane([["Recycle Bin Tasks", `<button class="link empty">${I.recycle}Empty the Recycle Bin</button>${trash.length ? `<button class="link restore">${I.folder}Restore all items</button>` : ""}`],
+    inner.innerHTML = `<div class="explorer">${taskPane([["Recycle Bin Tasks", `<button class="link empty">${I.recycle}Empty Recycle Bin</button>${trash.length ? `<button class="link restore">${I.folder}Restore all items</button>` : ""}`],
         ["Details", `<span>${trash.length + junk.length} objects<br>Drag an item onto the desktop to restore it.</span>`]])}
       <div class="ex-main"><div class="grid-items">${trash.map((id) => `<div class="fitem" data-open="${id}" title="Deleted shortcut">${I[APPS[id].icon]}<span>${esc(DESK_LABEL[id] || APPS[id].title)}</span><small>Shortcut</small></div>`).join("")}${junk.map(([n, ic]) => `<div class="fitem" data-id="${esc(n)}">${I[ic]}<span>${esc(n)}</span></div>`).join("")}</div></div></div>`;
     inner.querySelector(".empty").onclick = emptyBin;
@@ -1608,7 +1608,7 @@ Approximate round trip times in milli-seconds:
     const inner = chrome(body, { addr: "Help and Support Center", addrIcon: "help" });
     const topics = [
       ["Getting around", "Double-click a desktop icon to open it (one tap on a phone). Drag windows by their title bar; drag icons to rearrange them. The Start button lists everything."],
-      ["Shortcuts", "Ctrl+Esc or Win: Start menu · Alt+W: close window · Alt+T: Task Manager · Alt+R: Run · F2: new game · F11: full screen (games, Paint, Pictures, Media Player) · Delete: remove a desktop shortcut · Space: skip any start-up screen, loading screen or animation."],
+      ["Shortcuts", "Ctrl+Esc or Win: Start menu · Alt+W: close window · Alt+T: Task Manager · Alt+R: Run · F2: new game · F11: full screen (games, Paint, Pictures, Media Player) · Delete: remove a desktop shortcut · Space: skip any startup screen, loading screen or animation."],
       ["Games and levels", "Snake has 10 maze levels and Brick Breaker has 12 designed levels. Pinball ranks you up through missions. Every finished game earns XP points toward your career level; see your level and trophies in the Games folder."],
       ["Shared Notepad and Calendar", "The Notepad and Calendar are shared by everyone who visits. Changes are saved to the server as you type."],
       ["Shared with everyone", "Message Board posts, My Pictures uploads and world leaderboard scores are public too. Your name for them is the one you choose."],
@@ -1616,7 +1616,7 @@ Approximate round trip times in milli-seconds:
       ["Something looks wrong?", "Use Reset Desktop (desktop icon, Start menu or right-click) to restore icons, wallpaper and deleted shortcuts."],
       ["Privacy", "See Privacy.txt for what is stored and why."],
     ];
-    inner.innerHTML = `<div class="explorer">${taskPane([["Pick a task", appLink("reset", "Reset the desktop") + appLink("contact", "Contact me") + appLink("privacy", "Privacy and terms") + appLink("taskmgr", "See what's running")]])}
+    inner.innerHTML = `<div class="explorer">${taskPane([["Pick a task", appLink("reset", "Reset Desktop") + appLink("contact", "Contact Me") + appLink("privacy", "Privacy and Terms") + appLink("taskmgr", "See what's running")]])}
       <div class="ex-main doc"><h1>Help and Support Center</h1><p class="muted">Windows XP Portfolio Edition</p>${topics.map(([h, t]) => `<h2>${h}</h2><p>${t}</p>`).join("")}</div></div>`;
   }
   function renderPrivacy(body) {
@@ -1981,7 +1981,7 @@ TERMS
   $("#smRight").innerHTML = [
     `<li data-open="computer" tabindex="0" role="menuitem">${I.computer}<b>My Computer</b></li>`, `<li data-open="pictures" tabindex="0" role="menuitem">${I.pictures}My Pictures</li>`, `<li data-open="games" tabindex="0" role="menuitem">${I.games}Games</li>`, `<li data-open="calendar" tabindex="0" role="menuitem">${I.calendar}Calendar</li>`, `<li data-open="board" tabindex="0" role="menuitem">${I.board}Message Board</li>`, `<li data-open="stats" tabindex="0" role="menuitem">${I.stats}Site Statistics</li>`, "<hr>",
     `<li data-open="control" tabindex="0" role="menuitem">${I.control}Control Panel</li>`, `<li data-open="taskmgr" tabindex="0" role="menuitem">${I.taskmgr}Task Manager</li>`, `<li data-open="calc" tabindex="0" role="menuitem">${I.calc}Calculator</li>`, `<li data-open="notepad" tabindex="0" role="menuitem">${I.notepad}Notepad</li>`, "<hr>",
-    `<li data-open="help" tabindex="0" role="menuitem">${I.help}Help and Support</li>`, `<li data-open="search" tabindex="0" role="menuitem">${I.search}Search</li>`, `<li data-open="run" tabindex="0" role="menuitem">${I.run}Run...</li>`,
+    `<li data-open="help" tabindex="0" role="menuitem">${I.help}Help and Support</li>`, `<li data-open="search" tabindex="0" role="menuitem">${I.search}Search</li>`, `<li data-open="run" tabindex="0" role="menuitem">${I.run}Run…</li>`,
   ].join("");
   // All Programs fly-out, with Accessories and Games as sub-folders
   const smFly = document.createElement("div"); smFly.id = "smProg"; smFly.className = "sm-fly hidden"; smFly.setAttribute("role", "menu"); $("#desktop").appendChild(smFly);
@@ -2099,7 +2099,7 @@ TERMS
           ${row("Quality", n.eff ? n.eff.toUpperCase().replace("SLOW-", "Slow ") + "-class" : "Not reported by this browser")}
           ${row("Speed (est.)", n.down != null ? `${n.down >= 10 ? Math.round(n.down) : n.down} Mbps` : "Not reported")}
           ${row("Latency (est.)", n.rtt != null ? `${n.rtt} ms` : "Not reported")}
-          ${row("Ping to this site", net.testing ? "Testing…" : net.ping != null ? `${net.ping} ms` : "—")}
+          ${row("Ping to this site", net.testing ? "Testing…" : net.ping != null ? `${net.ping} ms` : "Not tested")}
           ${n.save ? row("Data saver", "On") : ""}</div>
         <button class="xpbtn nping" ${net.testing || !n.online ? "disabled" : ""}>Test connection</button>
         <p class="muted">Your browser doesn't share the Wi-Fi network's name with websites, so it isn't shown.</p>`;
@@ -2434,7 +2434,7 @@ TERMS
   async function boot() {
     const run = ++flow, out = $("#postText"), year = new Date().getFullYear();
     const kb = Math.round((navigator.deviceMemory || 4) * 1048576), cores = navigator.hardwareConcurrency || 1;
-    const lines = [`Portfolio BIOS v2.0, An XP-Ready Ally`, `Copyright (C) 2001-${year}, ${P.name}`, "", `Main Processor : ${cores} logical core${cores > 1 ? "s" : ""}`];
+    const lines = [`Portfolio BIOS v2.0, An an XP-Ready Ally`, `Copyright (C) 2001-${year}, ${P.name}`, "", `Main Processor : ${cores} logical core${cores > 1 ? "s" : ""}`];
     show("#post"); out.textContent = lines.join("\n") + "\nMemory Testing :      0K";
     for (let i = 1; i <= 10; i++) { const s = await pauseStep(55, run); if (s === null) return; if (s) return toLogin(run); out.textContent = lines.join("\n") + `\nMemory Testing : ${String(Math.round(kb * i / 10)).padStart(7)}K${i === 10 ? " OK" : ""}`; }
     XPS.play("post");
@@ -2449,7 +2449,7 @@ TERMS
   async function logon() {
     const first = store.get("xp-logged") !== "1", run = ++flow;
     if (first) {
-      welcomeScreen("welcome", "Loading your personal settings..."); XPS.play("logon");
+      welcomeScreen("welcome", "Loading your personal settings…"); XPS.play("logon");
       if (await pauseStep(1500, run) === null) return;
     }
     show("#desktop"); store.set("xp-logged", "1");
@@ -2489,7 +2489,7 @@ TERMS
     }
     welcomeScreen(a === "restart" ? "restarting" : "shutting down", "Saving your settings..."); XPS.play("shutdown");
     if (await pauseStep(1400, run) === null) return;
-    $("#welcomeMsg").textContent = "Windows is shutting down...";
+    $("#welcomeMsg").textContent = "Windows is shutting down…";
     if (await pauseStep(1000, run) === null) return;
     if (a === "restart") { msg.classList.remove("safe"); msg.textContent = ""; show("#blackout"); if (await pauseStep(500, run) === null) return; boot(); return; }
     show("#blackout"); msg.classList.add("safe"); msg.textContent = "It is now safe to turn off your computer."; on.classList.remove("hidden");
