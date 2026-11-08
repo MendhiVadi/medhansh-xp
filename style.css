@@ -748,6 +748,9 @@ button { font: inherit; }
 .stat-chart .bar i { position: absolute; bottom: 0; left: 10%; right: 10%; background: linear-gradient(#5a9cff, #1e5fcf); border-radius: 2px 2px 0 0; min-height: 1px; }
 .stat-chart .bar em { position: absolute; bottom: 0; left: 30%; right: 30%; background: #f2a900; border-radius: 2px 2px 0 0; }
 .stat-chart small { position: absolute; bottom: -16px; font-size: 10px; color: #666; }
+.stat-key { display: flex; gap: 14px; font-size: 11px; color: #555; margin: 0 0 4px; }
+.stat-key i { display: inline-block; width: 10px; height: 10px; margin-right: 4px; vertical-align: -1px; border-radius: 2px; }
+.stat-key .k1 { background: #2b74e6; } .stat-key .k2 { background: #f2a900; }
 
 /* ---------- Paint tool box (XP style) ---------- */
 .paint-tools { width: 62px; padding: 4px 3px; display: flex; flex-direction: column; gap: 6px; align-items: center; background: #ece9d8; border-right: 1px solid #aca899; overflow-y: auto; }

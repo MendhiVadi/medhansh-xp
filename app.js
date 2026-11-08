@@ -1668,7 +1668,7 @@ TERMS
   function renderStats(body, ctx) {
     const inner = chrome(body, { addr: "Site Statistics", addrIcon: "stats" });
     inner.innerHTML = `<div class="statwin"><div class="stat-cards"><div><b class="sv">…</b><span>Total page views</span></div><div><b class="su">…</b><span>Unique visitors</span></div><div><b class="tv">…</b><span>Views today</span></div><div><b class="tu">…</b><span>Visitors today</span></div></div>
-      <h4>Traffic, last 14 days (UTC)</h4><div class="stat-chart"></div><p class="muted stat-note">Counted on this site: one view per browser session, one visitor per new browser. Refreshes every 30 seconds.</p></div>`;
+      <h4>Traffic, last 14 days (UTC)</h4><div class="stat-key"><span><i class="k1"></i>Views</span><span><i class="k2"></i>Visitors</span></div><div class="stat-chart"></div><p class="muted stat-note">Counted on this site: one view per browser session, one visitor per new browser. Refreshes every 30 seconds.</p></div>`;
     const $s = (q) => inner.querySelector(q), note = $s(".stat-note").textContent;
     async function load() {
       const days = Array.from({ length: 14 }, (_, i) => new Date(Date.now() - (13 - i) * 864e5));
