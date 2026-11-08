@@ -1,9 +1,9 @@
-// Visual Rebuild, Mark 2: a ~41 second, purely visual rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
+// Visual Rebuild, Mark 2: a ~36 second, purely visual rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
 // 3-12s   the foundation: back-end windows (real source, data, a deploy) and front-end modules, built side by side
-// 7-34s   needles keep making single stitches into everything: in, out, and the thread is cut away
-// 12-34s  real app windows open and get built one on top of another, faster and faster, until several build at once
-// 34-38s  the windows fly away and the desktop (wallpaper, icons) is built
-// 38-41s  the taskbar, start button and tray icons, then it hands back to the live desktop underneath
+// 7-29s   needles drop in from above, go under the page, come back out and the thread is snipped: no mark is left
+// 12-27s  a handful of real app windows are built one on top of another, the games last and About Me on top
+// 29-33s  the windows fly away and the desktop (wallpaper, icons) is built
+// 33-36s  the taskbar, start button and tray icons, then it hands back to the live desktop underneath
 // It is all theatre: nothing here writes data or touches the network. Loaded on demand by app.js.
 (() => {
   const CSS = `
@@ -92,8 +92,14 @@
 /* needles and thread */
 .rb-sew { position: absolute; inset: 0; pointer-events: none; transition: opacity .8s; }
 .rb-sew > svg { position: absolute; left: 0; top: 0; overflow: visible; }
-.rb-th { fill: none; stroke-width: 1.1; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: .9; }
-.rb-th.on { stroke-dashoffset: 0; transition: stroke-dashoffset var(--t) linear; }
+.rb-hole { position: absolute; width: 600px; height: 600px; transform-origin: 300px 300px; pointer-events: none; }
+.rb-ndl { position: absolute; left: 300px; top: 300px; transform-origin: 0 0; }
+.rb-ndl > i { position: absolute; left: 0; top: 0; }
+.rb-ndl > i { filter: blur(1.3px); opacity: .4; }
+.rb-ndl svg { position: absolute; left: -124px; top: -7px; overflow: visible; }
+.rb-pin { position: absolute; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: #020617; box-shadow: 0 0 0 1px rgba(255,255,255,.22); }
+.rb-snip { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: radial-gradient(#fff, rgba(255,255,255,0) 70%); animation: rbSnip .2s ease-out both; }
+@keyframes rbSnip { from { transform: scale(.3); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
 
 /* swarm */
 .rb-fx, .rb-ags { position: absolute; inset: 0; pointer-events: none; transition: opacity .4s; }
@@ -251,9 +257,9 @@
     style: { t: "STYLE.CSS", tag: "luna", swatch: ["#0058ee", "#3c8f3c", "#ece9d8", "#4c9b2d", "#d6dff7", "#1941a5"], lines: [["titlebar", "#0058ee"], ["start", "#3c8f3c"]] },
   };
   // real apps, in build order (none that need the network)
-  const APP_IDS = ["about", "cmd", "mine", "paint", "projects", "solitaire", "msn", "taskmgr", "calc", "resume", "spider", "breakout", "wmp", "computer", "snake", "games", "notepad", "control"];
-  const APP_AT = [12000, 14200, 16200, 18000, 19600, 21000, 22250, 23350, 24350, 25250, 26100, 26900, 27650, 28350, 29000, 29600, 30150, 30650];
-  const APP_SPOT = [[.3, .4], [.7, .36], [.46, .6], [.2, .64], [.78, .62], [.54, .32], [.34, .5], [.64, .5], [.16, .4], [.84, .42], [.42, .66], [.58, .44], [.5, .52], [.26, .3], [.74, .68], [.6, .6], [.4, .38], [.5, .45]];
+  const APP_IDS = ["cmd", "paint", "projects", "msn", "mine", "solitaire", "spider", "snake", "about"];
+  const APP_AT = [12000, 14000, 15900, 17600, 19200, 20600, 21900, 23100, 24800];
+  const APP_SPOT = [[.3, .4], [.7, .36], [.22, .62], [.78, .62], [.4, .62], [.62, .34], [.34, .46], [.66, .56], [.5, .5]];
 
   let running = false;
 
@@ -589,27 +595,47 @@
     };
 
     // ---------- needles: one stitch at a time, anywhere, purely for texture ----------
-    // The needle slides in on the surface pulling a thin thread, dives into the fabric at P, travels under it and comes
-    // back out at Q, pulls through, and the thread is cut: the whole stitch vanishes and leaves no mark.
-    // The "under the fabric" stretch is a mask band between P and Q that hides the needle and the thread as they pass it.
-    let stN = 0;
-    const NEEDLE = `<path d="M0 0 L-7 -1.2 L-42 -1 Q-45 0 -42 1 L-7 1.2 Z" fill="url(#rbNdG)" stroke="#0f172a" stroke-width=".35"/><ellipse cx="-38" cy="0" rx="2.4" ry=".55" fill="#0b1020"/>`;
+    // Seen from above: a needle drops in from over the page (bigger and blurred-shadowed while it is high, its shadow closing in
+    // as it lands), sinks into a pinhole at P, travels under the page, pokes back out at Q a little further on, lifts away
+    // towards the viewer pulling its thread, and the thread is snipped: needle, thread and holes all vanish.
+    // Each hole is a rotated, zero-size box clipped to one side of the hole, so whatever passes it is hidden under the page.
+    const needleSvg = (color, shadow) => `<svg width="130" height="14" viewBox="-124 -7 130 14">` +
+      `<path d="M-52 0 C-90 0 -120 ${rand(-5, 5).toFixed(1)} -230 ${rand(-8, 8).toFixed(1)}" stroke="${shadow ? "#000" : color}" stroke-width="1.1" fill="none" stroke-linecap="round"/>` +
+      `<path d="M0 0 L-8 -1.6 L-58 -1.4 Q-62 0 -58 1.4 L-8 1.6 Z" fill="${shadow ? "#000" : "url(#rbNdG)"}" stroke="${shadow ? "none" : "#0f172a"}" stroke-width=".4"/>` +
+      (shadow ? "" : `<ellipse cx="-53" cy="0" rx="3" ry=".7" fill="#0b1020"/>`) + `</svg>`;
+    const sprite = (x, y, deg, side, color) => {
+      const w = document.createElement("div");
+      w.className = "rb-hole";
+      w.style.cssText = `left:${(x - 300).toFixed(1)}px;top:${(y - 300).toFixed(1)}px;transform:rotate(${deg.toFixed(1)}deg);clip-path:` +
+        (side < 0 ? "inset(0 300px 0 0)" : "inset(0 0 0 300px)");
+      w.innerHTML = `<div class="rb-ndl"><i>${needleSvg(color, true)}</i>${needleSvg(color)}</div>`;
+      sewL.appendChild(w);
+      return { w, n: w.firstElementChild, sh: w.firstElementChild.firstElementChild };
+    };
+    const dot = (x, y, cls) => { const d = document.createElement("div"); d.className = cls; d.style.left = x + "px"; d.style.top = y + "px"; sewL.appendChild(d); return d; };
     const stitch = (px, py, color = pick(YARN)) => {
-      const ang = rand(0, Math.PI * 2), ux = Math.cos(ang), uy = Math.sin(ang);
-      const inL = rand(22, 34), under = rand(14, 22), outL = 50, L = inL + under + outL;
-      const ax = px - ux * inL, ay = py - uy * inL, qx = px + ux * under, qy = py + uy * under, ex = qx + ux * outL, ey = qy + uy * outL;
-      const d = `M${ax.toFixed(1)} ${ay.toFixed(1)} L${ex.toFixed(1)} ${ey.toFixed(1)}`, id = "rbS" + stN++, ms = L * 3.4;
-      const deg = (ang * 180) / Math.PI;
-      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.innerHTML = `<mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="${vw}" height="${vh}"><rect width="${vw}" height="${vh}" fill="#fff"/>` +
-        `<rect x="${px.toFixed(1)}" y="${(py - 6).toFixed(1)}" width="${under.toFixed(1)}" height="12" fill="#000" transform="rotate(${deg.toFixed(1)} ${px.toFixed(1)} ${py.toFixed(1)})"/></mask>` +
-        `<g mask="url(#${id})"><path class="rb-th" pathLength="1" stroke="${color}" d="${d}" style="--t:${ms * sp}ms"/>` +
-        `<g>${NEEDLE}<animateMotion dur="${(ms * sp) / 1000}s" begin="indefinite" fill="freeze" rotate="auto" path="${d}"/></g></g>`;
-      sewS.appendChild(g);
-      const th = g.querySelector(".rb-th"); void th.getBoundingClientRect(); th.classList.add("on");
-      try { g.querySelector("animateMotion").beginElement(); } catch {}
-      blip(rand(900, 1300), 0.02, "triangle", 0.025, rand(500, 700));
-      at(ms, () => g.remove()); // pulled through: cut the thread, gone
+      const deg = rand(55, 125), ux = Math.cos((deg * Math.PI) / 180), uy = Math.sin((deg * Math.PI) / 180), gap = rand(14, 22);
+      const qx = px + ux * gap, qy = py + uy * gap, T = (ms) => ms * sp;
+      // down from above and into the pinhole at P
+      const A = sprite(px, py, deg, -1, color);
+      A.n.animate([{ transform: "translateX(-150px) scale(1.45)", opacity: 0 }, { opacity: 1, offset: 0.2 }, { transform: "translateX(0) scale(1)", offset: 0.6 }, { transform: "translateX(72px) scale(1)", opacity: 1 }],
+        { duration: T(380), easing: "cubic-bezier(.45,0,.55,1)", fill: "forwards" });
+      A.sh.animate([{ transform: "translate(-30px, 26px)", opacity: 0.12 }, { transform: "translate(0, 0)", opacity: 0.45, offset: 0.6 }, { transform: "translate(0, 0)", opacity: 0.45 }],
+        { duration: T(380), easing: "cubic-bezier(.45,0,.55,1)", fill: "forwards" });
+      let pin, pout, B;
+      at(230, () => (pin = dot(px, py, "rb-pin")));
+      // back out at Q, then up and away towards the viewer
+      at(430, () => {
+        A.w.remove();
+        pout = dot(qx, qy, "rb-pin");
+        B = sprite(qx, qy, deg, 1, color);
+        B.n.animate([{ transform: "translateX(0) scale(1)" }, { transform: "translateX(72px) scale(1)", offset: 0.5 }, { transform: "translateX(165px) scale(1.4)", opacity: 0 }],
+          { duration: T(440), easing: "cubic-bezier(.45,0,.55,1)", fill: "forwards" });
+        B.sh.animate([{ transform: "translate(0, 0)", opacity: 0.45 }, { transform: "translate(0, 0)", opacity: 0.45, offset: 0.5 }, { transform: "translate(-30px, 26px)", opacity: 0.1 }],
+          { duration: T(440), easing: "cubic-bezier(.45,0,.55,1)", fill: "forwards" });
+      });
+      // snip: the thread is cut at the hole and everything goes
+      at(830, () => { B?.w.remove(); pin?.remove(); pout?.remove(); const sn = dot(qx, qy, "rb-snip"); tick(); at(220, () => sn.remove()); });
     };
     // anything that has been built can be stitched into, near its edges
     const appRects = {};
@@ -735,9 +761,9 @@
     });
     // needles start stitching once there is something to stitch into
     let sewTimer = 0;
-    at(7000, () => { if (!rm) sewTimer = every(narrow ? 260 : 150, stitchOne); });
+    at(7000, () => { if (!rm) sewTimer = every(narrow ? 320 : 190, stitchOne); });
 
-    // 12-34s: the real apps, stacking on top of each other and speeding up
+    // 12-27s: the real apps, stacking on top of each other, the games last and About Me on top
     at(11500, () => {
       beL.classList.add("under");
       const edges = [[-30, vh * 0.3], [vw + 30, vh * 0.5], [vw * 0.5, vh + 30], [-30, vh * 0.8], [vw + 30, vh * 0.2], [vw * 0.3, -30]];
@@ -746,9 +772,9 @@
     at(18000, () => beL.classList.add("under2"));
     APP_AT.forEach((t, i) => at(t, () => { if (apps[i]) buildApp(apps[i], i); }));
 
-    // 34-38s: the windows fly away and the desktop is built
-    at(33600, () => stop(sewTimer));
-    at(34000, () => {
+    // 29-33s: the windows fly away and the desktop is built
+    at(28600, () => stop(sewTimer));
+    at(29000, () => {
       queue.length = 0; chores = false;
       [...appsL.children].reverse().forEach((w, k) => at(k * 45, () => {
         const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(w.style.transform) || [0, 0, 0];
@@ -760,7 +786,7 @@
       sewL.style.opacity = "0";
       blip(55, 1.0, "sawtooth", 0.4, 140);
     });
-    at(34500, () => {
+    at(29500, () => {
       clone.classList.add("on");
       q(".rb-vig").classList.add("off");
       pace = 0.7;
@@ -788,8 +814,8 @@
       }, { x: p.r.x, y: p.r.y }));
     });
 
-    // 38-41s: taskbar, start button, tray: wifi, battery, volume, clock
-    at(37900, () => {
+    // 33-36s: taskbar, start button, tray: wifi, battery, volume, clock
+    at(32900, () => {
       focusPt = [vw / 2, vh - 70];
       D.bar.forEach((p) => task("bar", async (a) => {
         say(a, "taskbar");
@@ -812,7 +838,7 @@
     });
 
     // outro: the swarm flies home into the start button and the live desktop takes over
-    at(40000, () => {
+    at(35000, () => {
       queue.length = 0;
       const home = D.start[0]?.r || { x: 20, y: vh - 30, w: 60, h: 30 };
       ags.forEach((a, k) => { a.home = true; at(k * 35, () => { place(a, home.x + home.w / 2, home.y + home.h / 2, 520, "cubic-bezier(.6,0,.8,.4)"); at(480, () => a.el.classList.remove("on")); }); });
@@ -820,8 +846,8 @@
       // anything the swarm did not reach in time is simply shown
       clone.querySelectorAll(".rb-h").forEach((e) => e.classList.add("rb-on"));
     });
-    at(40450, () => { flash.classList.add("go"); real.classList.remove("rb-glitch"); play("startup"); });
-    at(41000, () => finish(false));
+    at(35450, () => { flash.classList.add("go"); real.classList.remove("rb-glitch"); play("startup"); });
+    at(36000, () => finish(false));
 
     // ---------- skip + exit ----------
     const onKey = (e) => {
