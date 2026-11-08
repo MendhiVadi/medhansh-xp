@@ -246,13 +246,13 @@
   // Visual Rebuild (rebuild.js): a purely visual, full-screen rebuild of the site, fetched on first use
   let rebuildReady;
   const loadRebuild = () => rebuildReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "rebuild.js?v=40"; s.onload = ok; s.onerror = () => { rebuildReady = null; fail(); };
+    const s = document.createElement("script"); s.src = "rebuild.js?v=41"; s.onload = ok; s.onerror = () => { rebuildReady = null; fail(); };
     document.head.appendChild(s);
   });
   function runRebuild() {
     closeMenus(); busy();
     if (fsEl()) exitFull();
-    loadRebuild().then(() => window.REBUILD({ desktop: $("#desktop") }))
+    loadRebuild().then(() => window.REBUILD({ desktop: $("#desktop"), open: (id) => openApp(id, { key: "rb-" + id }), close: (id) => close("rb-" + id) }))
       .catch(() => msgBox("Visual Rebuild", "Could not load Visual Rebuild. Check your connection.", "⚠️"));
   }
   function lazyExtra(name) {
