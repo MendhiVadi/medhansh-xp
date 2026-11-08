@@ -1,10 +1,10 @@
-// Visual Rebuild, Mark 2: a purely visual, roughly one minute rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
-// 0-1.3s    the live desktop glitches out and the title decodes
-// 1.3-6.9s  01 BACK END: the swarm types the real source into blueprint panels (firestore.rules, api/otp.js, the Firestore
+// Visual Rebuild, Mark 2: a purely visual, roughly 50 second rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
+// 0-1.75s   the live desktop glitches out and the title decodes
+// 1.75-7.3s 01 BACK END: the swarm types the real source into blueprint panels (firestore.rules, api/otp.js, the Firestore
 //           collections, a vercel deploy, the mailer) and wires them up across the whole screen
-// 6.9-11.7s 02 FRONT END: the modules (index.html, app.js, sound.js, data.js, style.css, the lazy chunks) are built on top of
+// 7.3-12.1s 02 FRONT END: the modules (index.html, app.js, sound.js, data.js, style.css, the lazy chunks) are built on top of
 //           the dimmed back end
-// 11.7-59s  03 APPS (ends sooner if the swarm finishes): real app windows, two or three at a time, each outlined as a wireframe, painted top to bottom and filled in
+// 12.1-60s  03 APPS (ends sooner if the swarm finishes): real app windows, two or three at a time, each outlined as a wireframe, painted top to bottom and filled in
 //           piece by piece with a job for every agent (mines carried from a crate, a joker drawn by hand, wrong calendar digits
 //           replaced by numbers flung from below, colours carried from a palette to Paint's colour bar and a pixel picture painted, Internet Explorer opening the Instagram profile); a window is
 //           minimised once its swarm is done with it
@@ -479,7 +479,7 @@
     skipBtn.addEventListener("click", () => finish(true));
     const t0 = performance.now();
     const clockEl = q(".rb-clock"), progEl = q(".rb-prog i");
-    const TOTAL = 60000;
+    const TOTAL = 50000;
     let progLock = false;
     every(60, () => {
       const e = (performance.now() - t0) / sp;
@@ -549,7 +549,7 @@
         const ready = queue.filter((t) => t.deps.every((d) => doneIds.has(d)));
         if (!ready.length) {
           const x = focusPt ? focusPt[0] + rand(-150, 150) : a.x + rand(-90, 90), y = focusPt ? focusPt[1] + rand(-90, 90) : a.y + rand(-70, 70);
-          say(a); await go(a, clamp(x, 16, vw - 90), clamp(y, 60, vh - 50), rand(500, 800)); await wait(rand(40, 160)); continue;
+          say(a); await go(a, clamp(x, 16, vw - 90), clamp(y, 60, vh - 50), rand(240, 420)); await wait(rand(20, 70)); continue;
         }
         const top = Math.min(...ready.map((t) => t.pri));
         const t = ready.filter((t) => t.pri === top).sort((p, r) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(r.x - a.x, r.y - a.y))[0];
@@ -972,7 +972,7 @@
         const hideId = base + ":hide", [gx, gy] = mid(g);
         task(hideId, async (a) => {
           say(a, "hide mines");
-          await go(a, gx, gy, 200 * k); await wait(450 * k); click(a);
+          await go(a, gx, gy, 130 * k); await wait(220 * k); click(a);
           placed.forEach(({ m, c }) => { m.classList.add("bury"); c.animate([{ background: "#ffe08a" }, { background: "#c0c0c0" }], { duration: 420 * sp }); at(300, () => m.remove()); });
           crate.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 * sp, fill: "forwards" });
           at(320, () => crate.remove());
@@ -1061,7 +1061,7 @@
         }, { deps: rowIds, ...hint });
         // one agent takes out every wrong digit; only the digit goes, its number stays
         task(rmId, async (a) => {
-          await wait(180 * k);
+          await wait(70 * k);
           say(a, "remove digit");
           for (const { dg } of wrong) {
             const [x, y] = mid(dg);
@@ -1069,9 +1069,9 @@
             dg.style.color = "#e11d48";
             dg.animate([{ scale: "1" }, { scale: "1.7", offset: 0.35 }, { scale: "0" }], { duration: 170 * k * sp, easing: "ease-in" });
             at(165 * k, () => { dg.classList.add("rb-gap"); dg.style.color = ""; });
-            await wait(40 * k);
+            await wait(30 * k);
           }
-          await wait(150 * k);
+          await wait(70 * k);
         }, { deps: [numsId], ...hint });
         // the right digits are thrown from below the bottom edge of the screen, in a colour that does not belong
         task(flingId, async (a) => {
@@ -1084,7 +1084,7 @@
               { transform: `translate(calc(-50% + ${cx - sx}px), calc(-50% + ${cy - sy}px)) rotate(360deg)` }], { duration: t * sp, easing: "cubic-bezier(.2,.7,.4,1)", fill: "forwards" });
             at(t, () => { e.remove(); dg.textContent = good; dg.classList.remove("rb-gap"); dg.animate([{ scale: "1.5" }, { scale: "1" }], { duration: 220 * sp, easing: "cubic-bezier(.3,1.4,.5,1)" }); tick(); res(); });
           }))));
-          await wait(160 * k);
+          await wait(80 * k);
         }, { deps: [rmId], ...hint });
         task(slideId, async (a) => {
           say(a, "shrink");
@@ -1406,18 +1406,18 @@
     // intro: the live desktop glitches out and the title decodes
     real.classList.add("rb-glitch");
     if (!rm) { q(".rb-glitch-bars").classList.add("go"); play("tilt"); }
-    at(250, () => { ov.classList.add("on"); skipBtn.focus({ preventScroll: true }); });
-    at(350, () => { decode(q(".rb-intro-t"), "VISUAL REBUILD", 550); q(".rb-intro-bar").classList.add("on"); blip(90, 0.9, "sawtooth", 0.6, 45); });
-    at(650, () => prepAll());
+    at(380, () => { ov.classList.add("on"); skipBtn.focus({ preventScroll: true }); });
+    at(500, () => { decode(q(".rb-intro-t"), "VISUAL REBUILD", 720); q(".rb-intro-bar").classList.add("on"); blip(90, 0.9, "sawtooth", 0.6, 45); });
+    at(850, () => prepAll());
 
-    // 1.3-6.9s: the back end, typed in from the real source and wired up
-    at(1300, () => {
+    // 1.75-7.3s: the back end, typed in from the real source and wired up
+    at(1750, () => {
       intro.classList.add("off"); hud.classList.remove("off");
       phase("BACK END", "#22d3ee");
       caption("BACKEND", "Rules, serverless functions, data and a deploy, typed in from the real source.");
       spawn(8); thud();
     });
-    at(1400, () => {
+    at(1850, () => {
       ["deploy", "otp", "rules", "db"].forEach(buildPanel);
       buildBox(beL, "mail", BE.mail, "");
       if (narrow) {
@@ -1432,8 +1432,8 @@
       }
     });
 
-    // 6.9-11.7s: the front end on top of the back end
-    at(6870, () => {
+    // 7.3-12.1s: the front end on top of the back end
+    at(7320, () => {
       beL.classList.add("under");
       pace = 1.05 / 1.15;
       phase("FRONT END", "#f472b6");
@@ -1458,12 +1458,12 @@
       while (nextApp < APP_IDS.length && apps[nextApp] === null) nextApp++;
       const now = performance.now(), allOpened = nextApp >= APP_IDS.length;
       // a window goes to the taskbar soon after its swarm finishes, rather than waiting for the next one to need the room
-      for (let n = onScreen.length - 1; n >= 0; n--) if (apps[onScreen[n]].doneAt && now - apps[onScreen[n]].doneAt > 1400 * sp) minimize(onScreen.splice(n, 1)[0]);
+      for (let n = onScreen.length - 1; n >= 0; n--) if (apps[onScreen[n]].doneAt && now - apps[onScreen[n]].doneAt > 600 * sp) minimize(onScreen.splice(n, 1)[0]);
       if (allOpened) {
         if ((onScreen.every((i) => !busyWith("app:" + apps[i].id)) && now - lastOpen > 1500 * sp) || now - lastOpen > 11000 * sp) { stop(appTimer); at(700, endSeq); }
         return;
       }
-      if (apps[nextApp] === undefined || now - lastOpen < 1500 * sp) return;
+      if (apps[nextApp] === undefined || now - lastOpen < 900 * sp) return;
       // Solitaire opens on top of the Calendar: let the Calendar finish first
       if (APP_IDS[nextApp] === "solitaire" && busyWith("app:calendar") && now - lastOpen < 18000 * sp) return;
       if (onScreen.length >= 3) {
@@ -1474,7 +1474,7 @@
       const i = nextApp++;
       buildApp(apps[i], i); apps[i].openedAt = now; onScreen.push(i); lastOpen = now;
     };
-    at(11650, () => {
+    at(12100, () => {
       feL.classList.add("under"); beL.classList.add("under2");
       pace = 1;
       phase("APPS", "#fbbf24");
@@ -1483,8 +1483,8 @@
       spawn(6, (k) => edges[k]); thud();
       appTimer = every(150, appTick);
     });
-    at(15150, capOff);
-    at(59150, endSeq);
+    at(15600, capOff);
+    at(59600, endSeq);
 
     // the ending: the windows fly away and the desktop is built, then the taskbar, then the swarm flies home
     function endSeq() {
