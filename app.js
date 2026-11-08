@@ -1017,7 +1017,7 @@ Approximate round trip times in milli-seconds:
     body.innerHTML = `<div class="msn"><div class="msn-to">To: <b>${esc(P.name)}</b> &lt;${esc(links.email)}&gt;</div><div class="msn-log"></div>
       <div class="msn-bar"><textarea placeholder="Ask about my skills, projects, education, contact..."></textarea><div style="display:flex;flex-direction:column;gap:4px"><button class="xpbtn send">Send</button><button class="xpbtn nudge">Nudge</button><button class="xpbtn emo" title="Choose an emoticon" aria-label="Choose an emoticon">🙂</button></div></div><div class="emopick hidden" role="listbox" aria-label="Emoticons">${"🙂 😄 😉 😎 😂 😍 🤔 😮 😢 😡 👍 👎 👋 🙏 🎉 ❤️ 🔥 💻 🤖 ☕".split(" ").map((e) => `<button type="button" role="option">${e}</button>`).join("")}</div></div>`;
     const log = body.querySelector(".msn-log"), ta = body.querySelector("textarea");
-    const say = (who, text) => { const p = document.createElement("p"); p.innerHTML = `<b>${esc(who)} says:</b><br><span class="${who === "You" ? "" : "them"}">${esc(text).replace(/\(Y\)/g, "👍").replace(/\(H\)/g, "😎").replace(/:-D/g, "😄").replace(/:-\)/g, "🙂")}</span>`; log.appendChild(p); log.scrollTop = log.scrollHeight; };
+    const say = (who, text) => { const p = document.createElement("p"); p.innerHTML = `<b>${who === "You" ? "You say" : esc(who) + " says"}:</b><br><span class="${who === "You" ? "" : "them"}">${esc(text).replace(/\(Y\)/g, "👍").replace(/\(H\)/g, "😎").replace(/:-D/g, "😄").replace(/:-\)/g, "🙂")}</span>`; log.appendChild(p); log.scrollTop = log.scrollHeight; };
     const first = P.name.split(" ")[0];
     say(first, `Hey there :-) Welcome to my XP portfolio! Ask me about my skills, projects, education or how to reach me. Or click Nudge!`);
     const reply = (q) => {
