@@ -564,7 +564,7 @@
 
     const paintStatus = () => {
       const it = view === "viewer" ? items[idx] : items[sel];
-      const extra = busy || note || (online === false ? "Offline – showing built-in pictures" : online ? `Shared with everyone · ${remote.length} picture${remote.length === 1 ? "" : "s"}` : "Loading shared pictures...");
+      const extra = busy || note || (online === false ? "Offline – showing built-in pictures" : online ? `Shared with everyone · ${remote.length} uploaded` : "Loading shared pictures...");
       const who = it?.shared ? `Added by ${esc(it.by || "Anonymous")} · ${esc(fmtDate(it.createdAt))}` : it?.local ? "(not shared)" : "";
       sb.innerHTML = view === "grid"
         ? `<span>${items.length} object(s)</span><span>${it ? esc(it.title) : ""}</span><span>${esc(extra)}</span>`
