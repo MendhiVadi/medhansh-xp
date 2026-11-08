@@ -1,12 +1,12 @@
 // Visual Rebuild, Mark 2: a purely visual, roughly one minute rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
-// 0-2.6s    the live desktop glitches out and the title decodes
-// 2.6-9s    01 BACK END: the swarm types the real source into blueprint panels (firestore.rules, api/otp.js, the Firestore
+// 0-1.3s    the live desktop glitches out and the title decodes
+// 1.3-6.9s  01 BACK END: the swarm types the real source into blueprint panels (firestore.rules, api/otp.js, the Firestore
 //           collections, a vercel deploy, the mailer) and wires them up across the whole screen
-// 9-14.5s   02 FRONT END: the modules (index.html, app.js, sound.js, data.js, style.css, the lazy chunks) are built on top of
+// 6.9-11.7s 02 FRONT END: the modules (index.html, app.js, sound.js, data.js, style.css, the lazy chunks) are built on top of
 //           the dimmed back end
-// 14.5-62s  03 APPS (ends sooner if the swarm finishes): real app windows, two or three at a time, each outlined as a wireframe, painted top to bottom and filled in
+// 11.7-59s  03 APPS (ends sooner if the swarm finishes): real app windows, two or three at a time, each outlined as a wireframe, painted top to bottom and filled in
 //           piece by piece with a job for every agent (mines carried from a crate, a joker drawn by hand, wrong calendar digits
-//           replaced by numbers flung from below, paints dipped from a palette, Internet Explorer opening the Instagram profile); a window is
+//           replaced by numbers flung from below, colours carried from a palette to Paint's colour bar and a pixel picture painted, Internet Explorer opening the Instagram profile); a window is
 //           minimised once its swarm is done with it
 // then 7s   04 FINAL TOUCHES: the windows fly away, the wallpaper opens from the first click, icons, taskbar and tray are placed, the
 //           swarm flies home into the Start button and the live desktop takes over
@@ -50,19 +50,6 @@
 .rb-r::before { content: "▸"; color: var(--a); }
 .rb-r em { margin-left: auto; font-style: normal; color: #64748b; font-size: .9em; overflow: hidden; text-overflow: ellipsis; }
 .rb-box .rb-pad { height: 6px; }
-/* the deploy panel is a Windows XP Command Prompt window */
-.rb-pn.term.xp .rb-cl.p { color: #c0c0c0; }
-.rb-pn.xp { border: 3px solid #0a4fe0; border-top: 0; border-radius: 8px 8px 0 0; background: #000; }
-.rb-pn.xp .rb-bh { border: 0; padding: 0 4px 0 6px; gap: 5px; background: linear-gradient(180deg, #0997ff 0%, #0053ee 9%, #0050ee 40%, #0066ff 86%, #005bff 92%, #003dd7 100%); }
-.rb-pn.xp .rb-bh b { font: bold 13px Trebuchet MS, Tahoma, sans-serif; letter-spacing: 0; color: #fff; text-shadow: 1px 1px 1px #0f1f7a; }
-.rb-pn.xp .rb-bh i { width: 16px; height: 14px; border-radius: 1px; background: #000; box-shadow: 0 0 0 1px #c9d6f5; color: #e5e5e5; font: bold 8px/14px Consolas, monospace; text-align: center; font-style: normal; }
-.rb-xpb { margin-left: auto; display: flex; gap: 2px; flex: none; }
-.rb-xpb u { position: relative; width: 19px; height: 19px; border: 1px solid #fff; border-radius: 3px; background: radial-gradient(circle at 30% 25%, #6f9bf5, #2553d8 70%); box-sizing: border-box; text-decoration: none; }
-.rb-xpb u.c { background: radial-gradient(circle at 30% 25%, #f0a48c, #d8421c 70%); }
-.rb-xpb u::before, .rb-xpb u::after { content: ""; position: absolute; background: #fff; }
-.rb-xpb u.m::before { left: 3px; bottom: 3px; width: 7px; height: 3px; } .rb-xpb u.m::after { display: none; }
-.rb-xpb u.x::before { left: 3px; top: 3px; width: 11px; height: 11px; background: none; border: 1px solid #fff; border-top-width: 3px; box-sizing: border-box; } .rb-xpb u.x::after { display: none; }
-.rb-xpb u.c::before, .rb-xpb u.c::after { left: 3px; top: 7.5px; width: 11px; height: 2px; transform: rotate(45deg); } .rb-xpb u.c::after { transform: rotate(-45deg); }
 .rb-sw { display: flex; gap: 6px; height: 14px; padding: 4px 10px 2px; clip-path: inset(0 100% 0 0); transition: clip-path .4s steps(8); }
 .rb-sw.on { clip-path: inset(0 0 0 0); }
 .rb-sw i { flex: 1; height: 12px; border-radius: 2px; }
@@ -141,12 +128,11 @@
 .rb-joker path.l { fill: none; stroke: #1f1f1f; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
 .rb-joker .f { fill-opacity: 0; transition: fill-opacity .5s; } .rb-joker.fill .f { fill-opacity: .92; }
 .rb-joker text { font: bold 8px Arial, sans-serif; fill: #1f1f1f; opacity: 0; transition: opacity .3s; } .rb-joker.txt text { opacity: 1; }
-.rb-num { position: absolute; font-family: Tahoma, sans-serif; font-weight: bold; line-height: 1; color: #ff6a13; text-shadow: 0 0 10px rgba(255,106,19,.7), 0 3px 6px rgba(0,0,0,.45); pointer-events: none; }
+.rb-num { position: absolute; font-family: Tahoma, sans-serif; font-weight: bold; line-height: 1; color: #000; background: #fff; border-radius: 4px; padding: 0 .16em; box-shadow: 0 5px 12px rgba(0,0,0,.45); pointer-events: none; }
 .rb-app .cal.rb-calbig b { font-size: inherit; display: flex; align-items: center; justify-content: center; }
 .rb-app .cal.rb-calbig button { display: flex; align-items: center; justify-content: center; padding: 0; font: inherit; min-height: 0; }
 .rb-app .cal.rb-callines > button, .rb-app .cal.rb-callines > span { outline: 1px solid #c9d8ee; outline-offset: 0; border-radius: 0; }
 .rb-app .rb-dg { display: inline-block; font-style: normal; transition: color .3s; }
-.rb-app .rb-dg.rb-dgnew { color: #ff6a13; font-weight: bold; }
 .rb-app .rb-dg.rb-gap, .rb-app .rb-nodg .rb-dg { visibility: hidden; }
 /* the Instagram page Internet Explorer opens */
 .rb-ig { position: absolute; inset: 0; overflow: hidden; background: #fff; color: #262626; font: 12px/1.4 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; text-align: left; }
@@ -244,8 +230,6 @@
   transition: opacity .6s, transform .9s cubic-bezier(.7,0,.3,1); }
 .rb-intro.off { opacity: 0; transform: scale(1.25); }
 .rb-intro-t { font: 800 clamp(26px, 4.6vw, 64px) var(--rb-sans); letter-spacing: .42em; text-indent: .42em; color: #fff; white-space: nowrap; text-shadow: 0 0 34px rgba(34,211,238,.55); }
-.rb-intro-s { font: 13px var(--rb-mono); color: #64748b; letter-spacing: .22em; min-height: 1.5em; text-align: center; padding: 0 12px; }
-.rb-intro-s b { color: #22d3ee; font-weight: 400; }
 .rb-intro-bar { width: min(420px, 70vw); height: 1px; background: linear-gradient(90deg, transparent, #22d3ee, transparent); transform: scaleX(0); transition: transform 1.2s cubic-bezier(.7,0,.3,1); }
 .rb-intro-bar.on { transform: none; }
 .rb-glitch-bars { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
@@ -312,10 +296,7 @@
     db: { title: "FIRESTORE", tag: "resume-41921", kind: "db", lines: [
       ["shared/notepad", "read · write", 1], ["tasks", "validated", 38], ["pictures", "add · delete", 12], ["scores", "add-only", 214],
       ["board", "add-only", 57], ["stats", "+1 max", 6], ["otp", "5 attempts", 19], ["limits", "hashed keys", 44]] },
-    deploy: { title: "Command Prompt", xp: true, kind: "term", lines: [
-      "Microsoft Windows XP [Version 5.1.2600]",
-      "(C) Copyright 1985-2001 Microsoft Corp.",
-      "",
+    deploy: { title: "VERCEL EDGE", tag: "18 regions", kind: "term", lines: [
       "C:\\medhansh-xp> vercel deploy --prod",
       "Vercel CLI 59.11.2",
       "Deploying medhansh-xp",
@@ -353,6 +334,56 @@
     highlights: ["conic-gradient(#ef4444,#f59e0b,#22c55e,#3b82f6,#ef4444)", "linear-gradient(180deg,#6366f1,#f97316 62%,#312e81)", "linear-gradient(135deg,#92400e,#1f2937)"],
     tiles: ["linear-gradient(180deg,#2a0606 0 24%,#1f7a2e 24% 58%,#8a8a8a 58%)"] };
   // the paints on the palette the swarm dips into for Paint
+  // the picture the swarm paints: a dusk skyline seen through balcony netting, worked out cell by cell so it stays a blocky, pixelated image at any size
+  const pixelPhoto = (C, R) => {
+    const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * Math.max(0, Math.min(1, t)));
+    const rnd = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
+    const soft = (u, v) => { const x = u * 9, y = v * 9, i = Math.floor(x), j = Math.floor(y), a = x - i, b = y - j; return mix([rnd(i, j)], [rnd(i + 1, j)], a)[0] * (1 - b) + mix([rnd(i, j + 1)], [rnd(i + 1, j + 1)], a)[0] * b; };
+    const blob = (u, v, cx, cy, rx, ry) => 1 - Math.hypot((u - cx) / rx, (v - cy) / ry);
+    const STOPS = [[0, "#8f8a90"], [0.12, "#d9a06e"], [0.3, "#e88f52"], [0.42, "#f0a874"]].map(([p, c]) => [p, hex(c)]);
+    const sky = (u, v) => {
+      let c = STOPS[STOPS.length - 1][1];
+      for (let i = 1; i < STOPS.length; i++) if (v <= STOPS[i][0]) { c = mix(STOPS[i - 1][1], STOPS[i][1], (v - STOPS[i - 1][0]) / (STOPS[i][0] - STOPS[i - 1][0])); break; }
+      const m = Math.max(blob(u, v, 0.19, 0.23, 0.3, 0.095), blob(u, v, 0.71, 0.25, 0.15, 0.095), blob(u, v, 0.45, 0.025, 0.05, 0.05), blob(u, v, 0.525, 0.115, 0.04, 0.04), blob(u, v, 0.6, 0.16, 0.05, 0.04), blob(u, v, 0.04, 0.03, 0.09, 0.07)) + (soft(u, v) - 0.5) * 0.45 - Math.max(0, blob(u, v, 0.5, 0.21, 0.1, 0.1)) * 1.5;
+      if (m > 0) c = mix(hex("#6a739c"), hex("#2f3a5e"), m * 2.6);
+      return c;
+    };
+    const SHAPES = {
+      far: hex("#3f4650"), mid: hex("#4d453e"), midTop: hex("#96603c"), slab: hex("#65645f"), face: hex("#73726c"), core: hex("#2b2a28"), side: hex("#4b4944"),
+      crown: hex("#3a3024"), gold: hex("#d9b25e"), glow: hex("#ffdc62"), col: hex("#36342f"), colLit: hex("#4d4a43"), black: hex("#0b0b0a"), city: hex("#12181a"), hill: hex("#2b3249"),
+      lit: hex("#f2c552"), green: hex("#7fe07a"), white: hex("#f4efd8"), dark: hex("#1c1b19"), glass: hex("#2f3b39"), rail: hex("#2a211c"), railTop: hex("#6e5947"),
+    };
+    const out = [];
+    for (let y = 0; y < R; y++) for (let x = 0; x < C; x++) {
+      const u = (x + 0.5) / C, v = (y + 0.5) / R, S = SHAPES, on = rnd(x, y);
+      const lights = (base, rate, row = 3, col = 3) => (y % row && x % col ? (on > 1 - rate ? S.lit : S.dark) : base);
+      let c = v < 0.42 ? sky(u, v) : S.city;
+      if (v >= 0.38 && v < 0.445 && (u < 0.5 || soft(u, 0.1) > 0.45)) c = S.hill;
+      if (v >= 0.42 && on > 0.9) c = on > 0.97 ? S.white : on > 0.94 ? S.green : S.lit;
+      if (u > 0.42 && u < 0.48 && v > 0.4 + soft(u, 0.3) * 0.06) c = on > 0.86 ? S.lit : S.far;
+      if (u > 0.47 && u < 0.72 && v > 0.52) c = v < 0.56 ? S.midTop : lights(S.mid, 0.08, 4, 4);
+      if (u > 0.72 && u < 0.79 && v > 0.6) c = S.dark;
+      if (u > 0.07 && u < 0.16 && v > 0.47) c = lights(S.slab, 0.12, 3, 3);
+      if (u > 0.15 && u < 0.34 && v > 0.27) {
+        if (u < 0.205) c = S.face;
+        else if (u < 0.31) c = lights(S.core, 0.34, 3, 2);
+        else c = S.side;
+      }
+      if (u > 0.2 && u < 0.31 && v > 0.25 && v < 0.37) c = (x + y) % 2 ? S.crown : S.gold;
+      if (blob(u, v, 0.255, 0.285, 0.04, 0.03) > 0) c = S.glow;
+      if (u > 0.78 && u < 0.97 && v < 0.88) c = mix(S.colLit, S.col, (u - 0.78) / 0.1);
+      if (u >= 0.97) c = S.black;
+      // the netting, then the balcony's glass and rail in front of everything
+      if (u < 0.84 && v < 0.88 && ((x + Math.floor(y / 3)) % 6 === 0 || y % 6 === 0)) c = mix(c, S.black, 0.22);
+      const glassTop = 0.86 - u * 0.12;
+      if (v > glassTop) c = mix(c, S.glass, 0.62);
+      const railY = 1.02 - u * 0.21;
+      if (u > 0.07 && Math.abs(v - railY) < 0.03) c = v < railY - 0.012 ? S.railTop : S.rail;
+      out.push(`rgb(${c.map(Math.round).join(",")})`);
+    }
+    return out;
+  };
   const PAL_COLORS = ["#ff8040", "#ff0000", "#ffff00", "#008000", "#0080ff", "#0000ff", "#800080", "#804000", "#800000", "#ffffff", "#000000"];
 
   let running = false;
@@ -429,7 +460,7 @@
       <div class="rb-layer rb-apps"></div><div class="rb-wall"></div>
       <div class="rb-fx"></div><div class="rb-ags"></div>
       <div class="rb-glitch-bars">${Array.from({ length: 7 }, () => `<i style="top:${rand(0, 96).toFixed(1)}%;height:${rand(1, 9).toFixed(1)}px"></i>`).join("")}</div>
-      <div class="rb-intro"><div class="rb-intro-t">&nbsp;</div><div class="rb-intro-bar"></div><div class="rb-intro-s">&nbsp;</div></div>
+      <div class="rb-intro"><div class="rb-intro-t">&nbsp;</div><div class="rb-intro-bar"></div></div>
       <div class="rb-cap off" aria-live="polite"><b></b><span></span></div>
       <div class="rb-vig"></div>
       <div class="rb-hud off"><span class="rb-brand">VISUAL REBUILD</span><span class="rb-prog"><i></i></span>
@@ -448,7 +479,7 @@
     skipBtn.addEventListener("click", () => finish(true));
     const t0 = performance.now();
     const clockEl = q(".rb-clock"), progEl = q(".rb-prog i");
-    const TOTAL = 66000;
+    const TOTAL = 60000;
     let progLock = false;
     every(60, () => {
       const e = (performance.now() - t0) / sp;
@@ -472,7 +503,7 @@
 
     // ---------- the swarm ----------
     const ags = [];
-    let pace = 1.1; // > 1 is slower: every move and draw is scaled by it, and it drops as the show speeds up
+    let pace = 1.1 / 1.15; // > 1 is slower: every move and draw is scaled by it, and it drops as the show speeds up
     function place(a, x, y, ms, ease) {
       if (Math.hypot(x - a.x, y - a.y) > 6) {
         const deg = (Math.atan2(y - a.y, x - a.x) * 180) / Math.PI + 135;
@@ -636,15 +667,14 @@
     };
     const makePanel = (p, r, color) => {
       const el = document.createElement("div");
-      el.className = "rb-pn " + p.kind + (p.xp ? " xp" : "");
+      el.className = "rb-pn " + p.kind;
       el.style.cssText = `--a:${color};left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px` + (p.kind === "db" ? `;--clh:${dbRow}px` : "");
       const rows = shown(p).map((ln, k) => {
         if (p.kind === "db") return `<div class="rb-cl rb-dr"><span>${esc(ln[0])}</span><em>${esc(ln[1])}</em><i style="--w:${Math.round(14 + Math.log10(ln[2] + 1) * 34)}%"></i><u>${ln[2]}</u></div>`;
-        if (p.kind === "term") return `<div class="rb-cl${/^C:\\/.test(ln) ? " p" : /^(Production|Aliased)/.test(ln) ? " ok" : ""}"><code>${esc(ln)}</code></div>`;
+        if (p.kind === "term") return `<div class="rb-cl${k === 0 ? " p" : /^(Production|Aliased)/.test(ln) ? " ok" : ""}"><code>${esc(ln)}</code></div>`;
         return `<div class="rb-cl"><s>${k + 1}</s><code>${hl(ln)}</code></div>`;
       }).join("");
-      const right = p.xp ? `<span class="rb-xpb"><u class="m"></u><u class="x"></u><u class="c"></u></span>` : `<small>${esc(p.tag || "")}</small>`;
-      el.innerHTML = `<div class="rb-bh"><i>${p.xp ? "C:\\" : ""}</i><b>${esc(p.title)}</b>${right}</div><div class="rb-pb">${rows}</div>`;
+      el.innerHTML = `<div class="rb-bh"><i></i><b>${esc(p.title)}</b><small>${esc(p.tag || "")}</small></div><div class="rb-pb">${rows}</div>`;
       beL.appendChild(el);
       return el;
     };
@@ -951,63 +981,55 @@
         ids.push(hideId);
         return ids;
       },
-      // paint: a painter's palette comes in beside the window, and every colour is dipped from it before it goes on the canvas
+      // paint: the palette lands on the blank canvas and agents carry every colour from it down to the colour bar;
+      // then the palette is put away and the swarm paints the pixel picture very fast, a band of rows each
       paint(rl, base, k, partIds, win, app) {
         const cv = rl.querySelector(".paint-area canvas"), area = rl.querySelector(".paint-area"); if (!cv || !area) return;
-        const tools = [...rl.querySelectorAll(".pt-grid button")], fgc = rl.querySelector(".swatch .fgc");
-        const r = cv.getBoundingClientRect(), ar = area.getBoundingClientRect(), W = Math.min(r.width, ar.width) - 10, H = Math.min(r.height, ar.height) - 10;
+        const fgc = rl.querySelector(".swatch .fgc"), swatches = [...rl.querySelectorAll(".palette i")];
+        const r = cv.getBoundingClientRect(), ar = area.getBoundingClientRect(), W = Math.min(r.width, ar.width), H = Math.min(r.height, ar.height);
         const ctx = cv.getContext("2d"), sx = cv.width / r.width, sy = cv.height / r.height;
-        const pal = document.createElement("div"), px = clamp(win.x > 140 ? win.x - 132 : win.x + win.w + 8, 6, vw - 130), py = clamp(win.y + win.h - 104, 6, vh - 101);
+        const pal = document.createElement("div"), px = r.left + W / 2 - 62, py = r.top + H / 2 - 48;
         pal.className = "rb-pal"; pal.style.cssText = `left:${px}px;top:${py}px`; pal.innerHTML = paletteSvg();
         app.extras = [pal];
-        const palId = base + ":palette";
-        task(palId, async (a) => { say(a, "palette"); await go(a, px + 62, py + 48); fx.appendChild(pal); flyIn(pal, -180, 70, 420 * k); click(a); await wait(280 * k); }, { deps: [base + ":b"], pri: -1, x: px, y: py });
-        const line = (pts, n = 6) => [pts[0], ...pts.slice(1).flatMap((q, i) => Array.from({ length: n }, (_, j) => [pts[i][0] + ((q[0] - pts[i][0]) * (j + 1)) / n, pts[i][1] + ((q[1] - pts[i][1]) * (j + 1)) / n]))];
-        const ring = (cx, cy, rx, ry = rx, n = 24) => Array.from({ length: n + 1 }, (_, i) => [cx + Math.cos((i / n) * Math.PI * 2) * rx, cy + Math.sin((i / n) * Math.PI * 2) * ry]);
-        const R0 = Math.min(W, H) * 0.1, sun = [W * 0.16, H * 0.24];
-        // [colour on the palette, tool, strokes]: each one is one agent's drawing
-        const ART = [
-          ["#ff8040", "brush", [ring(sun[0], sun[1], R0)]],
-          ["#ff8040", "pencil", Array.from({ length: 8 }, (_, i) => { const t = (i / 8) * Math.PI * 2; return line([[sun[0] + Math.cos(t) * R0 * 1.35, sun[1] + Math.sin(t) * R0 * 1.35], [sun[0] + Math.cos(t) * R0 * 1.85, sun[1] + Math.sin(t) * R0 * 1.85]], 2); })],
-          ["#0080ff", "pencil", [Array.from({ length: 22 }, (_, i) => [W * (0.3 + 0.18 * (i / 21)), H * 0.2 - Math.abs(Math.sin((i / 21) * Math.PI * 3)) * R0 * 0.7])]],
-          ["#0000ff", "pencil", [line([[W * 0.42, H * 0.82], [W * 0.42, H * 0.52], [W * 0.66, H * 0.52], [W * 0.66, H * 0.82], [W * 0.42, H * 0.82]])]],
-          ["#800000", "brush", [line([[W * 0.39, H * 0.53], [W * 0.54, H * 0.34], [W * 0.69, H * 0.53]])]],
-          ["#804000", "pencil", [line([[W * 0.51, H * 0.82], [W * 0.51, H * 0.66], [W * 0.57, H * 0.66], [W * 0.57, H * 0.82]], 4)]],
-          ["#0080ff", "pencil", [line([[W * 0.45, H * 0.58], [W * 0.49, H * 0.58], [W * 0.49, H * 0.64], [W * 0.45, H * 0.64], [W * 0.45, H * 0.58]], 3)]],
-          ["#804000", "brush", [line([[W * 0.82, H * 0.86], [W * 0.82, H * 0.6]], 5)]],
-          ["#008000", "brush", [ring(W * 0.82, H * 0.5, R0 * 0.9, R0 * 0.8)]],
-          ["#008000", "brush", [Array.from({ length: 30 }, (_, i) => [W * 0.04 + (W * 0.92 * i) / 29, H * 0.93 + Math.sin(i * 1.3) * 4])]],
-          ["#ff0000", "pencil", [line([[W * 0.88, H * 0.1], [W * 0.88, H * 0.3]], 4), line([[W * 0.88, H * 0.22], [W * 0.9, H * 0.19], [W * 0.92, H * 0.22], [W * 0.92, H * 0.3]], 3), line([[W * 0.955, H * 0.21], [W * 0.955, H * 0.3]], 3), [[W * 0.955, H * 0.15], [W * 0.957, H * 0.155]]]],
-        ];
-        return [palId, ...ART.map(([color, tool, strokes], n) => { const id = `${base}:draw${n}`; task(id, async (a) => {
-          // pick the tool, dip into the colour, then draw
-          const tb = tools.find((bt) => bt.dataset.t === tool);
-          if (tb) { say(a, tool); const [tx, ty] = mid(tb); await go(a, tx, ty); click(a); tools.forEach((bt) => bt.setAttribute("aria-pressed", bt === tb ? "true" : "false")); }
-          const bl = pal.querySelector(`.rb-blob[data-c="${color}"]`);
-          if (bl) {
-            say(a, "dip"); const [qx, qy] = mid(bl); await go(a, qx, qy); click(a);
-            smudgePal(pal, bl, color, 380 * sp);
-            dip(a, color); if (fgc) fgc.style.background = color;
+        swatches.forEach((e) => e.classList.add("rb-hide"));
+        const palId = base + ":palette", hideId = base + ":palhide", hint = { pri: -1, x: px + 62, y: py + 48 };
+        task(palId, async (a) => { say(a, "palette"); await go(a, px + 62, py + 48); fx.appendChild(pal); flyIn(pal, 0, -70, 320 * k); click(a); await wait(160 * k); }, { deps: [base + ":b"], ...hint });
+        const rgbOf = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+        const blobFor = (c) => { const q = rgbOf(c); return PAL_COLORS.map((p) => [rgbOf(p).reduce((sum, v, i) => sum + (v - q[i]) ** 2, 0), p]).sort((m, n) => m[0] - n[0])[0][1]; };
+        const HANDS = 6, carryIds = Array.from({ length: HANDS }, (_, n) => { const id = `${base}:carry${n}`; task(id, async (a) => {
+          for (const e of swatches.filter((_, j) => j % HANDS === n)) {
+            const color = e.dataset.c, near = blobFor(color), bl = pal.querySelector(`.rb-blob[data-c="${near}"]`), [qx, qy] = mid(bl), [tx, ty] = mid(e);
+            say(a, "dip"); await go(a, qx, qy, 110 * k); click(a);
+            smudgePal(pal, bl, near, 200 * sp); dip(a, color);
+            say(a, "colour"); await go(a, tx, ty, 150 * k);
+            reveal(e); e.animate([{ scale: "0.2" }, { scale: "1" }], { duration: 150 * sp, easing: "cubic-bezier(.3,1.4,.5,1)" });
+            undip(a); if (fgc) fgc.style.background = color; tick();
           }
+        }, { deps: [palId], ...hint }); return id; });
+        task(hideId, async (a) => {
+          say(a, "put away"); await go(a, px + 62, py + 48, 150 * k); click(a);
+          pal.animate([{ opacity: 1, scale: "1" }, { opacity: 0, scale: "0.6" }], { duration: 200 * sp, easing: "ease-in", fill: "forwards" });
+          at(220, () => pal.remove());
+          await wait(180 * k);
+        }, { deps: carryIds, ...hint });
+        // every agent takes a band of rows and sweeps it in big steps, so the whole picture lands in about a second
+        const C = 64, RW = clamp(Math.round((C * H) / W), 24, 60), cells = pixelPhoto(C, RW), cw = W / C, ch = H / RW, BANDS = 10, STEP = 8;
+        return [palId, ...carryIds, hideId, ...Array.from({ length: BANDS }, (_, b) => { const id = `${base}:draw${b}`, y0 = Math.floor((b * RW) / BANDS), y1 = Math.floor(((b + 1) * RW) / BANDS); task(id, async (a) => {
           say(a, "paint");
-          ctx.strokeStyle = color; ctx.lineWidth = (tool === "brush" ? 6 : 3) * sx; ctx.lineCap = ctx.lineJoin = "round";
-          for (const st of strokes) {
-            const P = st.map(([qx, qy]) => [r.left + 5 + qx, r.top + 5 + qy]);
-            await go(a, P[0][0], P[0][1]); click(a);
-            for (let i = 1; i < P.length; i++) {
-              await go(a, P[i][0], P[i][1], 30 * k, "linear");
-              ctx.beginPath(); ctx.moveTo((P[i - 1][0] - r.left) * sx, (P[i - 1][1] - r.top) * sy); ctx.lineTo((P[i][0] - r.left) * sx, (P[i][1] - r.top) * sy); ctx.stroke();
-            }
+          await go(a, r.left + 4, r.top + (y0 + 0.5) * ch, 90 * k);
+          for (let y = y0; y < y1; y++) for (let x = 0; x < C; x += STEP) {
+            for (let cx = x; cx < Math.min(C, x + STEP); cx++) { ctx.fillStyle = cells[y * C + cx]; ctx.fillRect(cx * cw * sx, y * ch * sy, Math.ceil(cw * sx) + 1, Math.ceil(ch * sy) + 1); }
+            await go(a, r.left + (x + STEP / 2) * cw, r.top + (y + 0.5) * ch, 16 * k, "linear");
           }
-          undip(a);
-        }, { deps: [base + ":b", palId], pri: -1, x: r.left + W * ((n % 4) / 4), y: r.top + H / 2 }); return id; })];
+        }, { deps: [hideId, ...partIds], pri: -1, x: r.left + W / 2, y: r.top + (y0 + 0.5) * ch }); return id; })];
       },
-      // calendar: the grid is drawn almost as big as its window, then the numbers go in with some digits wrong. An agent takes the wrong digits out, the right ones are
-      // flung up from the bottom of the screen in another colour, an agent recolours them to match, and the calendar shrinks to the top left so the tasks can open
+      // calendar: the grid is drawn almost as big as its window, then the numbers go in with some digits wrong. An agent takes the wrong digits out, the right ones
+      // are flung up from the bottom of the screen, and the calendar shrinks to the top left to show the tasks pane, built behind it all along
       calendar(rl, base, k, partIds, win) {
         const grid = rl.querySelector(".cal.big"), capp = rl.querySelector(".cal-app"), left = rl.querySelector(".cal-left"), right = rl.querySelector(".cal-right"); if (!grid?.children.length || !capp) return;
         const q = (sel) => rl.querySelector(sel);
-        [".cal-head", ".ctoday", ".cal-up", ".cal-sync", ".cday", ".cal-add", ".task-list", ".cempty"].map(q).filter(Boolean).forEach((e) => e.classList.add("rb-hide"));
+        // everything else is built behind the big grid, so the tasks are already there when it shrinks
+        const list = q(".task-list"); if (list) { list.innerHTML = '<li class="done"><input type="checkbox" class="tdone" tabindex="-1" checked><span class="ttext">ship the visual rebuild</span></li>'; q(".cempty")?.classList.add("rb-gone"); }
         const ar = capp.getBoundingClientRect(), wide = !narrow && ar.width >= 460, M = 6, ease = "cubic-bezier(.5,0,.2,1)";
         // where it ends up: a wider left column than the real app's, so the shrink is only a tad
         if (left) left.style.overflow = "visible";
@@ -1020,18 +1042,18 @@
         grid.style.cssText += `;position:absolute;z-index:2;left:${M}px;top:${M}px;width:${ar.width - M * 2}px;height:${ar.height - M * 2}px;grid-auto-rows:1fr;font-size:${clamp((ar.height - M * 2) / 9, 16, 34)}px`;
         const days = [...grid.querySelectorAll("button[data-d]")];
         days.forEach((d) => { d.innerHTML = [...d.textContent].map((c) => `<i class="rb-dg">${c}</i>`).join(""); d.classList.add("rb-nodg"); });
-        const wrong = days.map((d) => [Math.random(), d]).sort((p, r) => p[0] - r[0]).slice(0, 8).map((p) => p[1]).sort((p, r) => days.indexOf(p) - days.indexOf(r)).map((d) => {
+        const wrong = days.map((d) => [Math.random(), d]).sort((p, r) => p[0] - r[0]).slice(0, 3).map((p) => p[1]).sort((p, r) => days.indexOf(p) - days.indexOf(r)).map((d) => {
           const dg = pick([...d.querySelectorAll(".rb-dg")]), good = dg.textContent; let w; do { w = String(1 + ((Math.random() * 9) | 0)); } while (w === good); dg.textContent = w; return { dg, good };
         });
         const rowIds = drawRows(grid, base, k, "calendar"), ids = [...rowIds];
         const hint = { pri: -1, x: ar.left + ar.width / 2, y: ar.top + ar.height / 2 };
-        const numsId = base + ":nums", rmId = base + ":rm", flingId = base + ":fling", tintId = base + ":tint", slideId = base + ":slide";
-        ids.push(numsId, rmId, flingId, tintId, slideId);
+        const numsId = base + ":nums", rmId = base + ":rm", flingId = base + ":fling", slideId = base + ":slide";
+        ids.push(numsId, rmId, flingId, slideId);
         task(numsId, async (a) => {
           say(a, "numbers");
           for (const [n, d] of days.entries()) {
             const [cx, cy] = mid(d);
-            await go(a, cx, cy, 34 * k, "linear");
+            await go(a, cx, cy, 18 * k, "linear");
             d.classList.remove("rb-nodg");
             d.querySelectorAll(".rb-dg").forEach((g) => g.animate([{ scale: "0.2", opacity: 0 }, { scale: "1", opacity: 1 }], { duration: 160 * sp, easing: "cubic-bezier(.3,1.4,.5,1)" }));
             if (n % 4 === 0) tick();
@@ -1039,81 +1061,45 @@
         }, { deps: rowIds, ...hint });
         // one agent takes out every wrong digit; only the digit goes, its number stays
         task(rmId, async (a) => {
-          await wait(420 * k);
+          await wait(180 * k);
           say(a, "remove digit");
           for (const { dg } of wrong) {
             const [x, y] = mid(dg);
-            await go(a, x, y, 190 * k); click(a);
+            await go(a, x, y, 120 * k); click(a);
             dg.style.color = "#e11d48";
-            dg.animate([{ scale: "1" }, { scale: "1.7", offset: 0.35 }, { scale: "0" }], { duration: 230 * k * sp, easing: "ease-in" });
-            at(225 * k, () => { dg.classList.add("rb-gap"); dg.style.color = ""; });
-            await wait(90 * k);
+            dg.animate([{ scale: "1" }, { scale: "1.7", offset: 0.35 }, { scale: "0" }], { duration: 170 * k * sp, easing: "ease-in" });
+            at(165 * k, () => { dg.classList.add("rb-gap"); dg.style.color = ""; });
+            await wait(40 * k);
           }
-          await wait(380 * k);
+          await wait(150 * k);
         }, { deps: [numsId], ...hint });
         // the right digits are thrown from below the bottom edge of the screen, in a colour that does not belong
         task(flingId, async (a) => {
           say(a, "launch");
-          await go(a, ar.left + ar.width / 2, vh - 26, 300 * k); click(a); thud();
-          await Promise.all(wrong.map(({ dg, good }, n) => new Promise((res) => at(n * 110 * k, () => {
-            const [cx, cy, cr] = mid(dg), sx = clamp(cx + rand(-240, 240), 30, vw - 30), sy = vh + 40, t = 560 * k;
+          await go(a, ar.left + ar.width / 2, vh - 26, 180 * k); click(a); thud();
+          await Promise.all(wrong.map(({ dg, good }, n) => new Promise((res) => at(n * 80 * k, () => {
+            const [cx, cy, cr] = mid(dg), sx = clamp(cx + rand(-240, 240), 30, vw - 30), sy = vh + 40, t = 400 * k;
             const e = document.createElement("div"); e.className = "rb-num"; e.textContent = good; e.style.cssText = `left:${sx}px;top:${sy}px;font-size:${Math.round(cr.height)}px`; fx.appendChild(e);
             e.animate([{ transform: "translate(-50%,-50%) rotate(-50deg)" }, { transform: `translate(calc(-50% + ${(cx - sx) * 0.55}px), calc(-50% + ${(cy - sy) * 0.62}px)) rotate(190deg) scale(1.3)`, offset: 0.55 },
               { transform: `translate(calc(-50% + ${cx - sx}px), calc(-50% + ${cy - sy}px)) rotate(360deg)` }], { duration: t * sp, easing: "cubic-bezier(.2,.7,.4,1)", fill: "forwards" });
-            at(t, () => { e.remove(); dg.textContent = good; dg.classList.remove("rb-gap"); dg.classList.add("rb-dgnew"); dg.animate([{ scale: "1.5" }, { scale: "1" }], { duration: 220 * sp, easing: "cubic-bezier(.3,1.4,.5,1)" }); tick(); res(); });
+            at(t, () => { e.remove(); dg.textContent = good; dg.classList.remove("rb-gap"); dg.animate([{ scale: "1.5" }, { scale: "1" }], { duration: 220 * sp, easing: "cubic-bezier(.3,1.4,.5,1)" }); tick(); res(); });
           }))));
-          await wait(420 * k);
+          await wait(160 * k);
         }, { deps: [rmId], ...hint });
-        task(tintId, async (a) => {
-          say(a, "match colour");
-          for (const { dg } of wrong) { const [x, y] = mid(dg); await go(a, x, y, 200 * k); click(a); dg.classList.remove("rb-dgnew"); await wait(70 * k); }
-          await wait(320 * k);
-        }, { deps: [flingId], ...hint });
         task(slideId, async (a) => {
           say(a, "shrink");
           const r0 = grid.getBoundingClientRect();
-          await go(a, r0.right - 8, r0.bottom - 8, 260 * k); click(a);
-          grid.classList.remove("rb-callines"); if (left) left.style.background = "";
-          const t = 620 * k;
+          await go(a, r0.right - 8, r0.bottom - 8, 140 * k); click(a);
+          grid.classList.remove("rb-callines"); if (left) left.style.background = ""; if (right) right.style.background = "#fff"; capp.style.background = "";
+          const t = 420 * k;
           grid.style.transition = ["left", "top", "width", "height", "font-size"].map((p) => `${p} ${t * sp}ms ${ease}`).join(", ");
           Object.assign(grid.style, { left: `${T.left}px`, top: `${T.top}px`, width: `${T.width}px`, height: `${T.height}px`, fontSize: wide ? "13px" : "11px" });
           await go(a, ar.left + T.left + T.width - 8, ar.top + T.top + T.height - 8, t, ease);
           Object.assign(grid.style, { transition: "", zIndex: "", position: "", left: "", top: "", width: "", height: wide ? `${T.height}px` : "", gridAutoRows: wide ? "1fr" : "" });
           hold.remove(); if (left) left.style.overflow = "";
           blip(300, 0.08, "sine", 0.05, 120);
-          [".cal-head", ".ctoday", ".cal-up", ".cal-sync"].map(q).filter(Boolean).forEach((e, i) => { reveal(e); flyIn(e, 0, i ? 14 : -14, 260 * k, i * 70); });
-          await wait(200 * k);
-        }, { deps: [tintId], ...hint });
-        const dayId = base + ":day"; ids.push(dayId);
-        task(dayId, async (a) => {
-          // the tasks pane opens across the blue the calendar left behind
-          if (right) {
-            const rr = right.getBoundingClientRect();
-            say(a, "open tasks"); await go(a, rr.left + 8, rr.top + rr.height / 2, 260 * k); click(a);
-            right.style.background = "#fff";
-            right.animate([{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 380 * sp, easing: ease });
-            await wait(380 * k);
-          }
-          capp.style.background = "";
-          const h = q(".cday"); if (h) await typeEl(a, h, k, win.x + win.w - 8);
-          const f = q(".cal-add");
-          if (f) { const fr = f.getBoundingClientRect(); say(a, "form"); const box = await frame(a, { x: fr.left, y: fr.top, w: fr.width, h: fr.height }, "form.cal-add", 240 * k); reveal(f); f.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 * sp }); unframe(box, 120); }
-          [".task-list", ".cempty"].map(q).filter(Boolean).forEach(reveal);
-        }, { deps: [slideId], pri: -1, x: ar.left + ar.width * 0.8, y: ar.top + 20 });
-        const ct = q(".ctext"), list = q(".task-list"), empty = q(".cempty");
-        if (ct && list) ["ship the visual rebuild", "post it on instagram"].forEach((txt, i) => { const id = `${base}:task${i}`; ids.push(id); task(id, async (a) => {
-          const [, cy, cr] = mid(ct);
-          say(a, "add task");
-          await go(a, cr.left + 6, cy); click(a);
-          for (let n = 2; n <= txt.length; n += 2) { ct.value = txt.slice(0, n); if (n % 6 === 0) tick(); await go(a, cr.left + 6 + Math.min(cr.width - 16, n * 6.2), cy, 55 * k, "linear"); }
-          ct.value = txt; await wait(160); ct.value = "";
-          empty?.classList.add("rb-gone");
-          const li = document.createElement("li");
-          li.innerHTML = `<input type="checkbox" class="tdone" tabindex="-1"><span class="ttext">${esc(txt)}</span>`;
-          list.appendChild(li);
-          li.animate([{ opacity: 0, translate: "0 -6px" }, { opacity: 1, translate: "0 0" }], { duration: 240 * sp });
-          if (i === 0) { const cb = li.querySelector("input"), [bx, by] = mid(cb); say(a, "done"); await go(a, bx, by, 300 * k); click(a); cb.checked = true; li.classList.add("done"); }
-        }, { deps: [i ? `${base}:task0` : dayId], pri: -1, x: ct.getBoundingClientRect().left, y: ct.getBoundingClientRect().top }); });
+          await wait(100 * k);
+        }, { deps: [flingId], ...hint });
         return ids;
       },
       // command prompt: three commands typed in, and the swarm types each answer
@@ -1348,7 +1334,7 @@
       wrap.insertAdjacentHTML("beforeend", `<div class="rb-scan"></div>`);
       // in the layer straight away, so windows stack in the order they open whichever agent gets to them first
       wrap.style.visibility = "hidden"; appsL.appendChild(wrap);
-      const k = clamp(1 - i * 0.04, 0.68, 1); // later apps build faster: the crescendo
+      const k = clamp(1 - i * 0.04, 0.68, 1) / (app.id === "cmd" || app.id === "paint" ? 1.15 : 1); // later apps build faster: the crescendo
       const base = "app:" + app.id;
       task(base, async (a) => {
         say(a, app.id);
@@ -1381,6 +1367,8 @@
         // the window is done once every piece is in: the wireframe goes
         task(base + ":d", async () => {
           wrap.classList.add("done"); goUnder(wrap); app.doneAt = performance.now();
+          // Paint moves on 0.3s after its picture is finished
+          if (app.id === "paint") at(300, () => { const n = onScreen.indexOf(i); if (n >= 0) minimize(onScreen.splice(n, 1)[0]); });
           chime();
         }, { deps: [base + ":b", ...partIds, ...tbIds, ...ownIds], pri: -2, x, y });
         const f = await frame(a, r, "win · " + app.title.replace(/ - .*$/, "").replace(/^.* - /, ""), 360 * k);
@@ -1418,19 +1406,18 @@
     // intro: the live desktop glitches out and the title decodes
     real.classList.add("rb-glitch");
     if (!rm) { q(".rb-glitch-bars").classList.add("go"); play("tilt"); }
-    at(650, () => { ov.classList.add("on"); skipBtn.focus({ preventScroll: true }); });
-    at(900, () => { decode(q(".rb-intro-t"), "VISUAL REBUILD", 900); q(".rb-intro-bar").classList.add("on"); blip(90, 0.9, "sawtooth", 0.6, 45); });
-    at(1150, () => { q(".rb-intro-s").innerHTML = "unmounting render tree · <b>0 nodes remain</b>"; tick(); });
-    at(1000, () => prepAll());
+    at(250, () => { ov.classList.add("on"); skipBtn.focus({ preventScroll: true }); });
+    at(350, () => { decode(q(".rb-intro-t"), "VISUAL REBUILD", 550); q(".rb-intro-bar").classList.add("on"); blip(90, 0.9, "sawtooth", 0.6, 45); });
+    at(650, () => prepAll());
 
-    // 2.6-9s: the back end, typed in from the real source and wired up
-    at(2600, () => {
+    // 1.3-6.9s: the back end, typed in from the real source and wired up
+    at(1300, () => {
       intro.classList.add("off"); hud.classList.remove("off");
       phase("BACK END", "#22d3ee");
       caption("BACKEND", "Rules, serverless functions, data and a deploy, typed in from the real source.");
       spawn(8); thud();
     });
-    at(2700, () => {
+    at(1400, () => {
       ["deploy", "otp", "rules", "db"].forEach(buildPanel);
       buildBox(beL, "mail", BE.mail, "");
       if (narrow) {
@@ -1445,10 +1432,10 @@
       }
     });
 
-    // 9-14.5s: the front end on top of the back end
-    at(9000, () => {
+    // 6.9-11.7s: the front end on top of the back end
+    at(6870, () => {
       beL.classList.add("under");
-      pace = 1.05;
+      pace = 1.05 / 1.15;
       phase("FRONT END", "#f472b6");
       caption("INTERFACE", "Shell, runtime, sound, data and styles, on top of the back end.");
       thud();
@@ -1487,7 +1474,7 @@
       const i = nextApp++;
       buildApp(apps[i], i); apps[i].openedAt = now; onScreen.push(i); lastOpen = now;
     };
-    at(14500, () => {
+    at(11650, () => {
       feL.classList.add("under"); beL.classList.add("under2");
       pace = 1;
       phase("APPS", "#fbbf24");
@@ -1496,8 +1483,8 @@
       spawn(6, (k) => edges[k]); thud();
       appTimer = every(150, appTick);
     });
-    at(18000, capOff);
-    at(62000, endSeq);
+    at(15150, capOff);
+    at(59150, endSeq);
 
     // the ending: the windows fly away and the desktop is built, then the taskbar, then the swarm flies home
     function endSeq() {
