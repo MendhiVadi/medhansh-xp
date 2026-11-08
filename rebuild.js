@@ -1,9 +1,9 @@
-// Visual Rebuild, Mark 2: a ~32 second, purely visual rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
+// Visual Rebuild, Mark 2: a ~45 second, purely visual rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
 // 3-10s   the foundation: back-end windows (real source, data, a deploy) and front-end modules, built side by side
-// 7-26s   needles drop in from above, go under the page, come back out and the thread is snipped: no mark is left
-// 9-25s   a handful of real app windows are built one on top of another, the games last and About Me on top
-// 26-29s  the windows fly away and the desktop (wallpaper, icons) is built
-// 29-32s  the taskbar, start button and tray icons, then it hands back to the live desktop underneath
+// 7-36s   needles drop in from above, go under the page, come back out and the thread is snipped: no mark is left
+// 9-36s   real app windows built two or three at a time, each minimised when done; the games last and About Me (which scrolls) on top
+// 36-39s  the windows fly away and the desktop (wallpaper, icons) is built
+// 39-43s  the taskbar, start button and tray icons, then it hands back to the live desktop underneath
 // It is all theatre: nothing here writes data or touches the network. Loaded on demand by app.js.
 (() => {
   const CSS = `
@@ -60,13 +60,6 @@
 .rb-app { position: absolute; left: 0; top: 0; transition: transform .85s cubic-bezier(.6,0,.35,1), opacity .75s ease; }
 .rb-app .win { position: absolute !important; left: 0 !important; top: 0 !important; margin: 0 !important; max-width: none !important; max-height: none !important;
   z-index: auto !important; transform: none !important; animation: none !important; pointer-events: none; }
-.rb-app .rb-wf, .rb-app .rb-wf * { background: transparent !important; color: transparent !important; box-shadow: none !important; text-shadow: none !important;
-  border-color: color-mix(in srgb, var(--a) 45%, transparent) !important; caret-color: transparent !important; }
-.rb-app .rb-wf { outline: 1px dashed var(--a); outline-offset: -1px; opacity: 0; transition: opacity .5s; }
-.rb-app .rb-wf * { outline: 1px solid color-mix(in srgb, var(--a) 22%, transparent); outline-offset: -1px; }
-.rb-app .rb-wf svg, .rb-app .rb-wf img, .rb-app .rb-wf canvas, .rb-app .rb-wf .avatar { opacity: 0 !important; }
-.rb-app.wf .rb-wf { opacity: 1; }
-.rb-app.done .rb-wf { opacity: 0; }
 .rb-app .rb-rl { clip-path: inset(0 100% calc(100% - var(--tb)) 0); transition: clip-path var(--t, .4s) linear; }
 .rb-app .rb-rl.t { clip-path: inset(0 0 calc(100% - var(--tb)) 0); }
 .rb-app .rb-rl.b { clip-path: inset(0 0 0 0); }
@@ -77,6 +70,8 @@
 .rb-app.fly { opacity: 0; }
 .rb-app .rb-hide { opacity: 0; }
 .rb-app .rb-tl { display: block; width: fit-content; }
+.rb-app .rb-gone { display: none !important; }
+.rb-app.min { opacity: 0; transition: transform .5s cubic-bezier(.6,0,.4,1), opacity .35s ease .15s; }
 .rb-throw { position: absolute; width: 46px; height: 46px; border-radius: 6px; border: 2px solid #fff; background-size: cover; background-position: center;
   box-shadow: 0 8px 18px rgba(0,0,0,.45); pointer-events: none; }
 .rb-app .rb-stick { position: absolute; right: 1px; bottom: 1px; width: 60%; height: 60%; border-radius: 3px; background-size: cover; background-position: center;
@@ -137,28 +132,6 @@
 .rb-ag.tag span { opacity: 1; }
 .rb-ag.click svg path { animation: rbClick .22s ease-out; }
 @keyframes rbClick { 50% { opacity: .55; } }
-.rb-gd { position: absolute; background: #ff4d4d; pointer-events: none; animation: rbGd .55s ease both; }
-.rb-gd.v { top: 0; bottom: 0; width: 1px; } .rb-gd.h { left: 0; right: 0; height: 1px; }
-@keyframes rbGd { 0% { opacity: 0; } 15%, 70% { opacity: .75; } 100% { opacity: 0; } }
-.rb-ruler { position: absolute; pointer-events: none; opacity: 0; transition: opacity .6s; background-color: rgba(8,12,24,.9); font: 9px/1 var(--rb-mono); color: #64748b; overflow: hidden; }
-.rb-ruler.on { opacity: 1; }
-.rb-ruler.h { left: 0; right: 0; top: 0; height: 16px; border-bottom: 1px solid #1e293b;
-  background-image: repeating-linear-gradient(90deg, #475569 0 1px, transparent 1px 10px), repeating-linear-gradient(90deg, #94a3b8 0 1px, transparent 1px 100px);
-  background-size: 100% 4px, 100% 9px; background-position: 0 100%, 0 100%; background-repeat: repeat-x; }
-.rb-ruler.v { left: 0; top: 16px; bottom: 0; width: 16px; border-right: 1px solid #1e293b;
-  background-image: repeating-linear-gradient(180deg, #475569 0 1px, transparent 1px 10px), repeating-linear-gradient(180deg, #94a3b8 0 1px, transparent 1px 100px);
-  background-size: 4px 100%, 9px 100%; background-position: 100% -16px, 100% -16px; background-repeat: repeat-y; }
-.rb-ruler span { position: absolute; top: 2px; } .rb-ruler.v span { left: 2px; writing-mode: vertical-rl; transform: rotate(180deg); }
-.rb-end { position: fixed; left: 50%; bottom: 44px; z-index: 100000; display: flex; align-items: center; gap: 10px; padding: 7px 8px 7px 12px; transform: translateX(-50%);
-  background: rgba(5,9,19,.9); color: #e2e8f0; border: 1px solid #1e293b; border-radius: 999px; font: 12px "Segoe UI", system-ui, sans-serif;
-  box-shadow: 0 10px 30px rgba(0,0,0,.45); animation: rbEnd .4s cubic-bezier(.2,.8,.2,1) both; }
-.rb-end.out { opacity: 0; transition: opacity .4s; }
-@keyframes rbEnd { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
-.rb-end .dots { display: flex; padding-left: 3px; } .rb-end .dots i { width: 9px; height: 9px; border-radius: 50%; margin-left: -3px; border: 1.5px solid #050913; }
-.rb-end b { font-weight: 600; color: #fff; }
-.rb-end button { border: 0; border-radius: 999px; padding: 5px 12px; font: 600 11px "Segoe UI", system-ui, sans-serif; cursor: pointer; background: #3b82f6; color: #fff; }
-.rb-end button.x { background: transparent; color: #94a3b8; padding: 5px 7px; }
-.rb-end button:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
 .rb-rip { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; border: 1.5px solid var(--a); box-sizing: border-box; animation: rbRip .55s ease-out both; }
 @keyframes rbRip { from { transform: scale(.2); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
 
@@ -292,7 +265,6 @@
   };
   // real apps, in build order (none that need the network)
   const APP_IDS = ["cmd", "paint", "projects", "msn", "calendar", "mine", "solitaire", "spider", "snake", "about"];
-  const APP_AT = [9400, 10600, 11800, 13000, 14200, 15400, 16600, 17800, 19000, 20800];
   const APP_SPOT = [[.3, .4], [.7, .36], [.22, .62], [.78, .62], [.56, .4], [.4, .62], [.62, .34], [.34, .46], [.66, .56], [.5, .5]];
 
   let running = false;
@@ -368,8 +340,6 @@
       <div class="rb-layer rb-apps"></div><div class="rb-wall"></div>
       <div class="rb-sew"><svg width="${vw}" height="${vh}" viewBox="0 0 ${vw} ${vh}" style="position:absolute;left:0;top:0;overflow:visible"><defs><linearGradient id="rbNdG" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="#f8fafc"/><stop offset=".45" stop-color="#cbd5e1"/><stop offset="1" stop-color="#475569"/></linearGradient></defs></svg></div>
-      <div class="rb-ruler h">${Array.from({ length: Math.ceil(vw / 100) }, (_, n) => `<span style="left:${n * 100 + 2}px">${n * 100}</span>`).join("")}</div>
-      <div class="rb-ruler v">${Array.from({ length: Math.ceil(vh / 100) }, (_, n) => `<span style="top:${n * 100 - 14}px">${n * 100}</span>`).join("")}</div>
       <div class="rb-fx"></div><div class="rb-ags"></div>
       <div class="rb-glitch-bars">${Array.from({ length: 7 }, () => `<i style="top:${rand(0, 96).toFixed(1)}%;height:${rand(1, 9).toFixed(1)}px"></i>`).join("")}</div>
       <div class="rb-intro"><div class="rb-intro-t">&nbsp;</div><div class="rb-intro-bar"></div><div class="rb-intro-s">&nbsp;</div></div>
@@ -447,7 +417,9 @@
         const top = Math.min(...ready.map((t) => t.pri));
         const t = ready.filter((t) => t.pri === top).sort((p, r) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(r.x - a.x, r.y - a.y))[0];
         queue.splice(queue.indexOf(t), 1);
+        a.cur = t.id;
         try { await t.run(a); } catch (e) { console.error("rebuild task", t.id, e); }
+        a.cur = null;
         doneIds.add(t.id);
       }
     }
@@ -464,14 +436,7 @@
       f.style.width = r.w + "px"; f.style.height = r.h + "px";
       await go(a, r.x + r.w, r.y + r.h, ms, "cubic-bezier(.5,0,.2,1)");
       f.classList.add("set");
-      guides(r);
       return f;
-    };
-    const guides = (r) => {
-      if (Math.random() < 0.45) return;
-      const v = document.createElement("div"), h = document.createElement("div");
-      v.className = "rb-gd v"; v.style.left = r.x + "px"; h.className = "rb-gd h"; h.style.top = r.y + "px";
-      fx.append(v, h); at(600, () => { v.remove(); h.remove(); });
     };
     const unframe = (f, delay = 200) => at(delay, () => { f.classList.add("gone"); at(500, () => f.remove()); });
 
@@ -714,16 +679,18 @@
         c.classList.remove("min", "max");
         c.style.width = w + "px"; c.style.height = h + "px";
         c.setAttribute("aria-hidden", "true"); c.inert = true;
+        // inside the overlay it would inherit the overlay's light text: give it the page's own text styles back
+        ["color", "font", "lineHeight", "letterSpacing", "textAlign"].forEach((key) => (c.style[key] = bs[key]));
         return c;
       };
-      const rl = make(), wf = make();
+      const rl = make();
       const src = el.querySelectorAll("canvas");
       rl.querySelectorAll("canvas").forEach((c, i) => { try { c.getContext("2d")?.drawImage(src[i], 0, 0); } catch {} });
       const title = el.querySelector(".ttl")?.textContent || id;
       try { opts.close?.(id); } catch {}
       opened.delete(id);
       skipBtn.focus({ preventScroll: true });
-      return w > 20 && h > 20 ? { id, w, h, tb, rl, wf, title } : null;
+      return w > 20 && h > 20 ? { id, w, h, tb, rl, title } : null;
     };
     const prepAll = async () => { for (const id of APP_IDS) apps.push(await prepApp(id)); };
 
@@ -749,12 +716,47 @@
       // containers too big to move as one give way to the pieces inside them
       let o = [...new Set(c)].map((e) => ({ e, r: e.getBoundingClientRect() })).filter((p) => ok(p.r));
       o = o.filter((p) => !o.some((q) => q !== p && q.e.contains(p.e)));
-      const max = 14, step = Math.max(1, o.length / max);
+      const max = 24, step = Math.max(1, o.length / max);
       return Array.from({ length: Math.min(max, o.length) }, (_, n) => o[Math.floor(n * step)]);
+    };
+    // one piece of a window: text gets typed, a text box is outlined first, an image is pulled out to size from its corner,
+    // anything else is picked up nearby and dragged into place
+    const buildPiece = async (b, e, k, win) => {
+      const pr = e.getBoundingClientRect(), cx = pr.left + pr.width / 2, cy = pr.top + pr.height / 2;
+      if (isText(e)) return typeEl(b, e, k, win.x + win.w - 8);
+      if (e.matches("input, textarea, select")) {
+        say(b, "text box");
+        const fr = await frame(b, { x: pr.left, y: pr.top, w: pr.width, h: pr.height }, e.tagName.toLowerCase(), 240 * k);
+        e.classList.remove("rb-hide");
+        e.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 * sp });
+        return unframe(fr, 120);
+      }
+      if (pr.width >= 28 && pr.height >= 28 && (e.matches("img, canvas, .avatar") || /photo|avatar|pic|img/i.test(e.className))) {
+        say(b, "resize");
+        await go(b, pr.left + pr.width * 0.3, pr.top + pr.height * 0.3); click(b);
+        e.classList.remove("rb-hide");
+        const t = 420 * k;
+        e.style.transformOrigin = "0 0";
+        e.animate([{ scale: "0.3", opacity: 0.4 }, { scale: "1", opacity: 1 }], { duration: t * sp, easing: "cubic-bezier(.3,.7,.3,1)", fill: "backwards" });
+        const fr = document.createElement("div");
+        fr.className = "rb-fr set" + (pr.top < 34 ? " lo" : "");
+        fr.style.cssText = `left:${pr.left}px;top:${pr.top}px;width:${pr.width * 0.3}px;height:${pr.height * 0.3}px;--t:${t * sp}ms`;
+        fr.innerHTML = `<i></i><i></i><i></i><i></i><b class="rb-chip">resize · ${Math.round(pr.width)}×${Math.round(pr.height)}</b>`;
+        fx.appendChild(fr); void fr.offsetWidth; fr.style.width = pr.width + "px"; fr.style.height = pr.height + "px";
+        await go(b, pr.right, pr.bottom, t, "cubic-bezier(.3,.7,.3,1)");
+        return unframe(fr, 150);
+      }
+      const ox = clamp(rand(-150, 150), win.x + 12 - cx, win.x + win.w - 12 - cx), oy = clamp(rand(-110, 110), win.y + win.tb + 12 - cy, win.y + win.h - 12 - cy), t = 340 * k;
+      say(b, "place");
+      await go(b, cx + ox, cy + oy); click(b);
+      e.classList.remove("rb-hide");
+      e.animate([{ translate: `${ox}px ${oy}px`, scale: "0.6", opacity: 0 }, { opacity: 1, offset: 0.25 }, { translate: "0px 0px", scale: "1", opacity: 1 }],
+        { duration: t * sp, easing: "cubic-bezier(.2,.75,.25,1.15)", fill: "backwards" });
+      await go(b, cx, cy, t, "cubic-bezier(.2,.75,.25,1.15)");
     };
     // typed in, the cursor running along the line
     const typeEl = async (b, e, k, xMax) => {
-      const r = e.getBoundingClientRect(), cy = r.top + r.height / 2, n = Math.min(40, e.textContent.trim().length), t = clamp(n * 20, 220, 700) * k;
+      const r = e.getBoundingClientRect(), cy = r.top + r.height / 2, n = Math.min(40, e.textContent.trim().length), t = clamp(n * 12, 150, 420) * k;
       say(b, "type");
       await go(b, r.left, cy);
       e.classList.remove("rb-hide");
@@ -793,28 +795,46 @@
       // paint: three agents draw on the canvas at once
       paint(rl, base, k) {
         const cv = rl.querySelector(".paint-area canvas"), area = rl.querySelector(".paint-area"); if (!cv || !area) return;
+        const tools = [...rl.querySelectorAll(".pt-grid button")], swatches = [...rl.querySelectorAll(".palette i[data-c]")], fgc = rl.querySelector(".swatch .fgc");
         const r = cv.getBoundingClientRect(), ar = area.getBoundingClientRect(), W = Math.min(r.width, ar.width) - 10, H = Math.min(r.height, ar.height) - 10;
         const ctx = cv.getContext("2d"), sx = cv.width / r.width, sy = cv.height / r.height;
-        const seg = (pts, n = 6) => pts.slice(1).flatMap((p, i) => Array.from({ length: n }, (_, j) => [pts[i][0] + ((p[0] - pts[i][0]) * (j + 1)) / n, pts[i][1] + ((p[1] - pts[i][1]) * (j + 1)) / n]));
-        const R0 = Math.min(W, H) * 0.12;
-        const shapes = [
-          ["#f5b700", Array.from({ length: 25 }, (_, i) => [W * 0.2 + Math.cos((i / 24) * Math.PI * 2) * R0, H * 0.28 + Math.sin((i / 24) * Math.PI * 2) * R0])],
-          ["#1e5fd0", [[W * 0.48, H * 0.78], ...seg([[W * 0.48, H * 0.78], [W * 0.48, H * 0.5], [W * 0.62, H * 0.32], [W * 0.76, H * 0.5], [W * 0.76, H * 0.78], [W * 0.48, H * 0.78]])]],
-          ["#2e9d3a", Array.from({ length: 30 }, (_, i) => [W * 0.04 + (W * 0.92 * i) / 29, H * 0.9 + Math.sin(i * 1.3) * 5])],
+        const line = (pts, n = 6) => [pts[0], ...pts.slice(1).flatMap((q, i) => Array.from({ length: n }, (_, j) => [pts[i][0] + ((q[0] - pts[i][0]) * (j + 1)) / n, pts[i][1] + ((q[1] - pts[i][1]) * (j + 1)) / n]))];
+        const ring = (cx, cy, rx, ry = rx, n = 24) => Array.from({ length: n + 1 }, (_, i) => [cx + Math.cos((i / n) * Math.PI * 2) * rx, cy + Math.sin((i / n) * Math.PI * 2) * ry]);
+        const R0 = Math.min(W, H) * 0.1, sun = [W * 0.16, H * 0.24];
+        // [colour from the palette, tool, strokes]: each one is one agent's drawing
+        const ART = [
+          ["#ff8040", "brush", [ring(sun[0], sun[1], R0)]],
+          ["#ff8040", "pencil", Array.from({ length: 8 }, (_, i) => { const t = (i / 8) * Math.PI * 2; return line([[sun[0] + Math.cos(t) * R0 * 1.35, sun[1] + Math.sin(t) * R0 * 1.35], [sun[0] + Math.cos(t) * R0 * 1.85, sun[1] + Math.sin(t) * R0 * 1.85]], 2); })],
+          ["#0080ff", "pencil", [Array.from({ length: 22 }, (_, i) => [W * (0.3 + 0.18 * (i / 21)), H * 0.2 - Math.abs(Math.sin((i / 21) * Math.PI * 3)) * R0 * 0.7])]],
+          ["#0000ff", "pencil", [line([[W * 0.42, H * 0.82], [W * 0.42, H * 0.52], [W * 0.66, H * 0.52], [W * 0.66, H * 0.82], [W * 0.42, H * 0.82]])]],
+          ["#800000", "brush", [line([[W * 0.39, H * 0.53], [W * 0.54, H * 0.34], [W * 0.69, H * 0.53]])]],
+          ["#804000", "pencil", [line([[W * 0.51, H * 0.82], [W * 0.51, H * 0.66], [W * 0.57, H * 0.66], [W * 0.57, H * 0.82]], 4)]],
+          ["#0080ff", "pencil", [line([[W * 0.45, H * 0.58], [W * 0.49, H * 0.58], [W * 0.49, H * 0.64], [W * 0.45, H * 0.64], [W * 0.45, H * 0.58]], 3)]],
+          ["#804000", "brush", [line([[W * 0.82, H * 0.86], [W * 0.82, H * 0.6]], 5)]],
+          ["#008000", "brush", [ring(W * 0.82, H * 0.5, R0 * 0.9, R0 * 0.8)]],
+          ["#008000", "brush", [Array.from({ length: 30 }, (_, i) => [W * 0.04 + (W * 0.92 * i) / 29, H * 0.93 + Math.sin(i * 1.3) * 4])]],
+          ["#ff0000", "pencil", [line([[W * 0.88, H * 0.1], [W * 0.88, H * 0.3]], 4), line([[W * 0.88, H * 0.22], [W * 0.9, H * 0.19], [W * 0.92, H * 0.22], [W * 0.92, H * 0.3]], 3), line([[W * 0.955, H * 0.21], [W * 0.955, H * 0.3]], 3), [[W * 0.955, H * 0.15], [W * 0.957, H * 0.155]]]],
         ];
-        shapes.forEach(([color, pts], n) => task(`${base}:draw${n}`, async (a) => {
+        ART.forEach(([color, tool, strokes], n) => task(`${base}:draw${n}`, async (a) => {
+          // pick the tool, then the colour, then draw
+          const tb = tools.find((bt) => bt.dataset.t === tool);
+          if (tb) { say(a, tool); const [tx, ty] = mid(tb); await go(a, tx, ty); click(a); tools.forEach((bt) => bt.setAttribute("aria-pressed", bt === tb ? "true" : "false")); }
+          const sw = swatches.find((q) => q.dataset.c === color);
+          if (sw) { say(a, "colour"); const [qx, qy] = mid(sw); await go(a, qx, qy); click(a); if (fgc) fgc.style.background = color; }
           say(a, "draw");
-          const P = pts.map(([px, py]) => [r.left + 5 + px, r.top + 5 + py]);
-          await go(a, P[0][0], P[0][1]); click(a);
-          ctx.strokeStyle = color; ctx.lineWidth = 4 * sx; ctx.lineCap = ctx.lineJoin = "round";
-          for (let i = 1; i < P.length; i++) {
-            await go(a, P[i][0], P[i][1], 30 * k, "linear");
-            ctx.beginPath(); ctx.moveTo((P[i - 1][0] - r.left) * sx, (P[i - 1][1] - r.top) * sy); ctx.lineTo((P[i][0] - r.left) * sx, (P[i][1] - r.top) * sy); ctx.stroke();
+          ctx.strokeStyle = color; ctx.lineWidth = (tool === "brush" ? 6 : 3) * sx; ctx.lineCap = ctx.lineJoin = "round";
+          for (const st of strokes) {
+            const P = st.map(([px, py]) => [r.left + 5 + px, r.top + 5 + py]);
+            await go(a, P[0][0], P[0][1]); click(a);
+            for (let i = 1; i < P.length; i++) {
+              await go(a, P[i][0], P[i][1], 30 * k, "linear");
+              ctx.beginPath(); ctx.moveTo((P[i - 1][0] - r.left) * sx, (P[i - 1][1] - r.top) * sy); ctx.lineTo((P[i][0] - r.left) * sx, (P[i][1] - r.top) * sy); ctx.stroke();
+            }
           }
-        }, { deps: [base + ":b"], pri: -1, x: r.left + W * (0.2 + n * 0.3), y: r.top + H / 2 }));
+        }, { deps: [base + ":b"], pri: -1, x: r.left + W * ((n % 4) / 4), y: r.top + H / 2 }));
       },
       // calendar: the month is drawn row by row while two agents throw photos up from the bottom of the screen onto the days
-      calendar(rl, base, k) {
+      calendar(rl, base, k, partIds) {
         const g = rl.querySelector(".cal.big"); if (!g?.children.length) return;
         const rowIds = drawRows(g, base, k, "calendar");
         const days = [...g.querySelectorAll("button[data-d]")].map((d) => [Math.random(), d]).sort((p, q) => p[0] - q[0]).slice(0, 6).map((p) => p[1]);
@@ -845,39 +865,115 @@
             await wait(220 * k);
           }
         }, { deps: rowIds, pri: -1, x: vw / 2, y: vh - 30 }));
+        // and someone adds a task and ticks it off
+        const ct = rl.querySelector(".cal-add .ctext"), list = rl.querySelector(".task-list");
+        if (ct && list) task(`${base}:task`, async (a) => {
+          const [, cy, cr] = mid(ct), txt = "ship the visual rebuild";
+          say(a, "add task");
+          await go(a, cr.left + 6, cy); click(a);
+          for (let n = 2; n <= txt.length; n += 2) { ct.value = txt.slice(0, n); if (n % 6 === 0) tick(); await go(a, cr.left + 6 + Math.min(cr.width - 16, n * 6.2), cy, 55 * k, "linear"); }
+          ct.value = txt; await wait(160); ct.value = "";
+          const li = document.createElement("li");
+          li.innerHTML = `<input type="checkbox" class="tdone" tabindex="-1"><span class="ttext">${esc(txt)}</span>`;
+          list.prepend(li);
+          li.animate([{ opacity: 0, translate: "0 -6px" }, { opacity: 1, translate: "0 0" }], { duration: 240 * sp });
+          const cb = li.querySelector("input"), [bx, by] = mid(cb);
+          say(a, "done");
+          await go(a, bx, by, 300 * k); click(a);
+          cb.checked = true; li.classList.add("done");
+        }, { deps: [base + ":b", ...partIds], pri: -1, x: ct.getBoundingClientRect().left, y: ct.getBoundingClientRect().top });
       },
-      // command prompt: someone types "help" and the swarm types the answer
+      // command prompt: three commands typed in, and the swarm types each answer
       cmd(rl, base, k, partIds) {
         const inp = rl.querySelector(".cmd .line input"), out = rl.querySelector(".cmd .out"); if (!inp || !out) return;
-        const [, iy, ir] = mid(inp);
-        task(`${base}:help`, async (a) => {
-          say(a, "help");
-          await go(a, ir.left + 4, iy); click(a);
-          for (let n = 1; n <= 4; n++) { inp.value = "help".slice(0, n); tick(); await go(a, ir.left + 4 + n * 8, iy, 120 * k, "linear"); }
-          await wait(150);
-          inp.value = "";
-          const lines = ["help", "Available commands:", "  ABOUT     - Displays biography", "  PROJECTS  - Lists showcase projects", "  GAMES     - Lists the games you can play"]
-            .map((l) => { const sp0 = document.createElement("span"); sp0.className = "rb-tl rb-hide"; sp0.textContent = l; out.appendChild(sp0); return sp0; });
-          lines.forEach((e, n) => task(`${base}:out${n}`, (b) => typeEl(b, e, k, ir.right), { deps: n ? [`${base}:out${n - 1}`] : [], pri: -1, x: ir.left, y: iy }));
-        }, { deps: [base + ":b", ...partIds], pri: -1, x: ir.left, y: iy });
+        const promptTxt = rl.querySelector(".cmd .prompt")?.textContent || ">", d = new Date(), p2 = (v) => String(v).padStart(2, "0");
+        const RUNS = [
+          ["help", ["Available commands:", "  ABOUT     - Displays biography", "  PROJECTS  - Lists showcase projects", "  GAMES     - Lists the games you can play"]],
+          ["whoami", ["mk-pc\\medhansh   (Medhansh Khattar, AI/ML engineer)"]],
+          ["date", [`The current date is: ${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()]} ${p2(d.getMonth() + 1)}/${p2(d.getDate())}/${d.getFullYear()}`]],
+        ];
+        const mk = (text) => { const e = document.createElement("span"); e.className = "rb-tl rb-hide rb-gone"; e.textContent = text; out.appendChild(e); return e; };
+        let prev = [base + ":b", ...partIds];
+        RUNS.forEach(([cmdText, lines], c) => {
+          const echo = mk(promptTxt + cmdText), outs = lines.map(mk), gap = mk(" "), id = `${base}:cmd${c}`;
+          task(id, async (a) => {
+            const [, iy, ir] = mid(inp);
+            say(a, cmdText);
+            await go(a, ir.left + 4, iy); click(a);
+            for (let n = 1; n <= cmdText.length; n++) { inp.value = cmdText.slice(0, n); tick(); await go(a, ir.left + 4 + n * 8, iy, 80 * k, "linear"); }
+            await wait(150);
+            inp.value = "";
+            echo.classList.remove("rb-gone", "rb-hide"); gap.classList.remove("rb-gone", "rb-hide");
+            outs.forEach((e) => e.classList.remove("rb-gone"));
+          }, { deps: prev, pri: -1, x: inp.getBoundingClientRect().left, y: inp.getBoundingClientRect().top });
+          const ids = outs.map((e, n) => { const oid = `${id}:o${n}`; task(oid, (b) => typeEl(b, e, k, Infinity), { deps: [id], pri: -1, x: inp.getBoundingClientRect().left, y: inp.getBoundingClientRect().top + n * 14 }); return oid; });
+          prev = ids.length ? ids : [id];
+        });
       },
-      // msn: someone types a message and sends it, and a reply comes back
+      // msn: two messages back and forth, then a nudge that shakes the window
       msn(rl, base, k, partIds) {
-        const ta = rl.querySelector(".msn-bar textarea"), log = rl.querySelector(".msn-log"), btn = rl.querySelector(".msn-bar button"); if (!ta || !log) return;
-        const [, , tr] = mid(ta);
-        task(`${base}:chat`, async (a) => {
+        const ta = rl.querySelector(".msn-bar textarea"), log = rl.querySelector(".msn-log"), send = rl.querySelector(".msn-bar .send"), nudge = rl.querySelector(".msn-bar .nudge");
+        if (!ta || !log) return;
+        const say2 = (who, text, cls) => {
+          const el = document.createElement("p"); el.innerHTML = `<b>${esc(who)} says:</b><br><span class="${cls}">${esc(text)}</span>`; log.appendChild(el); log.scrollTop = log.scrollHeight;
+          el.animate([{ opacity: 0, translate: "0 6px" }, { opacity: 1, translate: "0 0" }], { duration: 260 * sp });
+        };
+        const typeMsg = async (a, msg) => {
+          const [, , tr] = mid(ta);
           say(a, "typing");
           await go(a, tr.left + 8, tr.top + 12); click(a);
-          const msg = "hey! who built this site?";
           for (let n = 2; n <= msg.length; n += 2) { ta.value = msg.slice(0, n); if (n % 6 === 0) tick(); await go(a, tr.left + 8 + Math.min(tr.width - 24, n * 6), tr.top + 12, 50 * k, "linear"); }
           ta.value = msg;
-          if (btn) { const [bx, by] = mid(btn); await go(a, bx, by, 220 * k); click(a); }
-          ta.value = "";
-          const say2 = (who, text, cls) => { const el = document.createElement("p"); el.innerHTML = `<b>${esc(who)} says:</b><br><span class="${cls}">${esc(text)}</span>`; log.appendChild(el); el.animate([{ opacity: 0, translate: "0 6px" }, { opacity: 1, translate: "0 0" }], { duration: 260 * sp }); };
-          say2("You", msg, "");
-          await wait(500 * k);
-          say2("Medhansh", "a swarm of tiny agents. they're still at it.", "them");
-        }, { deps: [base + ":b", ...partIds], pri: -1, x: tr.left, y: tr.top });
+          if (send) { const [bx, by] = mid(send); say(a, "send"); await go(a, bx, by, 220 * k); click(a); }
+          ta.value = ""; say2("You", msg, "");
+        };
+        task(`${base}:chat`, async (a) => {
+          await typeMsg(a, "hey! who built this site?");
+          await wait(450 * k); say2("Medhansh", "a swarm of tiny agents. they're still at it.", "them");
+          await wait(300 * k);
+          await typeMsg(a, "can they build mine too?");
+          await wait(450 * k); say2("Medhansh", "sure, give them forty seconds.", "them");
+          if (nudge) {
+            const [nx, ny] = mid(nudge);
+            say(a, "nudge"); await go(a, nx, ny, 240 * k); click(a);
+            say2("You", "*sent a nudge*", "");
+            rl.parentElement.animate([{ translate: "0 0" }, { translate: "-10px 2px" }, { translate: "9px -2px" }, { translate: "-7px 1px" }, { translate: "6px -1px" }, { translate: "-3px 0" }, { translate: "0 0" }], { duration: 480 * sp });
+            blip(160, 0.3, "square", 0.06, 90);
+          }
+        }, { deps: [base + ":b", ...partIds], pri: -1, x: ta.getBoundingClientRect().left, y: ta.getBoundingClientRect().top });
+      },
+      // about me: once the top is built, the page is scrolled a screen at a time and each new section is built as it comes into view
+      about(rl, base, k, partIds, win) {
+        const sc = [...rl.querySelectorAll("*")].find((e) => e.scrollHeight > e.clientHeight + 40 && /(auto|scroll)/.test(getComputedStyle(e).overflowY));
+        if (!sc) return;
+        const box = sc.getBoundingClientRect();
+        const below = [...sc.querySelectorAll(PART_SEL)].filter((e) => !e.closest(SPECIAL_OWN)).map((e) => ({ e, r: e.getBoundingClientRect() }))
+          .filter((q) => q.r.width >= 8 && q.r.height >= 8 && q.r.height <= box.height * 0.8 && q.r.top >= box.bottom - 6);
+        const items = below.filter((q) => !below.some((o) => o !== q && o.e.contains(q.e))).map((q) => q.e);
+        items.forEach((e) => e.classList.add("rb-hide"));
+        const thumb = (st) => box.top + 18 + (st / Math.max(1, sc.scrollHeight - sc.clientHeight)) * (box.height - 50);
+        const scrollTo = async (a, to) => {
+          const from = sc.scrollTop, steps = 14, t = 600 * k;
+          await go(a, box.right - 7, thumb(from)); click(a);
+          for (let s2 = 1; s2 <= steps; s2++) { sc.scrollTop = from + ((to - from) * s2) / steps; await go(a, box.right - 7, thumb(sc.scrollTop), t / steps, "linear"); }
+        };
+        const page = (n, deps) => task(`${base}:page${n}`, async (a) => {
+          const max = sc.scrollHeight - sc.clientHeight, to = Math.min(max, sc.scrollTop + sc.clientHeight * 0.8);
+          const done = to <= sc.scrollTop + 4 || n > 1;
+          if (done) {
+            // back to the top; anything still unbuilt simply shows
+            say(a, "scroll"); await scrollTo(a, 0);
+            items.forEach((e) => e.classList.remove("rb-hide"));
+            return;
+          }
+          say(a, "scroll");
+          await scrollTo(a, to);
+          const vis = sc.getBoundingClientRect();
+          const now = items.filter((e) => e.classList.contains("rb-hide")).filter((e) => { const q = e.getBoundingClientRect(); return q.bottom > vis.top + 4 && q.top < vis.bottom - 4; });
+          const ids = now.slice(0, 14).map((e, j) => { const id = `${base}:pg${n}:${j}`; const q = e.getBoundingClientRect(); task(id, (b) => buildPiece(b, e, k, win), { pri: -1, x: q.left, y: q.top }); return id; });
+          page(n + 1, ids);
+        }, { deps, pri: -1, x: box.right, y: box.top });
+        page(0, [base + ":b", ...partIds]);
       },
     };
     function drawRows(g, base, k, label) {
@@ -922,6 +1018,20 @@
         }, { deps: [base + ":deck"], pri: -1, x: ox, y: oy });
       }
     }
+    // a finished window shrinks down into the taskbar, the way XP minimises, so only two or three are ever on screen
+    const minimize = (i) => {
+      const app = apps[i], wrap = app?.wrap; if (!wrap?.isConnected) return;
+      const base = "app:" + app.id;
+      for (let n = queue.length - 1; n >= 0; n--) if (queue[n].id === base || queue[n].id.startsWith(base + ":")) queue.splice(n, 1);
+      wrap.querySelectorAll(".rb-hide").forEach((e) => e.classList.remove("rb-hide"));
+      if (wrap.f) unframe(wrap.f, 0);
+      delete appRects[app.id];
+      wrap.style.transformOrigin = "0 0";
+      wrap.classList.add("min");
+      wrap.style.transform = `translate(${60 + (i % 6) * 110}px, ${vh - 22}px) scale(0.05)`;
+      blip(520, 0.12, "sine", 0.05, 260);
+      at(560, () => wrap.remove());
+    };
     const buildApp = (app, i) => {
       const [fx0, fy0] = APP_SPOT[i % APP_SPOT.length];
       const top = 16, bottom = vh - 16, w = app.w, h = app.h;
@@ -930,8 +1040,9 @@
       const wrap = document.createElement("div");
       wrap.className = "rb-app";
       wrap.style.cssText = `width:${w}px;height:${h}px;transform:translate(${x}px,${y}px);--tb:${app.tb}px`;
-      app.wf.classList.add("rb-wf"); app.rl.classList.add("rb-rl");
-      wrap.append(app.wf, app.rl);
+      app.rl.classList.add("rb-rl");
+      wrap.append(app.rl);
+      app.wrap = wrap;
       wrap.insertAdjacentHTML("beforeend", `<div class="rb-scan"></div>`);
       const k = clamp(1 - i * 0.04, 0.68, 1); // later apps build faster: the crescendo
       const base = "app:" + app.id;
@@ -942,47 +1053,12 @@
         focusPt = [x + w / 2, y + h / 2];
         thud();
         const parts = pickParts(app.rl, w, h);
+        const win = { x, y, w, h, tb: app.tb };
         parts.forEach(({ e, r: pr }, j) => {
           e.classList.add("rb-hide");
-          const cx = pr.left + pr.width / 2, cy = pr.top + pr.height / 2;
-          task(`${base}:p${j}`, async (b) => {
-            if (isText(e)) await typeEl(b, e, k, x + w - 8);
-            else if (e.matches("input, textarea, select")) {
-              // a text box: its outline is drawn first, then it fills in
-              say(b, "text box");
-              const fr = await frame(b, { x: pr.left, y: pr.top, w: pr.width, h: pr.height }, e.tagName.toLowerCase(), 320 * k);
-              e.classList.remove("rb-hide");
-              e.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 * sp });
-              unframe(fr, 120);
-            } else if (pr.width >= 28 && pr.height >= 28 && (e.matches("img, canvas, .avatar") || /photo|avatar|pic|img/i.test(e.className))) {
-              // an image: dropped in small, then pulled out to size from its corner
-              say(b, "resize");
-              await go(b, pr.left + pr.width * 0.3, pr.top + pr.height * 0.3); click(b);
-              e.classList.remove("rb-hide");
-              const t = 520 * k;
-              e.style.transformOrigin = "0 0";
-              e.animate([{ scale: "0.3", opacity: 0.4 }, { scale: "1", opacity: 1 }], { duration: t * sp, easing: "cubic-bezier(.3,.7,.3,1)", fill: "backwards" });
-              const fr = document.createElement("div");
-              fr.className = "rb-fr set" + (pr.top < 34 ? " lo" : "");
-              fr.style.cssText = `--a:${b.color};left:${pr.left}px;top:${pr.top}px;width:${pr.width * 0.3}px;height:${pr.height * 0.3}px;--t:${t * sp}ms`;
-              fr.innerHTML = `<i></i><i></i><i></i><i></i><b class="rb-chip">resize · ${Math.round(pr.width)}×${Math.round(pr.height)}</b>`;
-              fx.appendChild(fr); void fr.offsetWidth; fr.style.width = pr.width + "px"; fr.style.height = pr.height + "px";
-              await go(b, pr.right, pr.bottom, t, "cubic-bezier(.3,.7,.3,1)");
-              unframe(fr, 150);
-            } else {
-              // picked up nearby and dragged into place
-              const ox = clamp(rand(-150, 150), x + 12 - cx, x + w - 12 - cx), oy = clamp(rand(-110, 110), y + app.tb + 12 - cy, y + h - 12 - cy), t = 440 * k;
-              say(b, "place");
-              await go(b, cx + ox, cy + oy); click(b);
-              e.classList.remove("rb-hide");
-              e.animate([{ translate: `${ox}px ${oy}px`, scale: "0.6", opacity: 0 }, { opacity: 1, offset: 0.25 }, { translate: "0px 0px", scale: "1", opacity: 1 }],
-                { duration: t * sp, easing: "cubic-bezier(.2,.75,.25,1.15)", fill: "backwards" });
-              await go(b, cx, cy, t, "cubic-bezier(.2,.75,.25,1.15)");
-              guides({ x: pr.left, y: pr.top });
-            }
-          }, { deps: [base + ":b"], pri: -1, x: cx, y: cy });
+          task(`${base}:p${j}`, (b) => buildPiece(b, e, k, win), { deps: [base + ":b"], pri: -1, x: pr.left + pr.width / 2, y: pr.top + pr.height / 2 });
         });
-        SPECIAL[app.id]?.(app.rl, base, k, parts.map((_, j) => `${base}:p${j}`));
+        SPECIAL[app.id]?.(app.rl, base, k, parts.map((_, j) => `${base}:p${j}`), win);
         const NAMES = { min: "minimize", max: "maximize", close: "close", fs: "full screen" };
         [...app.rl.querySelectorAll(".titlebar .tbtn")].forEach((bt, n) => {
           bt.classList.add("rb-hide");
@@ -996,7 +1072,7 @@
           }, { deps: [base + ":t"], pri: -1, x: bx, y: by });
         });
         const f = await frame(a, r, "win · " + app.title.replace(/ - .*$/, "").replace(/^.* - /, ""), 360 * k);
-        wrap.classList.add("wf"); click(a);
+        click(a);
         wrap.f = f;
       }, { pri: -1, x, y });
       task(base + ":t", async (a) => {
@@ -1042,7 +1118,7 @@
     at(1000, () => prepAll());
 
     // 2.6-10s: the foundation, back end and front end built together
-    at(2600, () => { intro.classList.add("off"); ov.querySelectorAll(".rb-ruler").forEach((e) => e.classList.add("on")); spawn(4); thud(); });
+    at(2600, () => { intro.classList.add("off"); spawn(4); thud(); });
     // the swarm grows with the work, so nobody stands around waiting for something to do
     const sideIn = (k) => [[-30, vh * (0.25 + k * 0.25)], [vw + 30, vh * (0.3 + k * 0.2)], [vw * (0.3 + k * 0.2), -30]][k % 3];
     at(5400, () => spawn(3, sideIn));
@@ -1059,18 +1135,45 @@
     let sewTimer = 0;
     at(7000, () => { if (!rm) sewTimer = every(narrow ? 320 : 190, stitchOne); });
 
-    // 9-25s: the real apps, stacking on top of each other, the games last and About Me on top
+    // 9-36s: the real apps, stacking on top of each other, the games last and About Me on top
     at(10000, () => { beL.classList.add("under"); });
     at(12500, () => {
       const edges = [[-30, vh * 0.3], [vw + 30, vh * 0.5], [vw * 0.5, vh + 30], [-30, vh * 0.8], [vw + 30, vh * 0.2], [vw * 0.3, -30]];
       spawn(4, (k) => edges[k]); thud();
     });
     at(16000, () => beL.classList.add("under2"));
-    APP_AT.forEach((t, i) => at(t, () => { if (apps[i]) buildApp(apps[i], i); }));
+    // apps open one after another, two or three on screen: the next opens when there is room, and the oldest is
+    // minimised only once its swarm has finished with it. When the last one is done, the ending starts.
+    const mine0 = (base, id) => id === base || id.startsWith(base + ":");
+    const busyWith = (base) => queue.some((t) => mine0(base, t.id)) || ags.some((a) => a.cur && mine0(base, a.cur));
+    const onScreen = [];
+    let nextApp = 0, lastOpen = -1e9, ended = false;
+    let appTimer = 0;
+    const appTick = () => {
+      if (ended) return;
+      while (nextApp < APP_IDS.length && apps[nextApp] === null) nextApp++;
+      const now = performance.now(), allOpened = nextApp >= APP_IDS.length;
+      if (allOpened) {
+        if ((onScreen.every((i) => !busyWith("app:" + apps[i].id)) && now - lastOpen > 1500 * sp) || now - lastOpen > 11000 * sp) { stop(appTimer); at(700, endSeq); }
+        return;
+      }
+      if (apps[nextApp] === undefined || now - lastOpen < 1900 * sp) return;
+      if (onScreen.length >= 3) {
+        const old = apps[onScreen[0]];
+        if (busyWith("app:" + old.id) && now - old.openedAt < 7500 * sp) return;
+        minimize(onScreen.shift());
+      }
+      const i = nextApp++;
+      buildApp(apps[i], i); apps[i].openedAt = now; onScreen.push(i); lastOpen = now;
+    };
+    at(9400, () => (appTimer = every(150, appTick)));
 
-    // 26-29s: the windows fly away and the desktop is built
-    at(25600, () => stop(sewTimer));
-    at(26000, () => {
+    // 36-39s: the windows fly away and the desktop is built
+    function endSeq() {
+    if (ended) return;
+    ended = true; stop(appTimer);
+    stop(sewTimer);
+    at(400, () => {
       queue.length = 0; focusPt = null;
       appsL.querySelectorAll(".rb-hide").forEach((e) => e.classList.remove("rb-hide"));
       [...appsL.children].reverse().forEach((w, k) => at(k * 45, () => {
@@ -1083,7 +1186,7 @@
       sewL.style.opacity = "0";
       blip(55, 1.0, "sawtooth", 0.4, 140);
     });
-    at(26500, () => {
+    at(900, () => {
       clone.classList.add("on");
       q(".rb-vig").classList.add("off");
       pace = 0.7;
@@ -1112,7 +1215,6 @@
         p.el.animate([{ translate: `${ox}px ${oy}px`, scale: "0.6", opacity: 0 }, { opacity: 1, offset: 0.2 }, { translate: "0px 0px", scale: "1", opacity: 1 }],
           { duration: 380 * sp, easing: "cubic-bezier(.2,.75,.25,1.15)", fill: "backwards" });
         await go(a, cx, cy, 380, "cubic-bezier(.2,.75,.25,1.15)");
-        guides(p.r);
       }, { x: p.r.x, y: p.r.y }));
       D.wins.forEach((p, k) => task("uwin" + k, async (a) => {
         say(a, "window");
@@ -1123,8 +1225,8 @@
       }, { x: p.r.x, y: p.r.y }));
     });
 
-    // 29-32s: taskbar, start button, tray: wifi, battery, volume, clock
-    at(28600, () => {
+    // 39-43s: taskbar, start button, tray: wifi, battery, volume, clock
+    at(3000, () => {
       focusPt = [vw / 2, vh - 70];
       D.bar.forEach((p) => task("bar", async (a) => {
         say(a, "taskbar");
@@ -1147,7 +1249,7 @@
     });
 
     // outro: the swarm streams off the screen together, like a flock, and the live desktop takes over
-    at(31200, () => {
+    at(5600, () => {
       queue.length = 0;
       ags.forEach((a, k) => {
         a.home = true; a.el.classList.remove("tag");
@@ -1157,13 +1259,13 @@
         });
       });
       skipBtn.style.opacity = "0"; fx.style.opacity = "0";
-      ov.querySelectorAll(".rb-ruler").forEach((e) => e.classList.remove("on"));
       // anything the swarm did not reach in time is simply shown
       clone.querySelectorAll(".rb-h").forEach((e) => e.classList.add("rb-on"));
     });
-    at(31650, () => { flash.classList.add("go"); real.classList.remove("rb-glitch"); play("startup"); });
-    at(32200, () => finish(false));
-    const tStart = performance.now();
+    at(6050, () => { flash.classList.add("go"); real.classList.remove("rb-glitch"); play("startup"); });
+    at(6600, () => finish(false));
+    }
+    at(52000, endSeq);
 
     // ---------- skip + exit ----------
     const onKey = (e) => {
@@ -1172,20 +1274,6 @@
       else if (e.key === "Tab") { e.preventDefault(); skipBtn.focus(); }
     };
     addEventListener("keydown", onKey, true);
-    // "Rebuilt by N agents in X s", over the live desktop for a few seconds, with Replay
-    function credit() {
-      document.querySelector(".rb-end")?.remove();
-      const pill = document.createElement("div");
-      pill.className = "rb-end"; pill.setAttribute("role", "status");
-      pill.innerHTML = `<span class="dots">${ags.map((a) => `<i style="background:${a.color}"></i>`).join("")}</span>
-        <span>Rebuilt by <b>${ags.length} agents</b> in <b>${((performance.now() - tStart) / 1000).toFixed(1)}s</b></span>
-        <button type="button" class="re">Replay</button><button type="button" class="x" aria-label="Close">✕</button>`;
-      document.body.appendChild(pill);
-      const close = () => { pill.classList.add("out"); setTimeout(() => pill.remove(), 400); };
-      pill.querySelector(".re").onclick = () => { pill.remove(); window.REBUILD(opts); };
-      pill.querySelector(".x").onclick = close;
-      setTimeout(() => pill.isConnected && close(), 7000);
-    }
     function finish(skipped) {
       if (done) return;
       done = true;
@@ -1198,7 +1286,6 @@
       setTimeout(() => {
         ov.remove(); real.classList.remove("rb-reveal"); running = false;
         if (prevFocus?.isConnected) prevFocus.focus?.({ preventScroll: true });
-        if (!skipped) credit();
         opts.onDone?.();
       }, skipped ? 800 : 750);
     }
