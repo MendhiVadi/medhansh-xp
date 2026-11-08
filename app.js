@@ -246,7 +246,7 @@
   });
   // Visual Rebuild (rebuild.js): a purely visual, full-screen rebuild of the site, fetched on first use.
   // Mark 1 (rebuild-mk1.js) is kept so it can still be replayed from Run: "rebuild mk1".
-  const REBUILDS = { cur: ["rebuild.js?v=47", "REBUILD"], mk1: ["rebuild-mk1.js?v=1", "REBUILD_MK1"] };
+  const REBUILDS = { cur: ["rebuild.js?v=48", "REBUILD"], mk1: ["rebuild-mk1.js?v=1", "REBUILD_MK1"] };
   const rebuildReady = {};
   const loadRebuild = (m) => rebuildReady[m] ||= new Promise((ok, fail) => {
     const s = document.createElement("script"); s.src = REBUILDS[m][0]; s.onload = ok; s.onerror = () => { rebuildReady[m] = null; fail(); };

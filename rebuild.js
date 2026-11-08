@@ -1,9 +1,14 @@
-// Visual Rebuild, Mark 2: a ~45 second, purely visual rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
-// 3-10s   the foundation: back-end windows (real source, data, a deploy) and front-end modules, built side by side
-// 7-36s   needles drop in from above, go under the page, come back out and the thread is snipped: no mark is left
-// 9-36s   real app windows built two or three at a time, each minimised when done; the games last and About Me (which scrolls) on top
-// 36-39s  the windows fly away and the desktop (wallpaper, icons) is built
-// 39-43s  the taskbar, start button and tray icons, then it hands back to the live desktop underneath
+// Visual Rebuild, Mark 2: a ~50 second, purely visual rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
+// 0-2.6s    the live desktop glitches out and the title decodes
+// 2.6-9s    01 BACK END: the swarm types the real source into blueprint panels (firestore.rules, api/otp.js, the Firestore
+//           collections, a vercel deploy, the mailer) and wires them up across the whole screen
+// 9-14.5s   02 FRONT END: the modules (index.html, app.js, sound.js, data.js, style.css, the lazy chunks) are built on top of
+//           the dimmed back end, and needles start stitching threads between the two layers
+// 14.5-43s  03 APPS: real app windows, two or three at a time, each outlined as a wireframe, painted top to bottom and filled in
+//           piece by piece with a job for every agent; a window is minimised once its swarm is done with it
+// 43-50s    04 DESKTOP: the windows fly away, the wallpaper opens from the first click, icons, taskbar and tray are placed, the
+//           swarm flies home into the Start button and the live desktop takes over
+// A HUD at the top keeps the phase, the swarm size and the clock, and a caption names each phase as it starts. Space or Esc skips.
 // It is all theatre: nothing here writes data or touches the network. Loaded on demand by app.js.
 (() => {
   const CSS = `
@@ -21,17 +26,17 @@
 .rb-fe.under { opacity: .38; transform: scale(.985); }
 .rb-layer.gone { opacity: 0; }
 
-/* blueprint boxes */
-.rb-box { position: absolute; box-sizing: border-box; border: 1px solid color-mix(in srgb, var(--a) 60%, #1e293b); border-radius: 6px; overflow: hidden;
+/* blueprint boxes: the front-end modules and the small back-end pieces */
+.rb-box, .rb-pn { position: absolute; box-sizing: border-box; border: 1px solid color-mix(in srgb, var(--a) 60%, #1e293b); border-radius: 6px; overflow: hidden;
   background: rgba(7,12,26,.94); font: var(--fs) var(--rb-mono); opacity: 0; transition: opacity .3s, box-shadow .6s; }
-.rb-box.on { opacity: 1; box-shadow: 0 0 0 1px rgba(0,0,0,.45), 0 12px 44px -20px var(--a); }
+.rb-box.on, .rb-pn.on { opacity: 1; box-shadow: 0 0 0 1px rgba(0,0,0,.45), 0 12px 44px -20px var(--a); }
 .rb-box.fe { background: rgba(14,20,38,.96); border-color: var(--a); }
 .rb-box.fe.on { box-shadow: 0 0 0 1px rgba(0,0,0,.5), 0 18px 50px -16px rgba(0,0,0,.9), 0 0 30px -12px var(--a); }
 .rb-bh { display: flex; align-items: center; gap: 8px; height: var(--hdr); padding: 0 10px; border-bottom: 1px solid #16203a; white-space: nowrap;
   clip-path: inset(0 100% 0 0); transition: clip-path .35s steps(10); }
-.rb-box.hd .rb-bh { clip-path: inset(0 0 0 0); }
-.rb-bh b { font-weight: 700; letter-spacing: .12em; color: #f8fafc; }
-.rb-bh small { margin-left: auto; color: var(--a); font-size: .85em; letter-spacing: .06em; overflow: hidden; text-overflow: ellipsis; }
+.rb-box.hd .rb-bh, .rb-pn.hd .rb-bh { clip-path: inset(0 0 0 0); }
+.rb-bh b { font-weight: 700; letter-spacing: .12em; color: #f8fafc; overflow: hidden; text-overflow: ellipsis; }
+.rb-bh small { margin-left: auto; color: var(--a); font-size: .85em; letter-spacing: .06em; overflow: hidden; text-overflow: ellipsis; flex: none; }
 .rb-bh i { width: 7px; height: 7px; border-radius: 50%; background: var(--a); flex: none; box-shadow: 0 0 8px var(--a); }
 .rb-box.fe .rb-bh i { border-radius: 1px; width: 8px; height: 10px; }
 .rb-box.sm { font-size: var(--fss); }
@@ -42,8 +47,6 @@
 .rb-r.on { clip-path: inset(0 0 0 0); }
 .rb-r::before { content: "▸"; color: var(--a); }
 .rb-r em { margin-left: auto; font-style: normal; color: #64748b; font-size: .9em; overflow: hidden; text-overflow: ellipsis; }
-.rb-box.db .rb-r { border-bottom: 1px solid #101a30; }
-.rb-box.db .rb-r::before { content: "▣"; }
 .rb-box .rb-pad { height: 6px; }
 .rb-sw { display: flex; gap: 6px; height: 14px; padding: 4px 10px 2px; clip-path: inset(0 100% 0 0); transition: clip-path .4s steps(8); }
 .rb-sw.on { clip-path: inset(0 0 0 0); }
@@ -56,10 +59,35 @@
 .rb-wire.on { stroke-dashoffset: 0; transition: stroke-dashoffset var(--t) linear; }
 .rb-knot { fill: var(--a); }
 
-/* app windows */
+/* back-end panels: real source typed in by the swarm */
+.rb-pb { position: absolute; left: 0; right: 0; top: var(--hdr); bottom: 0; padding: 8px 0; font: var(--cfs) var(--rb-mono); line-height: var(--clh); color: #c9d1d9; }
+.rb-cl { display: flex; height: var(--clh); white-space: pre; overflow: hidden; clip-path: inset(0 100% 0 0); transition: clip-path var(--t, .3s) steps(var(--n, 12)); }
+.rb-cl.on { clip-path: inset(0 0 0 0); }
+.rb-cl s { flex: none; width: 26px; padding-right: 8px; text-align: right; text-decoration: none; color: #3b4a61; }
+.rb-cl code { font: inherit; overflow: hidden; }
+.rb-pn.term .rb-pb { background: rgba(0,0,0,.5); }
+.rb-pn.term .rb-cl { padding-left: 10px; color: #c0c0c0; }
+.rb-pn.term .rb-cl.p { color: #7ee787; } .rb-pn.term .rb-cl.ok { color: #fff; font-weight: 700; }
+.rb-cl b { font-weight: normal; } .rb-cl b.k { color: #ff7b72; } .rb-cl b.s { color: #a5d6ff; } .rb-cl b.c { color: #8b949e; font-style: italic; } .rb-cl b.n { color: #79c0ff; }
+.rb-pn.db .rb-pb { padding: 6px 0; }
+.rb-dr { display: grid; grid-template-columns: 1.3fr 1fr 44px 30px; gap: 8px; align-items: center; padding: 0 12px; border-bottom: 1px solid #142036; }
+.rb-dr span { color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; } .rb-dr span::before { content: "▣ "; color: var(--a); } .rb-dr em { font-style: normal; color: #64748b; overflow: hidden; text-overflow: ellipsis; }
+.rb-dr i { justify-self: start; height: 6px; width: 0; border-radius: 3px; background: var(--a); transition: width .7s cubic-bezier(.2,.8,.2,1) .15s; }
+.rb-dr.on i { width: var(--w); }
+.rb-dr u { text-decoration: none; text-align: right; color: #94a3b8; }
+
+/* app windows: a wireframe first, then the real window painted top to bottom and filled in piece by piece */
 .rb-app { position: absolute; left: 0; top: 0; transition: transform .85s cubic-bezier(.6,0,.35,1), opacity .75s ease; }
 .rb-app .win { position: absolute !important; left: 0 !important; top: 0 !important; margin: 0 !important; max-width: none !important; max-height: none !important;
   z-index: auto !important; transform: none !important; animation: none !important; pointer-events: none; }
+.rb-app .rb-wf, .rb-app .rb-wf * { background: transparent !important; color: transparent !important; box-shadow: none !important; text-shadow: none !important;
+  border-color: color-mix(in srgb, var(--a) 45%, transparent) !important; caret-color: transparent !important; }
+.rb-app .rb-wf { outline: 1px dashed var(--a); outline-offset: -1px; opacity: 0; transition: opacity .5s; }
+.rb-app .rb-wf * { outline: 1px solid color-mix(in srgb, var(--a) 26%, transparent); outline-offset: -1px; }
+.rb-app .rb-wf svg, .rb-app .rb-wf img, .rb-app .rb-wf canvas, .rb-app .rb-wf .avatar { opacity: 0 !important; }
+.rb-app .rb-wf .rb-wfoff { opacity: 0 !important; transition: opacity .35s; }
+.rb-app.wf .rb-wf { opacity: 1; }
+.rb-app.done .rb-wf { opacity: 0; }
 .rb-app .rb-rl { clip-path: inset(0 100% calc(100% - var(--tb)) 0); transition: clip-path var(--t, .4s) linear; }
 .rb-app .rb-rl.t { clip-path: inset(0 0 calc(100% - var(--tb)) 0); }
 .rb-app .rb-rl.b { clip-path: inset(0 0 0 0); }
@@ -99,14 +127,13 @@
 /* needles and thread */
 .rb-sew { position: absolute; inset: 0; pointer-events: none; transition: opacity .8s; }
 .rb-sew > svg { position: absolute; left: 0; top: 0; overflow: visible; }
-.rb-hole { position: absolute; width: 600px; height: 600px; transform-origin: 300px 300px; pointer-events: none; }
-.rb-ndl { position: absolute; left: 300px; top: 300px; transform-origin: 0 0; }
-.rb-ndl > i { position: absolute; left: 0; top: 0; }
-.rb-ndl > i { filter: blur(1.3px); opacity: .4; }
-.rb-ndl svg { position: absolute; left: -124px; top: -7px; overflow: visible; }
-.rb-pin { position: absolute; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: #020617; box-shadow: 0 0 0 1px rgba(255,255,255,.22); }
-.rb-snip { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: radial-gradient(#fff, rgba(255,255,255,0) 70%); animation: rbSnip .2s ease-out both; }
-@keyframes rbSnip { from { transform: scale(.3); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
+.rb-seam { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 7 5; }
+.rb-seam-u { fill: none; stroke-width: 1; opacity: .3; }
+.rb-sg { transition: opacity 1.2s; } .rb-sg.old { opacity: .3; }
+.rb-nd { position: absolute; left: 0; top: 0; width: 92px; height: 14px; offset-rotate: auto; offset-anchor: 100% 50%; offset-distance: 0%; }
+.rb-nd svg { display: block; width: 92px; height: 14px; overflow: visible; animation: rbBob .26s ease-in-out infinite alternate; }
+@keyframes rbBob { from { transform: translateX(0) scale(1); opacity: 1; } to { transform: translateX(-7px) scale(.9, .8); opacity: .7; } }
+.rb-nd.out { opacity: 0 !important; }
 
 /* swarm */
 .rb-fx, .rb-ags { position: absolute; inset: 0; pointer-events: none; transition: opacity .4s; }
@@ -125,9 +152,9 @@
 .rb-fr.gone { opacity: 0; }
 .rb-ag { position: absolute; left: 0; top: 0; opacity: 0; transition: transform .5s cubic-bezier(.45,0,.2,1), opacity .4s; }
 .rb-ag.on { opacity: 1; }
-.rb-ag svg { display: block; width: 14px; height: 14px; overflow: visible; transform-origin: 1.5px 1.5px; transition: transform .22s ease-out; }
+.rb-ag svg { display: block; width: 16px; height: 16px; overflow: visible; transform-origin: 1.7px 1.7px; transition: transform .22s ease-out; }
 .rb-ag path { fill: var(--a); stroke: #fff; stroke-width: 1.2; stroke-linejoin: round; }
-.rb-ag span { position: absolute; left: 12px; top: 14px; background: var(--a); color: #020617; font: 600 9.5px/1 var(--rb-mono); padding: 3px 6px;
+.rb-ag span { position: absolute; left: 14px; top: 16px; background: var(--a); color: #020617; font: 600 9.5px/1 var(--rb-mono); padding: 3px 6px;
   border-radius: 2px 8px 8px 8px; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.45); opacity: 0; transition: opacity .25s; }
 .rb-ag.tag span { opacity: 1; }
 .rb-ag.click svg path { animation: rbClick .22s ease-out; }
@@ -135,40 +162,31 @@
 .rb-rip { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; border: 1.5px solid var(--a); box-sizing: border-box; animation: rbRip .55s ease-out both; }
 @keyframes rbRip { from { transform: scale(.2); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
 
-/* skip */
-.rb-skip { position: absolute; right: 12px; top: 24px; background: rgba(5,9,19,.55); border: 1px solid #334155; color: #cbd5e1; cursor: pointer; font: 10px var(--rb-mono);
-  letter-spacing: .2em; padding: 4px 10px; border-radius: 999px; opacity: .35; transition: opacity .3s; }
-.rb-skip:hover, .rb-skip:focus-visible { opacity: 1; outline: none; }
-
-/* back-end windows: real source typed in by the swarm */
-.rb-pn { position: absolute; box-sizing: border-box; border: 2px solid #0831d9; border-top: 0; border-radius: 8px 8px 0 0; overflow: hidden; opacity: 0;
-  background: #0d1117; box-shadow: 0 22px 50px -14px rgba(0,0,0,.9), 0 0 0 1px rgba(0,0,0,.4); transition: opacity .25s; }
-.rb-pn.on { opacity: 1; }
-.rb-pt { height: 26px; display: flex; align-items: center; gap: 6px; padding: 0 3px 0 7px; color: #fff; font: bold 12px Tahoma, "Segoe UI", sans-serif; text-shadow: 1px 1px #0f1089;
-  background: linear-gradient(#0997ff, #0053ee 8%, #0050ee 40%, #06f 88%, #06f 93%, #005bff 95%, #003dd7 96%, #003dd7); white-space: nowrap; overflow: hidden;
-  clip-path: inset(0 100% 0 0); transition: clip-path .3s steps(10); }
-.rb-pn.hd .rb-pt { clip-path: inset(0 0 0 0); }
-.rb-pt i { width: 13px; height: 13px; border-radius: 2px; flex: none; background: var(--a); box-shadow: inset 0 0 0 1px rgba(255,255,255,.6); }
-.rb-pt b { overflow: hidden; text-overflow: ellipsis; }
-.rb-pt span { margin-left: auto; display: flex; gap: 2px; }
-.rb-pt u { width: 19px; height: 19px; box-sizing: border-box; border: 1px solid #fff; border-radius: 3px; background: linear-gradient(#3c8cff, #1a5fe0); }
-.rb-pt u:last-child { background: linear-gradient(#e8784a, #c4370f); }
-.rb-pb { position: absolute; left: 0; right: 0; top: 26px; bottom: 0; padding: 8px 0; font: var(--cfs) var(--rb-mono); line-height: var(--clh); color: #c9d1d9; }
-.rb-cl { display: flex; height: var(--clh); white-space: pre; overflow: hidden; clip-path: inset(0 100% 0 0); transition: clip-path var(--t, .3s) steps(var(--n, 12)); }
-.rb-cl.on { clip-path: inset(0 0 0 0); }
-.rb-cl s { flex: none; width: 26px; padding-right: 8px; text-align: right; text-decoration: none; color: #3b4a61; }
-.rb-cl code { font: inherit; overflow: hidden; }
-.rb-pn.term .rb-pb, .rb-pn.term { background: #000; }
-.rb-pn.term .rb-cl { padding-left: 10px; color: #c0c0c0; }
-.rb-pn.term .rb-cl.p { color: #7ee787; } .rb-pn.term .rb-cl.ok { color: #fff; font-weight: 700; }
-.rb-cl b { font-weight: normal; } .rb-cl b.k { color: #ff7b72; } .rb-cl b.s { color: #a5d6ff; } .rb-cl b.c { color: #8b949e; font-style: italic; } .rb-cl b.n { color: #79c0ff; }
-.rb-pn.db .rb-pb { background: #0b1220; }
-.rb-dr { display: grid; grid-template-columns: 1.25fr 1fr 64px 34px; gap: 10px; align-items: center; padding: 0 12px; border-bottom: 1px solid #142036; }
-.rb-dr span { color: #e2e8f0; } .rb-dr span::before { content: "▣ "; color: var(--a); } .rb-dr em { font-style: normal; color: #64748b; }
-.rb-dr i { justify-self: start; height: 6px; width: 0; border-radius: 3px; background: var(--a); transition: width .7s cubic-bezier(.2,.8,.2,1) .15s; }
-.rb-dr.on i { width: var(--w); }
-.rb-dr u { text-decoration: none; text-align: right; color: #94a3b8; }
-
+/* HUD and captions */
+.rb-hud { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 16px; padding: 7px 8px 7px 16px;
+  background: rgba(5,9,19,.84); border: 1px solid #1e293b; border-radius: 999px; font-family: var(--rb-mono); white-space: nowrap;
+  box-shadow: 0 8px 30px rgba(0,0,0,.5); transition: opacity .6s; }
+.rb-hud.off { opacity: 0; pointer-events: none; }
+.rb-brand { font: 700 12px var(--rb-mono); letter-spacing: .32em; color: #fff; }
+.rb-prog { width: 160px; height: 2px; background: #1b2540; position: relative; }
+.rb-prog i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--c); box-shadow: 0 0 10px var(--c); transition: background .6s; }
+.rb-meta { display: flex; gap: 12px; font-size: 11px; color: #64748b; letter-spacing: .1em; }
+.rb-meta b { color: var(--c); letter-spacing: .2em; transition: color .6s; }
+.rb-skip { background: transparent; border: 1px solid #334155; color: #cbd5e1; cursor: pointer; font: 11px var(--rb-mono); letter-spacing: .2em; padding: 5px 12px; border-radius: 999px; }
+.rb-skip small { margin-left: 8px; color: #64748b; letter-spacing: .08em; font-size: 10px; }
+.rb-skip:hover, .rb-skip:focus-visible { border-color: var(--c); color: #fff; outline: none; }
+.rb-cap { position: absolute; left: 0; right: 0; bottom: 34px; text-align: center; pointer-events: none; transition: opacity .6s; }
+.rb-cap.off { opacity: 0; }
+.rb-cap::before { content: ""; position: absolute; left: 50%; top: 50%; width: min(1000px, 96vw); height: 250%; transform: translate(-50%, -48%); z-index: -1;
+  background: radial-gradient(closest-side, rgba(2,4,12,.9), rgba(2,4,12,.6) 55%, transparent); }
+.rb-cap small { display: block; font: 11px var(--rb-mono); letter-spacing: .55em; color: var(--c); transition: color .6s; }
+.rb-cap b { display: block; font: 800 clamp(22px, 3.2vw, 44px)/1.15 var(--rb-sans); letter-spacing: .3em; text-indent: .3em; color: #fff; margin: 6px 0 4px;
+  text-shadow: 0 0 30px color-mix(in srgb, var(--c) 60%, transparent); }
+.rb-cap span { font: 14px var(--rb-sans); color: #94a3b8; letter-spacing: .04em; }
+.rb-cap.swap { animation: rbCap .9s cubic-bezier(.2,.8,.2,1) both; }
+.rb-cap.swap b { animation: rbCapB 1.1s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes rbCap { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes rbCapB { from { letter-spacing: .9em; text-indent: .9em; } to { letter-spacing: .3em; text-indent: .3em; } }
 .rb-vig { position: absolute; inset: 0; pointer-events: none; transition: opacity 1s;
   background: radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,.65) 100%), repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px); }
 .rb-vig.off { opacity: 0; }
@@ -187,6 +205,9 @@
 .rb-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
 .rb-flash.go { animation: rbFlash .8s ease-out both; }
 @keyframes rbFlash { 0% { opacity: 0; } 12% { opacity: .5; } 100% { opacity: 0; } }
+@media (max-width: 700px) { .rb-brand, .rb-meta .rb-clock, .rb-meta .rb-ags-n { display: none; } .rb-prog { width: 70px; } .rb-hud { gap: 10px; }
+  .rb-cap { bottom: 46px; } .rb-cap span { display: block; padding: 0 16px; font-size: 12px; } }
+@media (max-height: 560px) { .rb-cap span { display: none; } }
 #desktop.rb-glitch { animation: rbGlitch 1s steps(1, end) both; }
 @keyframes rbGlitch {
   0% { filter: none; transform: none; clip-path: none; }
@@ -207,11 +228,11 @@
 
   const AGENTS = [["nova", "#f472b6"], ["atlas", "#22d3ee"], ["pixel", "#a3e635"], ["echo", "#fbbf24"], ["flux", "#a78bfa"], ["orbit", "#fb7185"], ["vega", "#34d399"], ["juno", "#60a5fa"],
     ["kite", "#f59e0b"], ["ion", "#2dd4bf"], ["lumen", "#e879f9"], ["quill", "#facc15"], ["rho", "#38bdf8"], ["zed", "#4ade80"]];
-  const YARN = ["#f43f5e", "#fbbf24", "#22d3ee", "#e879f9", "#a3e635", "#fb923c", "#f8fafc"]; // thread colours
+  const THREADS = ["#f43f5e", "#fbbf24", "#22d3ee", "#e879f9", "#a3e635", "#fb923c"];
 
-  // the back end, as real source (condensed): each one is a window the swarm opens and types into
+  // the back end, as real source (condensed): each one is a panel the swarm opens and types into
   const PANELS = {
-    rules: { title: "firestore.rules", kind: "code", lines: [
+    rules: { title: "firestore.rules", tag: "gatekeeper", kind: "code", lines: [
       "rules_version = '2';",
       "// The site talks to Firestore straight from the browser,",
       "// so these rules are the only gatekeeper.",
@@ -222,29 +243,27 @@
       "      allow write: if request.resource.data.text.size() <= 20000;",
       "    }",
       "    match /scores/{id} {",
-      "      allow read: if true;",
       "      allow create: if validScore(request.resource.data);",
       "      allow update, delete: if false;",
       "    }"] },
-    otp: { title: "api/otp.js", kind: "code", lines: [
+    otp: { title: "api/otp.js", tag: "serverless", kind: "code", lines: [
       "// POST -> emails a random 4-digit code",
       "import { mailer, send, issue, throttled } from './_mail.js';",
       "",
       "export default async function handler(req, res) {",
       "  if (req.method !== 'POST') return send(res, 405, {});",
-      "  const b = body(req), email = str(b.email, 120);",
+      "  const email = str(body(req).email, 120);",
       "  if (!EMAIL.test(email)) return send(res, 400, {});",
       "  if (throttled(req, 'otp', 5, 15 * 60 * 1000))",
       "    return send(res, 429, { error: 'Slow down.' });",
-      "  const { code, token } = issue(email, digest(m));",
-      "  await mailer().sendMail({ to: email,",
-      "    subject: `${code} is your verification code` });",
+      "  const { code, token } = issue(email);",
+      "  await mailer().sendMail({ to: email, subject: `${code} is your code` });",
       "  return send(res, 200, { token });",
       "}"] },
-    db: { title: "Firestore · resume-41921", kind: "db", lines: [
+    db: { title: "FIRESTORE", tag: "resume-41921", kind: "db", lines: [
       ["shared/notepad", "read · write", 1], ["tasks", "validated", 38], ["pictures", "add · delete", 12], ["scores", "add-only", 214],
       ["board", "add-only", 57], ["stats", "+1 max", 6], ["otp", "5 attempts", 19], ["limits", "hashed keys", 44]] },
-    deploy: { title: "C:\\WINDOWS\\system32\\cmd.exe - vercel", kind: "term", lines: [
+    deploy: { title: "VERCEL EDGE", tag: "18 regions", kind: "term", lines: [
       "C:\\medhansh-xp> vercel deploy --prod",
       "Vercel CLI 59.11.2",
       "Deploying medhansh-xp",
@@ -256,16 +275,25 @@
       "Production   https://medhansh-xp.vercel.app",
       "Aliased      https://medhansh-xp.vercel.app"] },
   };
+  // the small back-end pieces drawn as blueprint boxes
+  const BE = {
+    mail: { t: "GMAIL SMTP", tag: "outbound", lines: [["otp", "4 digits"], ["contact", "→ inbox"], ["rate limit", "on"]] },
+  };
   // the front end, built on top of it
   const FE = {
+    index: { t: "INDEX.HTML", tag: "shell", lines: [["doctype", "html"], ["#desktop", "mount"], ["#windows", "layer"], ["taskbar", "toolbar"]] },
     app: { t: "APP.JS", tag: "runtime", lines: [["window manager", "z-order"], ["desktop grid", "snap"], ["start menu", ""], ["taskbar + tray", "live"], ["explorer · cmd · msn", ""], ["paint · notepad", ""]] },
     sound: { t: "SOUND.JS", tag: "webaudio", wave: true, lines: [["xp scheme", "synth"], ["files", "0"]] },
     data: { t: "DATA.JS", tag: "profile", lines: [["name", "Medhansh Khattar"], ["role", "AI/ML engineer"], ["based", "Navi Mumbai"], ["host", "MK-PC"]] },
     style: { t: "STYLE.CSS", tag: "luna", swatch: ["#0058ee", "#3c8f3c", "#ece9d8", "#4c9b2d", "#d6dff7", "#1941a5"], lines: [["titlebar", "#0058ee"], ["start", "#3c8f3c"]] },
+    games: { t: "GAMES.JS", tag: "lazy chunk", lines: [["solitaire · spider", ""], ["minesweeper", ""], ["snake · bricks", ""], ["3d pinball", ""]] },
+    extras: { t: "EXTRAS.JS", tag: "lazy chunk", lines: [["calculator", ""], ["media player", "indexeddb"], ["my pictures", ""], ["task manager", ""]] },
   };
   // real apps, in build order (none that need the network)
   const APP_IDS = ["cmd", "paint", "projects", "msn", "calendar", "mine", "solitaire", "spider", "snake", "about"];
   const APP_SPOT = [[.3, .4], [.7, .36], [.22, .62], [.78, .62], [.56, .4], [.4, .62], [.62, .34], [.34, .46], [.66, .56], [.5, .5]];
+  // which module each finished app is stitched to underneath
+  const APP_LINK = { cmd: "app", paint: "app", projects: "data", msn: "otp", calendar: "db", mine: "games", solitaire: "games", spider: "games", snake: "games", about: "data" };
 
   let running = false;
 
@@ -304,7 +332,8 @@
     const M = narrow ? { hdr: 26, row: 18, ch: 6.2, hdrs: 22, rows: 16, chs: 5.9, fs: "10.5px", fss: "10px" }
       : { hdr: 30, row: 22, ch: 7.2, hdrs: 24, rows: 18, chs: 6.6, fs: "12px", fss: "11px" };
     const side = narrow ? 12 : Math.max(24, vw * 0.035);
-    const R = { x: side, y: 30, w: vw - 2 * side, h: vh - 60 };
+    // the work area, under the HUD and above the captions
+    const R = { x: side, y: narrow ? 64 : 70, w: vw - 2 * side, h: vh - (narrow ? 64 : 70) - 120 };
 
     // ---------- measure the live desktop before anything moves ----------
     const rel = (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
@@ -338,17 +367,20 @@
     ov.innerHTML = `<div class="rb-grid"></div>
       <div class="rb-layer rb-be">${svgL}</div><div class="rb-layer rb-fe">${svgL}</div>
       <div class="rb-layer rb-apps"></div><div class="rb-wall"></div>
-      <div class="rb-sew"><svg width="${vw}" height="${vh}" viewBox="0 0 ${vw} ${vh}" style="position:absolute;left:0;top:0;overflow:visible"><defs><linearGradient id="rbNdG" x1="0" y1="0" x2="0" y2="1">
+      <div class="rb-sew"><svg width="${vw}" height="${vh}" viewBox="0 0 ${vw} ${vh}"><defs><linearGradient id="rbNdG" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="#f8fafc"/><stop offset=".45" stop-color="#cbd5e1"/><stop offset="1" stop-color="#475569"/></linearGradient></defs></svg></div>
       <div class="rb-fx"></div><div class="rb-ags"></div>
       <div class="rb-glitch-bars">${Array.from({ length: 7 }, () => `<i style="top:${rand(0, 96).toFixed(1)}%;height:${rand(1, 9).toFixed(1)}px"></i>`).join("")}</div>
       <div class="rb-intro"><div class="rb-intro-t">&nbsp;</div><div class="rb-intro-bar"></div><div class="rb-intro-s">&nbsp;</div></div>
+      <div class="rb-cap off" aria-live="polite"><small></small><b></b><span></span></div>
       <div class="rb-vig"></div>
-      <button class="rb-skip" type="button">SKIP · ESC</button>
+      <div class="rb-hud off"><span class="rb-brand">VISUAL REBUILD</span><span class="rb-prog"><i></i></span>
+        <span class="rb-meta"><b class="rb-ph">BOOT</b><span class="rb-ags-n">0 agents</span><span class="rb-clock">00.000</span></span>
+        <button class="rb-skip" type="button">SKIP<small>ESC</small></button></div>
       <div class="rb-flash"></div>`;
     const q = (s) => ov.querySelector(s);
     const beL = q(".rb-be"), feL = q(".rb-fe"), appsL = q(".rb-apps"), wall = q(".rb-wall"), sewL = q(".rb-sew"), sewS = q(".rb-sew svg"), fx = q(".rb-fx"), agL = q(".rb-ags");
-    const intro = q(".rb-intro"), flash = q(".rb-flash");
+    const cap = q(".rb-cap"), hud = q(".rb-hud"), intro = q(".rb-intro"), flash = q(".rb-flash");
     ["backgroundColor", "backgroundImage", "backgroundSize", "backgroundPosition", "backgroundRepeat", "backgroundOrigin", "backgroundClip"].forEach((k) => (wall.style[k] = rcs[k]));
     wall.after(clone);
 
@@ -356,6 +388,21 @@
     const prevFocus = document.activeElement;
     const skipBtn = q(".rb-skip");
     skipBtn.addEventListener("click", () => finish(true));
+    const t0 = performance.now();
+    const clockEl = q(".rb-clock"), progEl = q(".rb-prog i");
+    const TOTAL = 49000;
+    let progLock = false;
+    every(60, () => {
+      const e = (performance.now() - t0) / sp;
+      clockEl.textContent = `${String((e / 1000) | 0).padStart(2, "0")}.${String((e | 0) % 1000).padStart(3, "0")}`;
+      if (!progLock) progEl.style.width = Math.min(94, (e / TOTAL) * 100) + "%";
+    });
+    const phase = (name, c) => { q(".rb-ph").textContent = name; if (c) ov.style.setProperty("--c", c); };
+    const caption = (small, big, line) => {
+      cap.classList.remove("off", "swap"); void cap.offsetWidth; cap.classList.add("swap");
+      cap.querySelector("small").textContent = small; cap.querySelector("b").textContent = big; cap.querySelector("span").textContent = line;
+    };
+    const capOff = () => { cap.classList.remove("swap"); cap.classList.add("off"); };
     const decode = (el, text, ms) => {
       const glyphs = "▓▒░█<>/\\|=+*#01ABCDEF"; const s0 = performance.now();
       const id = every(28, () => {
@@ -367,7 +414,7 @@
 
     // ---------- the swarm ----------
     const ags = [];
-    let pace = 1; // > 1 is slower: every move and draw is scaled by it, and it drops as the show speeds up
+    let pace = 1.1; // > 1 is slower: every move and draw is scaled by it, and it drops as the show speeds up
     function place(a, x, y, ms, ease) {
       if (Math.hypot(x - a.x, y - a.y) > 6) {
         const deg = (Math.atan2(y - a.y, x - a.x) * 180) / Math.PI + 135;
@@ -383,7 +430,7 @@
       if (!txt) return;
       a.tag.textContent = `${a.name} · ${txt}`;
       a.el.classList.add("tag");
-      clearTimeout(a.tagT); a.tagT = setTimeout(() => a.el.classList.remove("tag"), 1300);
+      clearTimeout(a.tagT); a.tagT = setTimeout(() => a.el.classList.remove("tag"), 1500);
     };
     const ripple = (x, y, c) => { const d = document.createElement("div"); d.className = "rb-rip"; d.style.cssText = `left:${x}px;top:${y}px;--a:${c}`; fx.appendChild(d); at(600, () => d.remove()); };
     const click = (a) => { a.el.classList.remove("click"); void a.el.offsetWidth; a.el.classList.add("click"); ripple(a.x, a.y, a.color); tick(); };
@@ -400,6 +447,7 @@
         ags.push(a);
         at(30 + k * 60, () => { el.classList.add("on"); go(a, clamp(vw / 2 + rand(-vw * 0.3, vw * 0.3), 20, vw - 80), clamp(vh / 2 + rand(-vh * 0.25, vh * 0.25), 60, vh - 60), 650); worker(a); });
       }
+      q(".rb-ags-n").textContent = ags.length + " agents";
     };
 
     // tasks: each agent pulls the most urgent ready task, nearest first
@@ -424,7 +472,7 @@
       }
     }
 
-    // a wireframe box dragged out corner to corner, the way the swarm marks out every element
+    // a selection box dragged out corner to corner, the way the swarm marks out every element
     const frame = async (a, r, label, ms = 450, size = true) => {
       await go(a, r.x, r.y);
       click(a);
@@ -442,27 +490,21 @@
 
     // ---------- blueprint boxes ----------
     const rects = {}, boxes = {};
-    let dbRow = M.row;
-    const subH = () => M.hdrs + 6 + 2 * M.rows + 6;
-    const boxH = (d) => {
-      if (d.subs) return M.hdr + 8 + 2 * subH() + 8 + 8;
-      if (d.db) return M.hdr + 6 + d.lines.length * dbRow + 8;
-      return M.hdr + 6 + (d.wave ? 30 : 0) + (d.swatch ? 20 : 0) + (d.lines?.length || 0) * M.row + 8;
-    };
+    const boxH = (d) => M.hdr + 6 + (d.wave ? 30 : 0) + (d.swatch ? 20 : 0) + (d.lines?.length || 0) * M.row + 8;
     const makeBox = (layer, d, r, color, kind) => {
       const b = document.createElement("div");
-      b.className = "rb-box " + (kind || "") + (d.db ? " db" : "");
-      b.style.cssText = `--a:${color};left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px` + (d.db ? `;--row:${dbRow}px` : "");
+      b.className = "rb-box " + (kind || "");
+      b.style.cssText = `--a:${color};left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`;
       b.innerHTML = `<div class="rb-bh"><i></i><b>${esc(d.t)}</b><small>${esc(d.tag || "")}</small></div><div class="rb-pad"></div>` +
         (d.wave ? `<svg class="rb-wave" viewBox="0 0 200 26" preserveAspectRatio="none"><path pathLength="1" d="M0 13 ${Array.from({ length: 40 }, (_, k) => `L${(k + 1) * 5} ${(13 + Math.sin(k * 0.9) * (4 + (k % 7) * 1.4)).toFixed(1)}`).join(" ")}"/></svg>` : "") +
         (d.swatch ? `<div class="rb-sw">${d.swatch.map((c) => `<i style="background:${c}"></i>`).join("")}</div>` : "") +
-        (d.subs ? "" : (d.lines || []).map(([k, v]) => `<div class="rb-r">${esc(k)}${v ? `<em>${esc(v)}</em>` : ""}</div>`).join(""));
+        (d.lines || []).map(([k, v]) => `<div class="rb-r">${esc(k)}${v ? `<em>${esc(v)}</em>` : ""}</div>`).join("");
       layer.appendChild(b);
       return b;
     };
     // type each row: the cursor hops to the start of the line and runs along it as it appears
-    const typeRows = async (a, b, r, small) => {
-      const rows = [...b.querySelectorAll(":scope > .rb-r")], row = small ? M.rows : M.row, hdr = small ? M.hdrs : M.hdr, ch = small ? M.chs : M.ch;
+    const typeRows = async (a, b, r) => {
+      const rows = [...b.querySelectorAll(":scope > .rb-r")], row = M.row, hdr = M.hdr, ch = M.ch;
       const extra = (b.querySelector(".rb-wave") ? 30 : 0) + (b.querySelector(".rb-sw") ? 20 : 0);
       for (let k = 0; k < rows.length; k++) {
         const y = r.y + hdr + 6 + extra + k * row + row / 2;
@@ -485,31 +527,9 @@
         if (wv) { await go(a, r.x + 12, r.y + M.hdr + 20, 120); wv.classList.add("on"); await go(a, r.x + r.w - 14, r.y + M.hdr + 20, 600, "linear"); }
         const sw = b.querySelector(".rb-sw");
         if (sw) { await go(a, r.x + 12, r.y + M.hdr + 16, 120); sw.classList.add("on"); await go(a, r.x + r.w - 14, r.y + M.hdr + 16, 400, "linear"); }
-        if (!d.db) await typeRows(a, b, r);
+        await typeRows(a, b, r);
         unframe(f); chime();
       }, { x: r.x, y: r.y });
-      // a database's collections are filled in by whoever is free: the swarm piles in
-      if (d.db) d.lines.forEach((_, k) => task(id + ":r" + k, async (a) => {
-        const rows = boxes[id].querySelectorAll(".rb-r"), y = r.y + M.hdr + 6 + k * dbRow + dbRow / 2;
-        say(a, d.lines[k][0]);
-        await go(a, r.x + 12, y); click(a);
-        rows[k].classList.add("on");
-        await go(a, r.x + r.w - 20, y, 260 * pace, "linear");
-      }, { deps: [id], x: r.x, y: r.y + M.hdr + k * dbRow }));
-      if (d.subs) Object.entries(d.subs).forEach(([sid, sd], k) => {
-        const sw = (r.w - 24) / 2, sh = subH();
-        const key = id + ":" + sid;
-        const sr = rects[key] = { x: r.x + 8 + (k % 2) * (sw + 8), y: r.y + M.hdr + 8 + ((k / 2) | 0) * (sh + 8), w: sw, h: sh };
-        task(key, async (a) => {
-          say(a, sd.t);
-          const f = await frame(a, sr, sd.t, 300 * pace);
-          const b = boxes[key] = makeBox(layer, sd, sr, a.color, "sm" + (kind ? " " + kind : ""));
-          void b.offsetWidth; b.classList.add("on");
-          await wait(80); b.classList.add("hd"); click(a);
-          await typeRows(a, b, sr, true);
-          unframe(f);
-        }, { deps: [id], x: sr.x, y: sr.y });
-      });
     };
 
     // ---------- wires between boxes, drawn by an agent walking the route ----------
@@ -542,26 +562,14 @@
       }, { deps: [ai, bi], pri: 1, x: p0[0], y: p0[1] });
     };
 
-    // ---------- the back end: windows with the real source, typed in by the swarm ----------
-    const LH = narrow ? 14 : 17, CW = narrow ? 6 : 6.9, TB = 26, GUT = 26;
+    // ---------- the back end: panels with the real source, typed in by the swarm ----------
+    const LH = narrow ? 14 : 17, CW = narrow ? 6 : 6.9, GUT = 26, MAXL = narrow ? 7 : 13;
     ov.style.setProperty("--clh", LH + "px"); ov.style.setProperty("--cfs", narrow ? "10px" : "11.5px");
-    const shown = (p) => p.lines.slice(0, narrow ? 6 : 8);
-    const panelH = (p) => TB + 16 + shown(p).length * LH + 2;
-    // ---------- one foundation: back-end windows and front-end modules, side by side ----------
-    const heightOf = (id) => (PANELS[id] ? panelH(PANELS[id]) : boxH(FE[id]));
-    if (narrow) {
-      const order = ["rules", "app", "sound", "deploy", "style", "db", "otp", "data"], hs = order.map(heightOf);
-      const step = Math.min(hs[0] + 10, (R.h - hs.at(-1)) / (order.length - 1));
-      order.forEach((id, k) => (rects[id] = { x: R.x + (k % 2 ? 8 : 0), y: R.y + k * step, w: R.w - 8, h: hs[k] }));
-    } else {
-      const gap = 26, n = 4, colW = Math.min(390, (R.w - (n - 1) * gap) / n), grid = [["rules", "app", "sound", "db"], ["deploy", "style", "otp", "data"]];
-      const rowH = grid.map((row) => Math.max(...row.map(heightOf)));
-      const tot = rowH[0] + gap + rowH[1], y0 = R.y + Math.max(0, (R.h - tot) / 2), lift = Math.min(0, R.h - tot), x0 = R.x + (R.w - n * colW - (n - 1) * gap) / 2;
-      grid.forEach((row, ri) => row.forEach((id, ci) => {
-        rects[id] = { x: clamp(x0 + ci * (colW + gap) + (ri ? colW * 0.06 : -colW * 0.03) + rand(-8, 8), 6, vw - colW - 6), y: y0 + (ri ? rowH[0] + gap + lift : 0) + rand(-8, 8), w: colW, h: heightOf(id) };
-      }));
-    }
-
+    const shown = (p) => p.lines.slice(0, MAXL);
+    let dbRow = LH;
+    const rowOf = (p) => (p.kind === "db" ? dbRow : LH), padOf = (p) => (p.kind === "db" ? 6 : 8);
+    const panelH = (p) => M.hdr + 2 * padOf(p) + shown(p).length * rowOf(p) + 2;
+    const heightOf = (id) => (PANELS[id] ? panelH(PANELS[id]) : boxH(BE[id] || FE[id]));
     const hl = (line) => {
       const re = /(\/\/.*$)|('[^']*'|"[^"]*"|`[^`]*`)|(\b\d[\d_.]*\b)|(\b(?:import|from|export|default|async|function|return|if|const|await|allow|match|read|write|create|update|delete|service|true|false|rules_version)\b)/g;
       let out = "", i = 0, m;
@@ -571,97 +579,119 @@
     const makePanel = (p, r, color) => {
       const el = document.createElement("div");
       el.className = "rb-pn " + p.kind;
-      el.style.cssText = `--a:${color};left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`;
+      el.style.cssText = `--a:${color};left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px` + (p.kind === "db" ? `;--clh:${dbRow}px` : "");
       const rows = shown(p).map((ln, k) => {
         if (p.kind === "db") return `<div class="rb-cl rb-dr"><span>${esc(ln[0])}</span><em>${esc(ln[1])}</em><i style="--w:${Math.round(14 + Math.log10(ln[2] + 1) * 34)}%"></i><u>${ln[2]}</u></div>`;
         if (p.kind === "term") return `<div class="rb-cl${k === 0 ? " p" : /^(Production|Aliased)/.test(ln) ? " ok" : ""}"><code>${esc(ln)}</code></div>`;
         return `<div class="rb-cl"><s>${k + 1}</s><code>${hl(ln)}</code></div>`;
       }).join("");
-      el.innerHTML = `<div class="rb-pt"><i></i><b>${esc(p.title)}</b><span><u></u><u></u><u></u></span></div><div class="rb-pb">${rows}</div>`;
+      el.innerHTML = `<div class="rb-bh"><i></i><b>${esc(p.title)}</b><small>${esc(p.tag || "")}</small></div><div class="rb-pb">${rows}</div>`;
       beL.appendChild(el);
       return el;
     };
-    // one agent opens the window; then whoever is free piles in and types a line, so several lines type at once
-    const short = (t) => t.replace(/^.*[\\/]/, "");
+    // one agent opens the panel; then whoever is free piles in and types a line, so several lines type at once
     const buildPanel = (id) => {
-      const p = PANELS[id], r = rects[id];
+      const p = PANELS[id], r = rects[id], rh = rowOf(p), pad = padOf(p);
       task(id, async (a) => {
-        say(a, short(p.title));
-        const f = await frame(a, r, "win · " + short(p.title), 400 * pace);
+        say(a, p.title.toLowerCase());
+        const f = await frame(a, r, "section#" + id, 420 * pace);
         const el = boxes[id] = makePanel(p, r, a.color);
         void el.offsetWidth; el.classList.add("on"); click(a);
-        await go(a, r.x + 10, r.y + TB / 2, 140);
+        await go(a, r.x + 10, r.y + M.hdr / 2, 140);
         el.classList.add("hd");
-        await go(a, r.x + r.w - 70, r.y + TB / 2, 300 * pace, "linear");
+        await go(a, r.x + Math.min(r.w - 12, 30 + p.title.length * M.ch), r.y + M.hdr / 2, 260 * pace, "linear");
         unframe(f, 250); chime();
       }, { pri: -1, x: r.x, y: r.y });
-      shown(p).forEach((ln, k) => task(id + ":" + k, async (a) => {
-        const row = boxes[id].querySelectorAll(".rb-cl")[k];
-        const text = Array.isArray(ln) ? ln.slice(0, 2).join("    ") : ln, n = text.trimEnd().length, indent = text.length - text.trimStart().length;
-        if (!n) { row.classList.add("on"); return; }
-        const y = r.y + TB + 8 + k * LH + LH / 2, x0 = r.x + (p.kind === "code" ? GUT + 4 : 10) + indent * CW;
-        say(a, p.kind === "db" ? ln[0] : short(p.title));
-        await go(a, x0, y);
-        const t = clamp((n - indent) * 11, 160, 460) * pace;
-        row.style.setProperty("--t", t * sp + "ms"); row.style.setProperty("--n", Math.min(n, 48));
-        row.classList.add("on");
-        if (k % 3 === 0) click(a);
-        await go(a, Math.min(r.x + r.w - 12, x0 + (n - indent) * CW), y, t, "linear");
-      }, { deps: [id], pri: Math.floor(k / 4) * 0.01, x: r.x, y: r.y + TB + k * LH }));
+      // the lines are split between two or three agents, each typing every second or third line down the panel
+      const lines = shown(p), CH = Math.min(lines.length, p.kind === "db" ? 2 : 3);
+      for (let c = 0; c < CH; c++) task(id + ":c" + c, async (a) => {
+        say(a, p.kind === "db" ? "collections" : p.title.toLowerCase());
+        for (let k = c, first = true; k < lines.length; k += CH, first = false) {
+          const ln = lines[k], row = boxes[id].querySelectorAll(".rb-cl")[k];
+          const text = Array.isArray(ln) ? ln.slice(0, 2).join("    ") : ln, n = text.trimEnd().length, indent = text.length - text.trimStart().length;
+          if (!n) { row.classList.add("on"); continue; }
+          const y = r.y + M.hdr + pad + k * rh + rh / 2, x0 = r.x + (p.kind === "code" ? GUT + 4 : p.kind === "db" ? 12 : 10) + indent * CW;
+          if (p.kind === "db") say(a, ln[0]);
+          await go(a, x0, y, first ? undefined : 150 * pace);
+          const t = clamp((n - indent) * 9, 140, 380) * pace;
+          row.style.setProperty("--t", t * sp + "ms"); row.style.setProperty("--n", Math.min(n, 48));
+          row.classList.add("on");
+          if (k % 3 === 0) click(a);
+          await go(a, Math.min(r.x + r.w - 12, x0 + (n - indent) * CW), y, t, "linear");
+        }
+      }, { deps: [id], x: r.x, y: r.y + M.hdr + c * rh });
     };
 
-    // ---------- needles: one stitch at a time, anywhere, purely for texture ----------
-    // Seen from above: a needle drops in from over the page (bigger and blurred-shadowed while it is high, its shadow closing in
-    // as it lands), sinks into a pinhole at P, travels under the page, pokes back out at Q a little further on, lifts away
-    // towards the viewer pulling its thread, and the thread is snipped: needle, thread and holes all vanish.
-    // Each hole is a rotated, zero-size box clipped to one side of the hole, so whatever passes it is hidden under the page.
-    const needleSvg = (color, shadow) => `<svg width="130" height="14" viewBox="-124 -7 130 14">` +
-      `<path d="M-52 0 C-90 0 -120 ${rand(-5, 5).toFixed(1)} -230 ${rand(-8, 8).toFixed(1)}" stroke="${shadow ? "#000" : color}" stroke-width="1.1" fill="none" stroke-linecap="round"/>` +
-      `<path d="M0 0 L-8 -1.6 L-58 -1.4 Q-62 0 -58 1.4 L-8 1.6 Z" fill="${shadow ? "#000" : "url(#rbNdG)"}" stroke="${shadow ? "none" : "#0f172a"}" stroke-width=".4"/>` +
-      (shadow ? "" : `<ellipse cx="-53" cy="0" rx="3" ry=".7" fill="#0b1020"/>`) + `</svg>`;
-    const sprite = (x, y, deg, side, color) => {
-      const w = document.createElement("div");
-      w.className = "rb-hole";
-      w.style.cssText = `left:${(x - 300).toFixed(1)}px;top:${(y - 300).toFixed(1)}px;transform:rotate(${deg.toFixed(1)}deg);clip-path:` +
-        (side < 0 ? "inset(0 300px 0 0)" : "inset(0 0 0 300px)");
-      w.innerHTML = `<div class="rb-ndl"><i>${needleSvg(color, true)}</i>${needleSvg(color)}</div>`;
-      sewL.appendChild(w);
-      return { w, n: w.firstElementChild, sh: w.firstElementChild.firstElementChild };
-    };
-    const dot = (x, y, cls) => { const d = document.createElement("div"); d.className = cls; d.style.left = x + "px"; d.style.top = y + "px"; sewL.appendChild(d); return d; };
-    const stitch = (px, py, color = pick(YARN)) => {
-      const deg = rand(55, 125), ux = Math.cos((deg * Math.PI) / 180), uy = Math.sin((deg * Math.PI) / 180), gap = rand(14, 22);
-      const qx = px + ux * gap, qy = py + uy * gap, T = (ms) => ms * sp;
-      // down from above and into the pinhole at P
-      const A = sprite(px, py, deg, -1, color);
-      A.n.animate([{ transform: "translateX(-150px) scale(1.45)", opacity: 0 }, { opacity: 1, offset: 0.2 }, { transform: "translateX(0) scale(1)", offset: 0.6 }, { transform: "translateX(72px) scale(1)", opacity: 1 }],
-        { duration: T(380), easing: "cubic-bezier(.45,0,.55,1)", fill: "forwards" });
-      A.sh.animate([{ transform: "translate(-30px, 26px)", opacity: 0.12 }, { transform: "translate(0, 0)", opacity: 0.45, offset: 0.6 }, { transform: "translate(0, 0)", opacity: 0.45 }],
-        { duration: T(380), easing: "cubic-bezier(.45,0,.55,1)", fill: "forwards" });
-      let pin, pout, B;
-      at(230, () => (pin = dot(px, py, "rb-pin")));
-      // back out at Q, then up and away towards the viewer
-      at(430, () => {
-        A.w.remove();
-        pout = dot(qx, qy, "rb-pin");
-        B = sprite(qx, qy, deg, 1, color);
-        B.n.animate([{ transform: "translateX(0) scale(1)" }, { transform: "translateX(72px) scale(1)", offset: 0.5 }, { transform: "translateX(165px) scale(1.4)", opacity: 0 }],
-          { duration: T(440), easing: "cubic-bezier(.45,0,.55,1)", fill: "forwards" });
-        B.sh.animate([{ transform: "translate(0, 0)", opacity: 0.45 }, { transform: "translate(0, 0)", opacity: 0.45, offset: 0.5 }, { transform: "translate(-30px, 26px)", opacity: 0.1 }],
-          { duration: T(440), easing: "cubic-bezier(.45,0,.55,1)", fill: "forwards" });
+    // ---------- layouts ----------
+    const layoutColumns = (cols, gapX, gapY, maxW) => {
+      const n = cols.length, colW = Math.min(maxW, (R.w - (n - 1) * gapX) / n), x0 = R.x + (R.w - n * colW - (n - 1) * gapX) / 2;
+      cols.forEach((ids, c) => {
+        const hs = ids.map(heightOf);
+        const tot = hs.reduce((s, v) => s + v, 0) + gapY * (ids.length - 1);
+        let y = R.y + Math.max(0, (R.h - tot) / 2);
+        ids.forEach((id, k) => { rects[id] = { x: x0 + c * (colW + gapX), y, w: colW, h: hs[k] }; y += hs[k] + gapY; });
       });
-      // snip: the thread is cut at the hole and everything goes
-      at(830, () => { B?.w.remove(); pin?.remove(); pout?.remove(); const sn = dot(qx, qy, "rb-snip"); tick(); at(220, () => sn.remove()); });
     };
-    // anything that has been built can be stitched into, near its edges
-    const appRects = {};
-    const scaled = (r, f) => (f === 1 ? r : { x: vw / 2 + (r.x - vw / 2) * f, y: vh / 2 + (r.y - vh / 2) * f, w: r.w * f, h: r.h * f });
-    const pieces = () => [
-      ...Object.keys(boxes).filter((id) => rects[id]).map((id) => scaled(rects[id], beL.classList.contains("under") ? 0.965 : 1)),
-      ...Object.values(appRects)];
-    const onEdge = (r) => { const e = (Math.random() * 4) | 0, t = rand(0.12, 0.88); return e === 0 ? [r.x + r.w * t, r.y] : e === 1 ? [r.x + r.w, r.y + r.h * t] : e === 2 ? [r.x + r.w * t, r.y + r.h] : [r.x, r.y + r.h * t]; };
-    const stitchOne = () => { const ps = pieces(); if (!ps.length) return; const [x, y] = onEdge(pick(ps)); stitch(clamp(x, 40, vw - 40), clamp(y, 24, vh - 24)); };
-    // ---------- real apps: opened hidden behind the overlay, copied, closed again ----------
+    if (narrow) layoutColumns([["deploy", "rules"], ["otp", "mail", "db"]], 12, 26, 400);
+    else {
+      dbRow = clamp(Math.floor((R.h * 0.62 - M.hdr - 14) / PANELS.db.lines.length), LH, 40);
+      layoutColumns([["deploy"], ["otp", "mail"], ["rules"], ["db"]], clamp(R.w * 0.05, 36, 90), 46, 360);
+    }
+    // front-end modules are laid over the back end, offset so both stay readable
+    const FE_SPOT = narrow
+      ? { index: [0, 0, .58], sound: [.62, .03, .38], app: [.16, .2, .68], data: [0, .5, .52], style: [.55, .52, .45], games: [0, .74, .48], extras: [.52, .78, .48] }
+      : { index: [.02, .03, .2], sound: [.62, 0, .19], app: [.3, .15, .26], data: [.75, .3, .23], style: [.05, .5, .19], games: [.33, .64, .21], extras: [.63, .68, .21] };
+    Object.entries(FE_SPOT).forEach(([id, [fx0, fy0, fw]]) => {
+      const w = Math.min(R.w, Math.max(narrow ? 140 : 210, R.w * fw)), h = boxH(FE[id]);
+      rects[id] = { x: R.x + clamp(R.w * fx0, 0, R.w - w), y: R.y + clamp(R.h * fy0, 0, Math.max(0, R.h - h)), w, h };
+    });
+
+    // ---------- needles: a thread stitched between two pieces, in the background ----------
+    let seamN = 0;
+    const inside = (r, s) => { let x = r.x + r.w * rand(0.25, 0.75), y = r.y + r.h * rand(0.3, 0.7); if (s && s !== 1) { x = vw / 2 + (x - vw / 2) * s; y = vh / 2 + (y - vh / 2) * s; } return [x, y]; };
+    const stitch = (A, B, color = pick(THREADS), ms = rand(1100, 1600)) => {
+      if (!A || !B) return;
+      const [x1, y1] = A, [x2, y2] = B, dx = x2 - x1, dy = y2 - y1;
+      if (Math.hypot(dx, dy) < 40) return;
+      const bend = rand(0.12, 0.3) * (Math.random() < 0.5 ? -1 : 1), cx = (x1 + x2) / 2 - dy * bend, cy = (y1 + y2) / 2 + dx * bend;
+      const d = `M${x1.toFixed(1)} ${y1.toFixed(1)} Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+      const id = "rbM" + seamN++;
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.setAttribute("class", "rb-sg");
+      g.innerHTML = `<mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="${vw}" height="${vh}"><path d="${d}" fill="none" stroke="#fff" stroke-width="10" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" style="transition:stroke-dashoffset ${ms * sp}ms linear"/></mask>
+        <path class="rb-seam-u" stroke="${color}" d="${d}" mask="url(#${id})"/><path class="rb-seam" stroke="${color}" d="${d}" mask="url(#${id})"/>
+        <circle r="3" fill="${color}" cx="${x1}" cy="${y1}"/>`;
+      sewS.appendChild(g);
+      const nd = document.createElement("div");
+      nd.className = "rb-nd";
+      nd.style.cssText = `offset-path:path("${d}");transition:offset-distance ${ms * sp}ms linear, opacity .3s`;
+      nd.innerHTML = `<svg viewBox="0 0 64 10"><path d="M6 5 L-30 ${rand(-4, 4).toFixed(1)}" stroke="${color}" stroke-width="1.6" fill="none"/><path d="M3 5 Q3 2 8 2.2 L60 4.5 Q64 5 60 5.5 L8 7.8 Q3 8 3 5Z" fill="url(#rbNdG)" stroke="#0f172a" stroke-width=".5"/><ellipse cx="9" cy="5" rx="3.2" ry="1.1" fill="#0b1020"/></svg>`;
+      sewL.appendChild(nd);
+      void nd.offsetWidth; void g.getBoundingClientRect();
+      nd.style.offsetDistance = "100%";
+      g.querySelector("mask path").style.strokeDashoffset = "0";
+      blip(rand(500, 700), 0.05, "triangle", 0.04, rand(300, 400));
+      at(ms, () => { nd.classList.add("out"); g.insertAdjacentHTML("beforeend", `<circle r="3" fill="${color}" cx="${x2}" cy="${y2}"/>`); at(400, () => nd.remove()); });
+      at(ms + 2600, () => g.classList.add("old"));
+      at(ms + (narrow ? 5500 : 9000), () => g.remove());
+    };
+    // the threads that tie the front end to the back end; app windows join the pool as they are built
+    const SEAMS = [["index", "deploy"], ["app", "rules"], ["app", "otp"], ["games", "db"], ["data", "deploy"], ["app", "db"], ["extras", "deploy"], ["style", "index"], ["sound", "app"], ["app", "mail"], ["index", "otp"], ["games", "rules"]];
+    let seamPool = []; const appRects = {};
+    const ptOf = (id) => {
+      if (appRects[id]) return inside(appRects[id]);
+      const r = rects[id]; if (!r || !boxes[id]) return null;
+      return FE[id] ? inside(r, feL.classList.contains("under") ? 0.985 : 1) : inside(r, beL.classList.contains("under") ? 0.965 : 1);
+    };
+    let seamI = 0;
+    const sewOne = () => {
+      const ready = [...SEAMS, ...seamPool].filter(([a, b]) => ptOf(a) && ptOf(b));
+      if (!ready.length) return;
+      const [a, b] = ready[(seamI++ * 7) % ready.length];
+      stitch(ptOf(a), ptOf(b));
+    };
+
+    // ---------- real apps: opened hidden behind the overlay, copied twice (wireframe and real), closed again ----------
     const opened = new Set(), apps = [];
     const prepApp = async (id) => {
       let rec; try { rec = opts.open?.(id); } catch (e) { console.error("rebuild open", id, e); }
@@ -683,16 +713,25 @@
         ["color", "font", "lineHeight", "letterSpacing", "textAlign"].forEach((key) => (c.style[key] = bs[key]));
         return c;
       };
-      const rl = make();
+      const rl = make(), wf = make();
+      // every element of the real copy knows its outline in the wireframe, so the outline can go as the piece is built
+      const A = [rl, ...rl.querySelectorAll("*")], B = [wf, ...wf.querySelectorAll("*")];
+      rl.__pairs = new Map(A.map((e, i) => [e, B[i]]));
       const src = el.querySelectorAll("canvas");
       rl.querySelectorAll("canvas").forEach((c, i) => { try { c.getContext("2d")?.drawImage(src[i], 0, 0); } catch {} });
       const title = el.querySelector(".ttl")?.textContent || id;
       try { opts.close?.(id); } catch {}
       opened.delete(id);
       skipBtn.focus({ preventScroll: true });
-      return w > 20 && h > 20 ? { id, w, h, tb, rl, title } : null;
+      return w > 20 && h > 20 ? { id, w, h, tb, rl, wf, title } : null;
     };
     const prepAll = async () => { for (const id of APP_IDS) apps.push(await prepApp(id)); };
+    // a piece shows in the real window and its outline leaves the wireframe
+    const reveal = (e) => {
+      e.classList.remove("rb-hide");
+      const m = e.closest(".rb-rl")?.__pairs, w = m?.get(e) || m?.get(e.parentElement);
+      w?.classList.add("rb-wfoff");
+    };
 
     // the pieces of a window the swarm builds one by one: text gets typed, everything else is dragged into place.
     // A long run of identical siblings (card stacks, minesweeper cells) is placed as one block.
@@ -727,14 +766,14 @@
       if (e.matches("input, textarea, select")) {
         say(b, "text box");
         const fr = await frame(b, { x: pr.left, y: pr.top, w: pr.width, h: pr.height }, e.tagName.toLowerCase(), 240 * k);
-        e.classList.remove("rb-hide");
+        reveal(e);
         e.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 * sp });
         return unframe(fr, 120);
       }
       if (pr.width >= 28 && pr.height >= 28 && (e.matches("img, canvas, .avatar") || /photo|avatar|pic|img/i.test(e.className))) {
         say(b, "resize");
         await go(b, pr.left + pr.width * 0.3, pr.top + pr.height * 0.3); click(b);
-        e.classList.remove("rb-hide");
+        reveal(e);
         const t = 420 * k;
         e.style.transformOrigin = "0 0";
         e.animate([{ scale: "0.3", opacity: 0.4 }, { scale: "1", opacity: 1 }], { duration: t * sp, easing: "cubic-bezier(.3,.7,.3,1)", fill: "backwards" });
@@ -749,7 +788,7 @@
       const ox = clamp(rand(-150, 150), win.x + 12 - cx, win.x + win.w - 12 - cx), oy = clamp(rand(-110, 110), win.y + win.tb + 12 - cy, win.y + win.h - 12 - cy), t = 340 * k;
       say(b, "place");
       await go(b, cx + ox, cy + oy); click(b);
-      e.classList.remove("rb-hide");
+      reveal(e);
       e.animate([{ translate: `${ox}px ${oy}px`, scale: "0.6", opacity: 0 }, { opacity: 1, offset: 0.25 }, { translate: "0px 0px", scale: "1", opacity: 1 }],
         { duration: t * sp, easing: "cubic-bezier(.2,.75,.25,1.15)", fill: "backwards" });
       await go(b, cx, cy, t, "cubic-bezier(.2,.75,.25,1.15)");
@@ -759,7 +798,7 @@
       const r = e.getBoundingClientRect(), cy = r.top + r.height / 2, n = Math.min(40, e.textContent.trim().length), t = clamp(n * 12, 150, 420) * k;
       say(b, "type");
       await go(b, r.left, cy);
-      e.classList.remove("rb-hide");
+      reveal(e);
       e.animate([{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: t * sp, easing: `steps(${Math.max(4, n)})`, fill: "backwards" });
       await go(b, Math.min(r.right, xMax), cy, t, "linear");
     };
@@ -791,6 +830,7 @@
             await wait(120 * k);
           }
         }, { deps: rowIds, pri: -1, x: g.getBoundingClientRect().left, y: g.getBoundingClientRect().top }));
+        return rowIds;
       },
       // paint: three agents draw on the canvas at once
       paint(rl, base, k) {
@@ -815,7 +855,7 @@
           ["#008000", "brush", [Array.from({ length: 30 }, (_, i) => [W * 0.04 + (W * 0.92 * i) / 29, H * 0.93 + Math.sin(i * 1.3) * 4])]],
           ["#ff0000", "pencil", [line([[W * 0.88, H * 0.1], [W * 0.88, H * 0.3]], 4), line([[W * 0.88, H * 0.22], [W * 0.9, H * 0.19], [W * 0.92, H * 0.22], [W * 0.92, H * 0.3]], 3), line([[W * 0.955, H * 0.21], [W * 0.955, H * 0.3]], 3), [[W * 0.955, H * 0.15], [W * 0.957, H * 0.155]]]],
         ];
-        ART.forEach(([color, tool, strokes], n) => task(`${base}:draw${n}`, async (a) => {
+        return ART.map(([color, tool, strokes], n) => { const id = `${base}:draw${n}`; task(id, async (a) => {
           // pick the tool, then the colour, then draw
           const tb = tools.find((bt) => bt.dataset.t === tool);
           if (tb) { say(a, tool); const [tx, ty] = mid(tb); await go(a, tx, ty); click(a); tools.forEach((bt) => bt.setAttribute("aria-pressed", bt === tb ? "true" : "false")); }
@@ -831,15 +871,15 @@
               ctx.beginPath(); ctx.moveTo((P[i - 1][0] - r.left) * sx, (P[i - 1][1] - r.top) * sy); ctx.lineTo((P[i][0] - r.left) * sx, (P[i][1] - r.top) * sy); ctx.stroke();
             }
           }
-        }, { deps: [base + ":b"], pri: -1, x: r.left + W * ((n % 4) / 4), y: r.top + H / 2 }));
+        }, { deps: [base + ":b"], pri: -1, x: r.left + W * ((n % 4) / 4), y: r.top + H / 2 }); return id; });
       },
       // calendar: the month is drawn row by row while two agents throw photos up from the bottom of the screen onto the days
       calendar(rl, base, k, partIds) {
         const g = rl.querySelector(".cal.big"); if (!g?.children.length) return;
-        const rowIds = drawRows(g, base, k, "calendar");
+        const rowIds = drawRows(g, base, k, "calendar"), ids = [...rowIds];
         const days = [...g.querySelectorAll("button[data-d]")].map((d) => [Math.random(), d]).sort((p, q) => p[0] - q[0]).slice(0, 6).map((p) => p[1]);
         const PICS = ["url(photo.jpg)", "linear-gradient(160deg,#ffb347,#ff5f6d)", "linear-gradient(160deg,#4facfe,#00f2fe)", "url(photo.jpg)", "linear-gradient(160deg,#43e97b,#38f9d7)", "linear-gradient(160deg,#a18cd1,#fbc2eb)"];
-        [0, 1].forEach((n) => task(`${base}:throw${n}`, async (a) => {
+        [0, 1].forEach((n) => { const id = `${base}:throw${n}`; ids.push(id); task(id, async (a) => {
           say(a, "photos");
           for (const [j, d] of days.entries()) {
             if (j % 2 !== n) continue;
@@ -864,10 +904,10 @@
             });
             await wait(220 * k);
           }
-        }, { deps: rowIds, pri: -1, x: vw / 2, y: vh - 30 }));
+        }, { deps: rowIds, pri: -1, x: vw / 2, y: vh - 30 }); });
         // and someone adds a task and ticks it off
         const ct = rl.querySelector(".cal-add .ctext"), list = rl.querySelector(".task-list");
-        if (ct && list) task(`${base}:task`, async (a) => {
+        if (ct && list) { const id = `${base}:task`; ids.push(id); task(id, async (a) => {
           const [, cy, cr] = mid(ct), txt = "ship the visual rebuild";
           say(a, "add task");
           await go(a, cr.left + 6, cy); click(a);
@@ -881,7 +921,8 @@
           say(a, "done");
           await go(a, bx, by, 300 * k); click(a);
           cb.checked = true; li.classList.add("done");
-        }, { deps: [base + ":b", ...partIds], pri: -1, x: ct.getBoundingClientRect().left, y: ct.getBoundingClientRect().top });
+        }, { deps: [base + ":b", ...partIds], pri: -1, x: ct.getBoundingClientRect().left, y: ct.getBoundingClientRect().top }); }
+        return ids;
       },
       // command prompt: three commands typed in, and the swarm types each answer
       cmd(rl, base, k, partIds) {
@@ -894,6 +935,7 @@
         ];
         const mk = (text) => { const e = document.createElement("span"); e.className = "rb-tl rb-hide rb-gone"; e.textContent = text; out.appendChild(e); return e; };
         let prev = [base + ":b", ...partIds];
+        const all = [];
         RUNS.forEach(([cmdText, lines], c) => {
           const echo = mk(promptTxt + cmdText), outs = lines.map(mk), gap = mk(" "), id = `${base}:cmd${c}`;
           task(id, async (a) => {
@@ -907,8 +949,10 @@
             outs.forEach((e) => e.classList.remove("rb-gone"));
           }, { deps: prev, pri: -1, x: inp.getBoundingClientRect().left, y: inp.getBoundingClientRect().top });
           const ids = outs.map((e, n) => { const oid = `${id}:o${n}`; task(oid, (b) => typeEl(b, e, k, Infinity), { deps: [id], pri: -1, x: inp.getBoundingClientRect().left, y: inp.getBoundingClientRect().top + n * 14 }); return oid; });
+          all.push(id, ...ids);
           prev = ids.length ? ids : [id];
         });
+        return all;
       },
       // msn: two messages back and forth, then a nudge that shakes the window
       msn(rl, base, k, partIds) {
@@ -927,7 +971,8 @@
           if (send) { const [bx, by] = mid(send); say(a, "send"); await go(a, bx, by, 220 * k); click(a); }
           ta.value = ""; say2("You", msg, "");
         };
-        task(`${base}:chat`, async (a) => {
+        const id = `${base}:chat`;
+        task(id, async (a) => {
           await typeMsg(a, "hey! who built this site?");
           await wait(450 * k); say2("Medhansh", "a swarm of tiny agents. they're still at it.", "them");
           await wait(300 * k);
@@ -941,6 +986,7 @@
             blip(160, 0.3, "square", 0.06, 90);
           }
         }, { deps: [base + ":b", ...partIds], pri: -1, x: ta.getBoundingClientRect().left, y: ta.getBoundingClientRect().top });
+        return [id];
       },
       // about me: once the top is built, the page is scrolled a screen at a time and each new section is built as it comes into view
       about(rl, base, k, partIds, win) {
@@ -963,7 +1009,7 @@
           if (done) {
             // back to the top; anything still unbuilt simply shows
             say(a, "scroll"); await scrollTo(a, 0);
-            items.forEach((e) => e.classList.remove("rb-hide"));
+            items.forEach(reveal);
             return;
           }
           say(a, "scroll");
@@ -974,6 +1020,7 @@
           page(n + 1, ids);
         }, { deps, pri: -1, x: box.right, y: box.top });
         page(0, [base + ":b", ...partIds]);
+        return [`${base}:page0`];
       },
     };
     function drawRows(g, base, k, label) {
@@ -985,7 +1032,7 @@
           say(a, label);
           const t = (120 + row.length * 30) * k;
           await go(a, x0 - 10, y0);
-          row.forEach((c, m) => { c.classList.remove("rb-hide"); c.animate([{ scale: "0.2", opacity: 0 }, { scale: "1", opacity: 1 }], { duration: 170 * sp, delay: ((m * t) / row.length) * sp, easing: "cubic-bezier(.3,1.4,.5,1)", fill: "backwards" }); });
+          row.forEach((c, m) => { reveal(c); c.animate([{ scale: "0.2", opacity: 0 }, { scale: "1", opacity: 1 }], { duration: 170 * sp, delay: ((m * t) / row.length) * sp, easing: "cubic-bezier(.3,1.4,.5,1)", fill: "backwards" }); });
           await go(a, x1 + 10, y0, t, "linear");
         }, { deps: [base + ":b"], pri: -1, x: x0, y: y0 });
         return id;
@@ -997,26 +1044,29 @@
       cards.forEach((c) => c.classList.add("rb-hide"));
       const stock = cards.filter((c) => c.dataset.pile === "s"), rest = cards.filter((c) => c.dataset.pile !== "s");
       const [ox, oy] = mid(stock[0] || cards[0]);
+      const ids = [base + ":deck"];
       task(base + ":deck", async (a) => {
         say(a, "shuffle");
         await go(a, ox, oy); click(a);
-        stock.forEach((c, n) => { c.classList.remove("rb-hide"); flyIn(c, rand(-40, 40), -60, 280 * k, n * 40); });
+        stock.forEach((c, n) => { reveal(c); flyIn(c, rand(-40, 40), -60, 280 * k, n * 40); });
         await wait(320 * k);
       }, { deps: [base + ":b"], pri: -1, x: ox, y: oy });
       const per = Math.max(3, Math.ceil(rest.length / 10));
       for (let b = 0; b * per < rest.length; b++) {
-        const group = rest.slice(b * per, b * per + per);
-        task(`${base}:deal${b}`, async (a) => {
+        const group = rest.slice(b * per, b * per + per), id = `${base}:deal${b}`;
+        ids.push(id);
+        task(id, async (a) => {
           say(a, "deal");
           for (const c of group) {
             await go(a, ox, oy, 150 * k);
             const [cx, cy] = mid(c);
-            c.classList.remove("rb-hide"); flyIn(c, ox - cx, oy - cy, 230 * k);
+            reveal(c); flyIn(c, ox - cx, oy - cy, 230 * k);
             await go(a, cx, cy, 230 * k, "cubic-bezier(.3,.7,.3,1)");
           }
           tick();
         }, { deps: [base + ":deck"], pri: -1, x: ox, y: oy });
       }
+      return ids;
     }
     // a finished window shrinks down into the taskbar, the way XP minimises, so only two or three are ever on screen
     const minimize = (i) => {
@@ -1026,6 +1076,7 @@
       wrap.querySelectorAll(".rb-hide").forEach((e) => e.classList.remove("rb-hide"));
       if (wrap.f) unframe(wrap.f, 0);
       delete appRects[app.id];
+      seamPool = seamPool.filter(([id]) => id !== app.id);
       wrap.style.transformOrigin = "0 0";
       wrap.classList.add("min");
       wrap.style.transform = `translate(${60 + (i % 6) * 110}px, ${vh - 22}px) scale(0.05)`;
@@ -1034,14 +1085,14 @@
     };
     const buildApp = (app, i) => {
       const [fx0, fy0] = APP_SPOT[i % APP_SPOT.length];
-      const top = 16, bottom = vh - 16, w = app.w, h = app.h;
+      const top = narrow ? 50 : 58, bottom = vh - 34, w = app.w, h = app.h;
       const x = clamp(vw * fx0 - w / 2, 8, Math.max(8, vw - w - 8)), y = clamp(top + (bottom - top) * fy0 - h / 2, top, Math.max(top, bottom - h));
       const r = { x, y, w, h };
       const wrap = document.createElement("div");
       wrap.className = "rb-app";
       wrap.style.cssText = `width:${w}px;height:${h}px;transform:translate(${x}px,${y}px);--tb:${app.tb}px`;
-      app.rl.classList.add("rb-rl");
-      wrap.append(app.rl);
+      app.rl.classList.add("rb-rl"); app.wf.classList.add("rb-wf");
+      wrap.append(app.rl, app.wf);
       app.wrap = wrap;
       wrap.insertAdjacentHTML("beforeend", `<div class="rb-scan"></div>`);
       const k = clamp(1 - i * 0.04, 0.68, 1); // later apps build faster: the crescendo
@@ -1054,25 +1105,35 @@
         thud();
         const parts = pickParts(app.rl, w, h);
         const win = { x, y, w, h, tb: app.tb };
+        const partIds = parts.map((_, j) => `${base}:p${j}`);
         parts.forEach(({ e, r: pr }, j) => {
           e.classList.add("rb-hide");
-          task(`${base}:p${j}`, (b) => buildPiece(b, e, k, win), { deps: [base + ":b"], pri: -1, x: pr.left + pr.width / 2, y: pr.top + pr.height / 2 });
+          task(partIds[j], (b) => buildPiece(b, e, k, win), { deps: [base + ":b"], pri: -1, x: pr.left + pr.width / 2, y: pr.top + pr.height / 2 });
         });
-        SPECIAL[app.id]?.(app.rl, base, k, parts.map((_, j) => `${base}:p${j}`), win);
+        const ownIds = SPECIAL[app.id]?.(app.rl, base, k, partIds, win) || [];
         const NAMES = { min: "minimize", max: "maximize", close: "close", fs: "full screen" };
-        [...app.rl.querySelectorAll(".titlebar .tbtn")].forEach((bt, n) => {
+        const tbIds = [...app.rl.querySelectorAll(".titlebar .tbtn")].map((bt, n) => {
           bt.classList.add("rb-hide");
-          const [bx, by, br] = mid(bt);
-          task(`${base}:tb${n}`, async (b) => {
+          const [bx, by, br] = mid(bt), id = `${base}:tb${n}`;
+          task(id, async (b) => {
             say(b, NAMES[bt.dataset.a] || "button");
             const fr = await frame(b, { x: br.left, y: br.top, w: br.width, h: br.height }, NAMES[bt.dataset.a] || "button", 200 * k, false);
-            bt.classList.remove("rb-hide");
+            reveal(bt);
             bt.animate([{ scale: "0.3", opacity: 0 }, { scale: "1", opacity: 1 }], { duration: 220 * sp, easing: "cubic-bezier(.3,1.5,.5,1)" });
             click(b); unframe(fr, 80);
           }, { deps: [base + ":t"], pri: -1, x: bx, y: by });
+          return id;
         });
+        // the window is done once every piece is in: the wireframe goes, and the window joins the stitching
+        task(base + ":d", async () => {
+          wrap.classList.add("done"); if (wrap.f) unframe(wrap.f, 0);
+          appRects[app.id] = r;
+          seamPool.push([app.id, APP_LINK[app.id] || "app"]);
+          if (!rm) stitch(inside(r), ptOf(APP_LINK[app.id] || "app"), pick(THREADS), 1000);
+          chime();
+        }, { deps: [base + ":b", ...partIds, ...tbIds, ...ownIds], pri: -2, x, y });
         const f = await frame(a, r, "win · " + app.title.replace(/ - .*$/, "").replace(/^.* - /, ""), 360 * k);
-        click(a);
+        wrap.classList.add("wf"); click(a);
         wrap.f = f;
       }, { pri: -1, x, y });
       task(base + ":t", async (a) => {
@@ -1081,6 +1142,7 @@
         app.rl.style.setProperty("--t", 300 * k * sp + "ms");
         app.rl.classList.add("t"); click(a);
         await go(a, x + w - 10, y + app.tb / 2, 300 * k, "linear");
+        const tb = app.rl.querySelector(".titlebar"); if (tb) reveal(tb);
       }, { deps: [base], pri: -1, x, y });
       const bodyMs = clamp(h * 1.7, 600, 1000) * k;
       // two agents raster the body down like a print head; the first one drives the reveal
@@ -1099,12 +1161,6 @@
         await go(a, x + w * f, y + app.tb + 6);
         await go(a, x + w * f + rand(-20, 20), y + h - 8, bodyMs * 0.9, "linear");
       }, { deps: [base + ":t"], pri: -1, x: x + w * f, y: y + app.tb }));
-      task(base + ":d", async () => {
-        wrap.classList.add("done"); if (wrap.f) unframe(wrap.f, 0);
-        appRects[app.id] = r;
-        if (!rm) for (let n = 0; n < 2; n++) { const [kx, ky] = onEdge(r); stitch(clamp(kx, 40, vw - 40), clamp(ky, 24, vh - 24)); }
-        chime();
-      }, { deps: [base + ":b"], pri: -2, x, y });
     };
 
     // ---------- the show ----------
@@ -1114,41 +1170,54 @@
     at(650, () => { ov.classList.add("on"); skipBtn.focus({ preventScroll: true }); });
     at(900, () => { decode(q(".rb-intro-t"), "VISUAL REBUILD", 900); q(".rb-intro-bar").classList.add("on"); blip(90, 0.9, "sawtooth", 0.6, 45); });
     at(1150, () => { q(".rb-intro-s").innerHTML = "unmounting render tree · <b>0 nodes remain</b>"; tick(); });
-    at(1900, () => { q(".rb-intro-s").innerHTML = "spawning swarm ▸ <b>agents · needle and thread</b>"; tick(); });
+    at(1900, () => { q(".rb-intro-s").innerHTML = "spawning swarm ▸ <b>8 agents · needle and thread</b>"; tick(); });
     at(1000, () => prepAll());
 
-    // 2.6-10s: the foundation, back end and front end built together
-    at(2600, () => { intro.classList.add("off"); spawn(4); thud(); });
-    // the swarm grows with the work, so nobody stands around waiting for something to do
-    const sideIn = (k) => [[-30, vh * (0.25 + k * 0.25)], [vw + 30, vh * (0.3 + k * 0.2)], [vw * (0.3 + k * 0.2), -30]][k % 3];
-    at(5400, () => spawn(3, sideIn));
-    at(8200, () => spawn(3, sideIn));
-    [["rules", 2700], ["app", 3100], ["sound", 3900], ["db", 4700], ["deploy", 5500], ["style", 6300], ["otp", 7100], ["data", 7900]]
-      .forEach(([id, t]) => at(t, () => (PANELS[id] ? buildPanel(id) : buildBox(beL, id, FE[id], "fe"))));
-    if (!narrow) at(8400, () => {
-      wire(beL, ["rules", "r", 0.5], ["app", "l", 0.35], "allow");
-      wire(beL, ["app", "r", 0.3], ["sound", "l", 0.5], "play()");
-      wire(beL, ["app", "b", 0.5], ["style", "t", 0.5], "paint");
-      wire(beL, ["otp", "r", 0.5], ["data", "l", 0.5], "send");
+    // 2.6-9s: the back end, typed in from the real source and wired up
+    at(2600, () => {
+      intro.classList.add("off"); hud.classList.remove("off");
+      phase("BACK END", "#22d3ee");
+      caption("01 · BACK END", "BACKEND", "Rules, serverless functions, data and a deploy, typed in from the real source.");
+      spawn(8); thud();
     });
-    // needles start stitching once there is something to stitch into
-    let sewTimer = 0;
-    at(7000, () => { if (!rm) sewTimer = every(narrow ? 320 : 190, stitchOne); });
+    at(2700, () => {
+      ["deploy", "otp", "rules", "db"].forEach(buildPanel);
+      buildBox(beL, "mail", BE.mail, "");
+      if (narrow) {
+        wire(beL, ["deploy", "r", 0.4], ["otp", "l", 0.2], "invoke");
+        wire(beL, ["otp", "b", 0.5], ["mail", "t", 0.5], "smtp");
+        wire(beL, ["rules", "r", 0.5], ["db", "l", 0.3], "allow");
+      } else {
+        wire(beL, ["deploy", "r", 0.5], ["otp", "l", 0.3], "invoke");
+        wire(beL, ["otp", "b", 0.5], ["mail", "t", 0.5], "smtp");
+        wire(beL, ["otp", "r", 0.6], ["rules", "l", 0.4], "admin sdk");
+        wire(beL, ["rules", "r", 0.5], ["db", "l", 0.3], "allow");
+      }
+    });
 
-    // 9-36s: the real apps, stacking on top of each other, the games last and About Me on top
-    at(10000, () => { beL.classList.add("under"); });
-    at(12500, () => {
-      const edges = [[-30, vh * 0.3], [vw + 30, vh * 0.5], [vw * 0.5, vh + 30], [-30, vh * 0.8], [vw + 30, vh * 0.2], [vw * 0.3, -30]];
-      spawn(4, (k) => edges[k]); thud();
+    // 9-14.5s: the front end on top of the back end; needles start stitching the two together
+    let sewTimer = 0;
+    at(9000, () => {
+      beL.classList.add("under");
+      pace = 1.05;
+      phase("FRONT END", "#f472b6");
+      caption("02 · FRONT END", "INTERFACE", "Shell, runtime, sound, data and styles, on top of the back end.");
+      thud();
+      ["index", "app", "sound", "data", "style", "games", "extras"].forEach((id) => buildBox(feL, id, FE[id], "fe"));
+      wire(feL, ["index", "r", 0.5], ["app", "l", 0.3], "boot");
+      wire(feL, ["app", "b", 0.3], ["games", "t", 0.5], "import()");
+      wire(feL, ["app", narrow ? "b" : "r", narrow ? 0.75 : 0.8], ["extras", "t", 0.4], "import()");
+      if (!rm) sewTimer = every(narrow ? 1400 : 850, sewOne);
     });
-    at(16000, () => beL.classList.add("under2"));
-    // apps open one after another, two or three on screen: the next opens when there is room, and the oldest is
-    // minimised only once its swarm has finished with it. When the last one is done, the ending starts.
+
+    // 14.5-43s: the real apps, two or three at a time, each outlined, painted and filled in piece by piece
     const mine0 = (base, id) => id === base || id.startsWith(base + ":");
     const busyWith = (base) => queue.some((t) => mine0(base, t.id)) || ags.some((a) => a.cur && mine0(base, a.cur));
     const onScreen = [];
     let nextApp = 0, lastOpen = -1e9, ended = false;
     let appTimer = 0;
+    // apps open one after another, two or three on screen: the next opens when there is room, and the oldest is
+    // minimised only once its swarm has finished with it. When the last one is done, the ending starts.
     const appTick = () => {
       if (ended) return;
       while (nextApp < APP_IDS.length && apps[nextApp] === null) nextApp++;
@@ -1157,7 +1226,7 @@
         if ((onScreen.every((i) => !busyWith("app:" + apps[i].id)) && now - lastOpen > 1500 * sp) || now - lastOpen > 11000 * sp) { stop(appTimer); at(700, endSeq); }
         return;
       }
-      if (apps[nextApp] === undefined || now - lastOpen < 1900 * sp) return;
+      if (apps[nextApp] === undefined || now - lastOpen < 1700 * sp) return;
       if (onScreen.length >= 3) {
         const old = apps[onScreen[0]];
         if (busyWith("app:" + old.id) && now - old.openedAt < 7500 * sp) return;
@@ -1166,106 +1235,107 @@
       const i = nextApp++;
       buildApp(apps[i], i); apps[i].openedAt = now; onScreen.push(i); lastOpen = now;
     };
-    at(9400, () => (appTimer = every(150, appTick)));
+    at(14500, () => {
+      feL.classList.add("under"); beL.classList.add("under2");
+      pace = 1;
+      phase("APPS", "#fbbf24");
+      caption("03 · APPS", "PROGRAMS", "Every window rebuilt live, piece by piece, two or three at a time.");
+      const edges = [[-30, vh * 0.3], [vw + 30, vh * 0.5], [vw * 0.5, vh + 30], [-30, vh * 0.8], [vw + 30, vh * 0.2], [vw * 0.3, -30]];
+      spawn(6, (k) => edges[k]); thud();
+      appTimer = every(150, appTick);
+    });
+    at(18000, capOff);
+    at(43000, endSeq);
 
-    // 36-39s: the windows fly away and the desktop is built
+    // the ending: the windows fly away and the desktop is built, then the taskbar, then the swarm flies home
     function endSeq() {
-    if (ended) return;
-    ended = true; stop(appTimer);
-    stop(sewTimer);
-    at(400, () => {
-      queue.length = 0; focusPt = null;
-      appsL.querySelectorAll(".rb-hide").forEach((e) => e.classList.remove("rb-hide"));
-      [...appsL.children].reverse().forEach((w, k) => at(k * 45, () => {
-        const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(w.style.transform) || [0, 0, 0];
-        const x = +m[1], y = +m[2], dx = x + w.offsetWidth / 2 - vw / 2, dy = y + w.offsetHeight / 2 - vh / 2, L = Math.hypot(dx, dy) || 1, far = Math.max(vw, vh) * 0.95;
-        w.style.transform = `translate(${x + (dx / L) * far}px, ${y + (dy / L) * far}px) rotate(${rand(-14, 14).toFixed(1)}deg) scale(.6)`;
-        w.classList.add("fly");
-      }));
-      fx.querySelectorAll(".rb-fr").forEach((f) => f.classList.add("gone"));
-      sewL.style.opacity = "0";
-      blip(55, 1.0, "sawtooth", 0.4, 140);
-    });
-    at(900, () => {
-      clone.classList.add("on");
-      q(".rb-vig").classList.add("off");
-      pace = 0.7;
-      task("wall", async (a) => {
-        say(a, "wallpaper");
-        await go(a, vw * 0.6, vh * 0.6, 380); click(a);
-        wall.style.clipPath = "none";
-        wall.animate([{ clipPath: "inset(40% 40% 40% 40% round 10px)" }, { clipPath: "inset(0 0 0 0 round 0)" }], { duration: 1100 * sp, easing: "cubic-bezier(.5,0,.2,1)", fill: "backwards" });
-        const fr = document.createElement("div");
-        fr.className = "rb-fr set";
-        fr.style.cssText = `--a:${a.color};left:${vw * 0.4}px;top:${vh * 0.4}px;width:${vw * 0.2}px;height:${vh * 0.2}px;--t:${1100 * sp}ms`;
-        fr.innerHTML = `<i></i><i></i><i></i><i></i><b class="rb-chip">wallpaper · ${vw}×${vh}</b>`;
-        fx.appendChild(fr); void fr.offsetWidth;
-        fr.style.cssText += `;left:0;top:0;width:${vw}px;height:${vh}px;transition:width var(--t) cubic-bezier(.5,0,.2,1),height var(--t) cubic-bezier(.5,0,.2,1),left var(--t) cubic-bezier(.5,0,.2,1),top var(--t) cubic-bezier(.5,0,.2,1)`;
-        blip(220, 0.5, "sine", 1.0, 440);
-        at(1300, () => { beL.classList.add("gone"); feL.classList.add("gone"); q(".rb-grid").style.opacity = 0; });
-        await go(a, vw - 24, vh - 40, 1100, "cubic-bezier(.5,0,.2,1)");
-        unframe(fr, 100);
-      }, { pri: -3 });
-      D.icons.forEach((p, k) => task("icon" + k, async (a) => {
-        const lbl = p.el.textContent.trim() || "icon", cx = p.r.x + p.r.w / 2, cy = p.r.y + p.r.h / 2;
-        const ox = clamp(rand(-260, 260), 30 - cx, vw - 60 - cx), oy = clamp(rand(-160, 160), 30 - cy, vh - 60 - cy);
-        say(a, lbl.toLowerCase());
-        await go(a, cx + ox, cy + oy); click(a);
-        p.el.style.setProperty("--t", "0ms"); p.el.classList.add("rb-on");
-        p.el.animate([{ translate: `${ox}px ${oy}px`, scale: "0.6", opacity: 0 }, { opacity: 1, offset: 0.2 }, { translate: "0px 0px", scale: "1", opacity: 1 }],
-          { duration: 380 * sp, easing: "cubic-bezier(.2,.75,.25,1.15)", fill: "backwards" });
-        await go(a, cx, cy, 380, "cubic-bezier(.2,.75,.25,1.15)");
-      }, { x: p.r.x, y: p.r.y }));
-      D.wins.forEach((p, k) => task("uwin" + k, async (a) => {
-        say(a, "window");
-        const f = await frame(a, p.r, "win", 380);
-        p.el.style.setProperty("--t", 700 * sp + "ms"); p.el.classList.add("rb-on"); click(a);
-        await go(a, p.r.x + 10, p.r.y + p.r.h, 700, "linear");
-        unframe(f, 0);
-      }, { x: p.r.x, y: p.r.y }));
-    });
-
-    // 39-43s: taskbar, start button, tray: wifi, battery, volume, clock
-    at(3000, () => {
-      focusPt = [vw / 2, vh - 70];
-      D.bar.forEach((p) => task("bar", async (a) => {
-        say(a, "taskbar");
-        const f = await frame(a, p.r, "div.taskbar", 420);
-        p.el.style.setProperty("--t", 480 * sp + "ms"); p.el.classList.add("rb-on"); click(a);
-        await go(a, p.r.x + 6, p.r.y + p.r.h / 2, 480, "linear");
-        unframe(f, 100);
-      }, { pri: -3, x: 0, y: vh - 30 }));
-      if (!D.bar.length) doneIds.add("bar");
-      const part = (list, name, label) => list.forEach((p, k) => task(name + k, async (a) => {
-        say(a, label);
-        const f = await frame(a, p.r, label, 200);
-        p.el.style.setProperty("--t", 300 * sp + "ms"); p.el.classList.add("rb-on"); click(a);
-        unframe(f, 350);
-      }, { deps: ["bar"], pri: -2, x: p.r.x, y: p.r.y }));
-      part(D.start, "start", "button.start");
-      part(D.quick, "quick", "quick launch");
-      D.tray.forEach((p, k) => part([p], "tray" + k, (p.el.getAttribute("aria-label") || "tray").toLowerCase()));
-      part(D.clock, "clock", "clock");
-    });
-
-    // outro: the swarm streams off the screen together, like a flock, and the live desktop takes over
-    at(5600, () => {
-      queue.length = 0;
-      ags.forEach((a, k) => {
-        a.home = true; a.el.classList.remove("tag");
-        at(k * 45, () => {
-          place(a, vw * 0.7 + rand(-70, 70), vh * 0.72 + rand(-50, 50), 380, "cubic-bezier(.4,0,.6,1)");
-          at(380, () => { place(a, vw + 60 + rand(0, 80), vh * 0.85 + rand(-140, 60), 520, "cubic-bezier(.6,0,.9,.5)"); at(520, () => a.el.classList.remove("on")); });
-        });
+      if (ended) return;
+      ended = true; stop(appTimer); stop(sewTimer);
+      progLock = true; progEl.style.transition = `width ${6.6 * sp}s linear`; progEl.style.width = "100%";
+      at(400, () => {
+        queue.length = 0; focusPt = null;
+        phase("DESKTOP", "#a3e635");
+        caption("04 · DESKTOP", "DESKTOP", "Wallpaper, icons and taskbar, then the live desktop takes over.");
+        appsL.querySelectorAll(".rb-hide").forEach((e) => e.classList.remove("rb-hide"));
+        [...appsL.children].reverse().forEach((w, k) => at(k * 45, () => {
+          const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(w.style.transform) || [0, 0, 0];
+          const x = +m[1], y = +m[2], dx = x + w.offsetWidth / 2 - vw / 2, dy = y + w.offsetHeight / 2 - vh / 2, L = Math.hypot(dx, dy) || 1, far = Math.max(vw, vh) * 0.95;
+          w.style.transform = `translate(${x + (dx / L) * far}px, ${y + (dy / L) * far}px) rotate(${rand(-14, 14).toFixed(1)}deg) scale(.6)`;
+          w.classList.add("fly");
+        }));
+        fx.querySelectorAll(".rb-fr").forEach((f) => f.classList.add("gone"));
+        sewL.style.opacity = "0";
+        blip(55, 1.0, "sawtooth", 0.4, 140);
       });
-      skipBtn.style.opacity = "0"; fx.style.opacity = "0";
-      // anything the swarm did not reach in time is simply shown
-      clone.querySelectorAll(".rb-h").forEach((e) => e.classList.add("rb-on"));
-    });
-    at(6050, () => { flash.classList.add("go"); real.classList.remove("rb-glitch"); play("startup"); });
-    at(6600, () => finish(false));
+      at(900, () => {
+        clone.classList.add("on");
+        q(".rb-vig").classList.add("off");
+        pace = 0.7;
+        task("wall", async (a) => {
+          say(a, "wallpaper");
+          const cx = vw * 0.5, cy = vh * 0.45;
+          await go(a, cx, cy, 380); click(a);
+          wall.style.setProperty("--x", cx + "px"); wall.style.setProperty("--y", cy + "px");
+          wall.classList.add("on"); blip(220, 0.5, "sine", 1.0, 440);
+          at(1300, () => { beL.classList.add("gone"); feL.classList.add("gone"); q(".rb-grid").style.opacity = 0; });
+          await go(a, cx + 60, cy - 40, 500);
+        }, { pri: -3 });
+        D.icons.forEach((p, k) => task("icon" + k, async (a) => {
+          const lbl = p.el.textContent.trim() || "icon", cx = p.r.x + p.r.w / 2, cy = p.r.y + p.r.h / 2;
+          const ox = clamp(rand(-260, 260), 30 - cx, vw - 60 - cx), oy = clamp(rand(-160, 160), 30 - cy, vh - 60 - cy);
+          say(a, lbl.toLowerCase());
+          await go(a, cx + ox, cy + oy); click(a);
+          p.el.style.setProperty("--t", "0ms"); p.el.classList.add("rb-on");
+          p.el.animate([{ translate: `${ox}px ${oy}px`, scale: "0.6", opacity: 0 }, { opacity: 1, offset: 0.2 }, { translate: "0px 0px", scale: "1", opacity: 1 }],
+            { duration: 380 * sp, easing: "cubic-bezier(.2,.75,.25,1.15)", fill: "backwards" });
+          await go(a, cx, cy, 380, "cubic-bezier(.2,.75,.25,1.15)");
+        }, { x: p.r.x, y: p.r.y }));
+        D.wins.forEach((p, k) => task("uwin" + k, async (a) => {
+          say(a, "window");
+          const f = await frame(a, p.r, "win", 380);
+          p.el.style.setProperty("--t", 700 * sp + "ms"); p.el.classList.add("rb-on"); click(a);
+          await go(a, p.r.x + 10, p.r.y + p.r.h, 700, "linear");
+          unframe(f, 0);
+        }, { x: p.r.x, y: p.r.y }));
+      });
+      at(1500, capOff);
+
+      // taskbar, start button, tray: wifi, battery, volume, clock
+      at(3000, () => {
+        phase("TASKBAR", "#60a5fa");
+        focusPt = [vw / 2, vh - 70];
+        D.bar.forEach((p) => task("bar", async (a) => {
+          say(a, "taskbar");
+          const f = await frame(a, p.r, "div.taskbar", 420);
+          p.el.style.setProperty("--t", 480 * sp + "ms"); p.el.classList.add("rb-on"); click(a);
+          await go(a, p.r.x + 6, p.r.y + p.r.h / 2, 480, "linear");
+          unframe(f, 100);
+        }, { pri: -3, x: 0, y: vh - 30 }));
+        if (!D.bar.length) doneIds.add("bar");
+        const part = (list, name, label) => list.forEach((p, k) => task(name + k, async (a) => {
+          say(a, label);
+          const f = await frame(a, p.r, label, 200);
+          p.el.style.setProperty("--t", 300 * sp + "ms"); p.el.classList.add("rb-on"); click(a);
+          unframe(f, 350);
+        }, { deps: ["bar"], pri: -2, x: p.r.x, y: p.r.y }));
+        part(D.start, "start", "button.start");
+        part(D.quick, "quick", "quick launch");
+        D.tray.forEach((p, k) => part([p], "tray" + k, (p.el.getAttribute("aria-label") || "tray").toLowerCase()));
+        part(D.clock, "clock", "clock");
+      });
+
+      // outro: the swarm flies home into the start button and the live desktop takes over
+      at(5600, () => {
+        queue.length = 0;
+        const home = D.start[0]?.r || { x: 20, y: vh - 30, w: 60, h: 30 };
+        ags.forEach((a, k) => { a.home = true; a.el.classList.remove("tag"); at(k * 35, () => { place(a, home.x + home.w / 2, home.y + home.h / 2, 520, "cubic-bezier(.6,0,.8,.4)"); at(480, () => a.el.classList.remove("on")); }); });
+        hud.classList.add("off"); fx.style.opacity = "0";
+        // anything the swarm did not reach in time is simply shown
+        clone.querySelectorAll(".rb-h").forEach((e) => e.classList.add("rb-on"));
+      });
+      at(6050, () => { flash.classList.add("go"); real.classList.remove("rb-glitch"); play("startup"); });
+      at(6600, () => finish(false));
     }
-    at(52000, endSeq);
 
     // ---------- skip + exit ----------
     const onKey = (e) => {
