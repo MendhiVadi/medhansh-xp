@@ -199,6 +199,7 @@ button { font: inherit; }
 .fitem:hover { border-color: #c9d8f1; background: #eef3fc; }
 .fitem.sel { background: #316ac5; color: #fff; }
 .fitem small { color: #888; }
+.fitem > span { min-height: 3.6em; }
 .fitem.sel small { color: #dde; }
 
 /* ---------- Content styles ---------- */
@@ -650,7 +651,7 @@ button { font: inherit; }
 .cstep b { width: 18px; height: 18px; border-radius: 50%; background: #d6dff7; color: #215dc6; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
 .cstep b.on { background: #316ac5; color: #fff; }
 .cvia { display: flex; align-items: center; gap: 12px; }
-.cvia > span { width: 56px; text-align: right; }
+.cvia > span { width: 56px; flex-shrink: 0; text-align: right; white-space: nowrap; }
 .cvia label { display: flex; align-items: center; gap: 4px; }
 .ccode { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 8px; background: #ffffe1; border: 1px solid #e0d68a; }
 .ccode input { width: 76px; text-align: center; font: bold 18px "Lucida Console", monospace; letter-spacing: 6px; }

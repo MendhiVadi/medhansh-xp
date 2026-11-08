@@ -628,7 +628,7 @@
   }
 
   function renderProjects(body, ctx) {
-    const inner = chrome(body, { addr: "C:\\My Documents\\My Projects" });
+    const inner = chrome(body, { addr: "C:\\Documents and Settings\\Medhansh Khattar\\My Projects" });
     inner.innerHTML = `<div class="explorer">
       ${taskPane([
         ["File and Folder Tasks", `<span>Double-click a project to open it.</span>`],
@@ -647,7 +647,7 @@
   function openProject(i) {
     const p = P.projects[i];
     openApp(null, { key: "proj" + i, app: { title: p.name + " - Project", icon: "project", w: 520, h: 360, render: (b) => {
-      const inner = chrome(b, { addr: "C:\\My Documents\\My Projects\\" + p.name });
+      const inner = chrome(b, { addr: "C:\\Documents and Settings\\Medhansh Khattar\\My Projects\\" + p.name });
       inner.innerHTML = `<div class="doc"><h1>${esc(p.name)}</h1><div class="muted">${esc(p.year)}</div>
         <h2>Description</h2><p>${esc(p.desc)}</p>
         <h2>Built with</h2><div class="chips">${(p.stack || []).map((s) => `<span class="chip">${esc(s)}</span>`).join("")}</div>
@@ -689,11 +689,11 @@
     inner.innerHTML = `<form class="form contact" novalidate>
       <div class="cstep"><b>1</b> Your details <span>›</span> <b>2</b> Verify email <span>›</span> <b>3</b> Sent</div>
       <label><span>To:</span><input value="${esc(P.name)}" readonly tabindex="-1"></label>
-      <div class="cvia" role="radiogroup" aria-label="How should I reach you?"><span>Reach me by:</span><label><input type="radio" name="via" value="email" checked> Email</label><label><input type="radio" name="via" value="phone"> Phone</label></div>
-      <label><span>Name:</span><input name="name" maxlength="80" autocomplete="name" placeholder="your name"></label>
+      <div class="cvia" role="radiogroup" aria-label="How should I reach you?"><span>Reply by:</span><label><input type="radio" name="via" value="email" checked> Email</label><label><input type="radio" name="via" value="phone"> Phone</label></div>
+      <label><span>Name:</span><input name="name" maxlength="80" autocomplete="name" placeholder="Your name"></label>
       <label><span>Email:</span><input name="email" type="email" maxlength="120" autocomplete="email" placeholder="you@example.com (we'll send a code)"></label>
       <label class="cphone hidden"><span>Phone:</span><input name="phone" type="tel" maxlength="20" autocomplete="tel" placeholder="+91 98765 43210"></label>
-      <label><span>Subject:</span><input name="subject" maxlength="140" placeholder="what's this about?"></label>
+      <label><span>Subject:</span><input name="subject" maxlength="140" placeholder="What's this about?"></label>
       <input name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
       <textarea name="message" maxlength="4000" placeholder="Write your message..."></textarea>
       <div class="ccode hidden"><span>Enter the 4-digit code sent to <b class="cto"></b>:</span><input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="4" pattern="[0-9]{4}" placeholder="••••"><button type="button" class="xpbtn cresend">Resend</button></div>

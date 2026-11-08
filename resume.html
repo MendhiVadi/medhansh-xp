@@ -14,6 +14,7 @@
     h1 { margin: 0; font-size: 23pt; letter-spacing: .3px; color: #0a246a; }
     .role { color: #444; font-size: 11pt; }
     .contact { text-align: right; font-size: 9.5pt; line-height: 1.5; }
+    .contact a { white-space: nowrap; }
     a { color: #1e4fb8; text-decoration: none; }
     h2 { break-after: avoid; margin: 10px 0 4px; font-size: 10.5pt; text-transform: uppercase; letter-spacing: 1.2px; color: #1e4fb8; border-bottom: 1px solid #d5dcec; padding-bottom: 2px; }
     .item { margin-bottom: 5px; break-inside: avoid; }
@@ -28,7 +29,7 @@
     .two li { break-inside: avoid; }
     body.embed { background: transparent; } body.embed main { margin: 12px auto; }
     @media print { body { background: #fff; } main { margin: 0; padding: 0; max-width: none; box-shadow: none; } a { color: #1e4fb8; } }
-    @media (max-width: 640px) { main { margin: 0; padding: 18px 16px; } header { flex-direction: column; align-items: flex-start; } .contact { text-align: left; } .two { columns: 1; } }
+    @media (max-width: 640px) { main { margin: 0; padding: 18px 16px; } header { flex-direction: column; align-items: flex-start; } .contact { text-align: left; } .contact a { white-space: normal; overflow-wrap: anywhere; } .two { columns: 1; } }
   </style>
 </head>
 <body>
