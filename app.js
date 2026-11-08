@@ -620,7 +620,7 @@
       ])}
       <div class="ex-main doc">
         <div class="about-head">${avatar()}
-          <div><h1>${esc(P.name)}</h1><div class="muted">${esc(P.role)}${P.subtitle ? " · " + esc(P.subtitle) : ""} · ${esc(P.location)}</div><p style="margin:6px 0 0">${esc(P.tagline)}</p></div></div>
+          <div><h1>${esc(P.name)}</h1><div class="muted">${esc(P.role)}${P.subtitle ? " · " + esc(P.subtitle) : ""} · <span style="white-space:nowrap">${esc(P.location)}</span></div><p style="margin:6px 0 0">${esc(P.tagline)}</p></div></div>
         <h2>About</h2>${P.bio.map((p) => `<p>${esc(p)}</p>`).join("")}
         <h2>Currently</h2><ul>${(P.experience || []).filter((x) => /present/i.test(x.years)).map((x) => `<li><b>${esc(x.title)}</b>, ${x.org === "Yap-less" ? yap() : esc(x.org)}</li>`).join("")}${P.education?.[0] ? `<li>${esc(P.education[0].degree)}, ${esc(P.education[0].school)}</li>` : ""}</ul>
         <p class="about-more">Skills, education, awards and certifications are in my ${appLink("resume", "Resume")}. Things I've built are in ${appLink("projects", "My Projects")}.</p>
