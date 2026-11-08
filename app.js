@@ -2441,7 +2441,7 @@ TERMS
     XPS.play("post");
     lines.push(`Memory Testing : ${String(kb).padStart(7)}K OK`, "");
     for (const l of ["Detecting Primary Master ... PORTFOLIO-XP HDD", "Detecting Primary Slave  ... None", "Detecting Keyboard ....... OK", "Detecting Mouse .......... OK"]) { const s = await pauseStep(130, run); if (s === null) return; if (s) return toLogin(run); lines.push(l); out.textContent = lines.join("\n"); }
-    const s0 = await pauseStep(350, run); if (s0 === null) return; if (s0) return toLogin(run);
+    const s0 = await pauseStep(1850, run); if (s0 === null) return; if (s0) return toLogin(run); // the BIOS screen stays up a moment after the last line
     show("#boot");
     const s1 = await pauseStep(2800, run); if (s1 === null) return;
     toLogin(run);
