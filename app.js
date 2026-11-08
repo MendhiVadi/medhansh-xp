@@ -217,6 +217,7 @@
   ["solitaire", "spider", "mine", "pinball", "snake", "breakout", "wmp", "pictures", "paint"].forEach((k) => (APPS[k].full = true));
   APPS.reset = { title: "Reset Desktop", icon: "showdesk", action: () => askReset() };
   APPS.rebuild = { title: "Visual Rebuild", icon: "rebuild", action: () => runRebuild() };
+  APPS.rebuildmk1 = { title: "Visual Rebuild Mark 1", icon: "rebuild", action: () => runRebuild("mk1") };
   const GAME_IDS = ["solitaire", "spider", "mine", "pinball", "snake", "breakout"];
   // Minesweeper's panel: a seven-segment clock and the little face
   const SEG_POLY = { a: "2,.5 11,.5 9,2.5 4,2.5", f: "1,1.5 3,3.5 3,9.5 1,11", b: "12,1.5 12,11 10,9.5 10,3.5", g: "2,11.5 4,10.5 9,10.5 11,11.5 9,12.5 4,12.5", e: "1,12 3,13.5 3,19.5 1,21.5", c: "12,12 12,21.5 10,19.5 10,13.5", d: "4,20.5 9,20.5 11,22.5 2,22.5" };
@@ -243,16 +244,18 @@
     const s = document.createElement("script"); s.src = "extras.js?v=41"; s.onload = ok; s.onerror = () => { extrasReady = null; fail(); };
     document.head.appendChild(s);
   });
-  // Visual Rebuild (rebuild.js): a purely visual, full-screen rebuild of the site, fetched on first use
-  let rebuildReady;
-  const loadRebuild = () => rebuildReady ||= new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = "rebuild.js?v=41"; s.onload = ok; s.onerror = () => { rebuildReady = null; fail(); };
+  // Visual Rebuild (rebuild.js): a purely visual, full-screen rebuild of the site, fetched on first use.
+  // Mark 1 (rebuild-mk1.js) is kept so it can still be replayed from Run: "rebuild mk1".
+  const REBUILDS = { cur: ["rebuild.js?v=42", "REBUILD"], mk1: ["rebuild-mk1.js?v=1", "REBUILD_MK1"] };
+  const rebuildReady = {};
+  const loadRebuild = (m) => rebuildReady[m] ||= new Promise((ok, fail) => {
+    const s = document.createElement("script"); s.src = REBUILDS[m][0]; s.onload = ok; s.onerror = () => { rebuildReady[m] = null; fail(); };
     document.head.appendChild(s);
   });
-  function runRebuild() {
+  function runRebuild(mark = "cur") {
     closeMenus(); busy();
     if (fsEl()) exitFull();
-    loadRebuild().then(() => window.REBUILD({ desktop: $("#desktop"), open: (id) => openApp(id, { key: "rb-" + id }), close: (id) => close("rb-" + id) }))
+    loadRebuild(mark).then(() => window[REBUILDS[mark][1]]({ desktop: $("#desktop"), open: (id) => openApp(id, { key: "rb-" + id }), close: (id) => close("rb-" + id) }))
       .catch(() => msgBox("Visual Rebuild", "Could not load Visual Rebuild. Check your connection.", "⚠️"));
   }
   function lazyExtra(name) {
@@ -351,7 +354,7 @@
     focus(key);
     return rec;
   }
-  const RUN_ALIAS = { rebuild: "rebuild", mspaint: "paint", "notepad.exe": "notepad", "calc.exe": "calc", "cmd.exe": "cmd", taskmgr: "taskmgr", iexplore: "ie", explorer: "computer", winmine: "mine", sol: "solitaire", spider: "spider", pinball: "pinball", wmplayer: "wmp", control: "control" };
+  const RUN_ALIAS = { rebuild: "rebuild", "rebuild mk1": "rebuildmk1", "rebuild-mk1": "rebuildmk1", mk1: "rebuildmk1", mspaint: "paint", "notepad.exe": "notepad", "calc.exe": "calc", "cmd.exe": "cmd", taskmgr: "taskmgr", iexplore: "ie", explorer: "computer", winmine: "mine", sol: "solitaire", spider: "spider", pinball: "pinball", wmplayer: "wmp", control: "control" };
   const sys = {
     windows: () => [...wins].filter(([k]) => !k.startsWith("msg") && !k.startsWith("ask")).map(([k, w]) => ({ key: k, title: w.el.querySelector(".ttl").textContent, minimized: w.el.classList.contains("min"), active: k === activeKey })),
     focus: (k) => { if (wins.has(k)) restore(k); },

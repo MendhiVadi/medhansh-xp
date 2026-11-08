@@ -1,7 +1,7 @@
-// Visual Rebuild: a 45 second, purely visual rebuild of this site by a swarm of tiny agents.
-// 0-10s   the screen is wiped and the swarm draws the back end (Vercel edge, serverless API, Firestore rules and data)
+// Visual Rebuild, Mark 2: a ~45 second, purely visual rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
+// 0-10s   the screen is wiped and the swarm opens the back end as windows and types its real source into them
 // 10-20s  the front end is built on top of it (index.html, app.js, sound.js, data.js, style.css, the lazy chunks)
-// 10-38s  sewing needles keep stitching threads between the layers in the background
+// 8-38s   knitting needles keep knitting little sweater patches over everything, for texture
 // 20-38s  real app windows open and get built one on top of another, faster and faster, until several build at once
 // 38-42s  the windows fly away and the desktop (wallpaper, icons) is built
 // 42-45s  the taskbar, start button and tray icons, then it hands back to the live desktop underneath
@@ -93,13 +93,11 @@
 /* needles and thread */
 .rb-sew { position: absolute; inset: 0; pointer-events: none; transition: opacity .8s; }
 .rb-sew > svg { position: absolute; left: 0; top: 0; overflow: visible; }
-.rb-seam { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 7 5; }
-.rb-seam-u { fill: none; stroke-width: 1; opacity: .3; }
-.rb-sg { transition: opacity 1.2s; } .rb-sg.old { opacity: .3; }
-.rb-nd { position: absolute; left: 0; top: 0; width: 92px; height: 14px; offset-rotate: auto; offset-anchor: 100% 50%; offset-distance: 0%; }
-.rb-nd svg { display: block; width: 92px; height: 14px; overflow: visible; animation: rbBob .26s ease-in-out infinite alternate; }
-@keyframes rbBob { from { transform: translateX(0) scale(1); opacity: 1; } to { transform: translateX(-7px) scale(.9, .8); opacity: .7; } }
-.rb-nd.out { opacity: 0 !important; }
+.rb-nd { position: absolute; left: 0; top: 0; width: 58px; height: 9px; offset-rotate: auto; offset-anchor: 100% 50%; offset-distance: 0%; }
+.rb-nd svg { display: block; width: 58px; height: 9px; overflow: visible; animation: rbPierce var(--sp, 70ms) linear infinite; }
+@keyframes rbPierce { 0%, 100% { clip-path: inset(-8px 0 -8px -60px); transform: translateX(-5px); }
+  50% { clip-path: inset(-8px 46% -8px -60px); transform: translateX(7px); } }
+.rb-nd.out { opacity: 0 !important; transition: opacity .25s; }
 
 /* swarm */
 .rb-fx, .rb-ags { position: absolute; inset: 0; pointer-events: none; transition: opacity .4s; }
@@ -127,31 +125,45 @@
 .rb-rip { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; border: 1.5px solid var(--a); box-sizing: border-box; animation: rbRip .55s ease-out both; }
 @keyframes rbRip { from { transform: scale(.2); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
 
-/* HUD */
-.rb-hud { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 16px; padding: 7px 8px 7px 16px;
-  background: rgba(5,9,19,.84); border: 1px solid #1e293b; border-radius: 999px; font-family: var(--rb-mono); white-space: nowrap;
-  box-shadow: 0 8px 30px rgba(0,0,0,.5); transition: opacity .6s; }
-.rb-hud.off { opacity: 0; pointer-events: none; }
-.rb-brand { font: 700 12px var(--rb-mono); letter-spacing: .32em; color: #fff; }
-.rb-prog { width: 160px; height: 2px; background: #1b2540; position: relative; }
-.rb-prog i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--c); box-shadow: 0 0 10px var(--c); transition: background .6s; }
-.rb-meta { display: flex; gap: 12px; font-size: 11px; color: #64748b; letter-spacing: .1em; }
-.rb-meta b { color: var(--c); letter-spacing: .2em; transition: color .6s; }
-.rb-skip { background: transparent; border: 1px solid #334155; color: #cbd5e1; cursor: pointer; font: 11px var(--rb-mono); letter-spacing: .2em; padding: 5px 12px; border-radius: 999px; }
-.rb-skip small { margin-left: 8px; color: #64748b; letter-spacing: .08em; font-size: 10px; }
-.rb-skip:hover, .rb-skip:focus-visible { border-color: var(--c); color: #fff; outline: none; }
-.rb-cap { position: absolute; left: 0; right: 0; bottom: 34px; text-align: center; pointer-events: none; transition: opacity .6s; }
-.rb-cap.off { opacity: 0; }
-.rb-cap::before { content: ""; position: absolute; left: 50%; top: 50%; width: min(1000px, 96vw); height: 250%; transform: translate(-50%, -48%); z-index: -1;
-  background: radial-gradient(closest-side, rgba(2,4,12,.9), rgba(2,4,12,.6) 55%, transparent); }
-.rb-cap small { display: block; font: 11px var(--rb-mono); letter-spacing: .55em; color: var(--c); transition: color .6s; }
-.rb-cap b { display: block; font: 800 clamp(22px, 3.2vw, 44px)/1.15 var(--rb-sans); letter-spacing: .3em; text-indent: .3em; color: #fff; margin: 6px 0 4px;
-  text-shadow: 0 0 30px color-mix(in srgb, var(--c) 60%, transparent); }
-.rb-cap span { font: 14px var(--rb-sans); color: #94a3b8; letter-spacing: .04em; }
-.rb-cap.swap { animation: rbCap .9s cubic-bezier(.2,.8,.2,1) both; }
-.rb-cap.swap b { animation: rbCapB 1.1s cubic-bezier(.2,.8,.2,1) both; }
-@keyframes rbCap { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes rbCapB { from { letter-spacing: .9em; text-indent: .9em; } to { letter-spacing: .3em; text-indent: .3em; } }
+/* skip */
+.rb-skip { position: absolute; right: 12px; top: 10px; background: rgba(5,9,19,.55); border: 1px solid #334155; color: #cbd5e1; cursor: pointer; font: 10px var(--rb-mono);
+  letter-spacing: .2em; padding: 4px 10px; border-radius: 999px; opacity: .35; transition: opacity .3s; }
+.rb-skip:hover, .rb-skip:focus-visible { opacity: 1; outline: none; }
+
+/* back-end windows: real source typed in by the swarm */
+.rb-pn { position: absolute; box-sizing: border-box; border: 2px solid #0831d9; border-top: 0; border-radius: 8px 8px 0 0; overflow: hidden; opacity: 0;
+  background: #0d1117; box-shadow: 0 22px 50px -14px rgba(0,0,0,.9), 0 0 0 1px rgba(0,0,0,.4); transition: opacity .25s; }
+.rb-pn.on { opacity: 1; }
+.rb-pt { height: 26px; display: flex; align-items: center; gap: 6px; padding: 0 3px 0 7px; color: #fff; font: bold 12px Tahoma, "Segoe UI", sans-serif; text-shadow: 1px 1px #0f1089;
+  background: linear-gradient(#0997ff, #0053ee 8%, #0050ee 40%, #06f 88%, #06f 93%, #005bff 95%, #003dd7 96%, #003dd7); white-space: nowrap; overflow: hidden;
+  clip-path: inset(0 100% 0 0); transition: clip-path .3s steps(10); }
+.rb-pn.hd .rb-pt { clip-path: inset(0 0 0 0); }
+.rb-pt i { width: 13px; height: 13px; border-radius: 2px; flex: none; background: var(--a); box-shadow: inset 0 0 0 1px rgba(255,255,255,.6); }
+.rb-pt b { overflow: hidden; text-overflow: ellipsis; }
+.rb-pt span { margin-left: auto; display: flex; gap: 2px; }
+.rb-pt u { width: 19px; height: 19px; box-sizing: border-box; border: 1px solid #fff; border-radius: 3px; background: linear-gradient(#3c8cff, #1a5fe0); }
+.rb-pt u:last-child { background: linear-gradient(#e8784a, #c4370f); }
+.rb-pb { position: absolute; left: 0; right: 0; top: 26px; bottom: 0; padding: 8px 0; font: var(--cfs) var(--rb-mono); line-height: var(--clh); color: #c9d1d9; }
+.rb-cl { display: flex; height: var(--clh); white-space: pre; overflow: hidden; clip-path: inset(0 100% 0 0); transition: clip-path var(--t, .3s) steps(var(--n, 12)); }
+.rb-cl.on { clip-path: inset(0 0 0 0); }
+.rb-cl s { flex: none; width: 26px; padding-right: 8px; text-align: right; text-decoration: none; color: #3b4a61; }
+.rb-cl code { font: inherit; overflow: hidden; }
+.rb-pn.term .rb-pb, .rb-pn.term { background: #000; }
+.rb-pn.term .rb-cl { padding-left: 10px; color: #c0c0c0; }
+.rb-pn.term .rb-cl.p { color: #7ee787; } .rb-pn.term .rb-cl.ok { color: #fff; font-weight: 700; }
+.rb-cl b { font-weight: normal; } .rb-cl b.k { color: #ff7b72; } .rb-cl b.s { color: #a5d6ff; } .rb-cl b.c { color: #8b949e; font-style: italic; } .rb-cl b.n { color: #79c0ff; }
+.rb-pn.db .rb-pb { background: #0b1220; }
+.rb-dr { display: grid; grid-template-columns: 1.25fr 1fr 64px 34px; gap: 10px; align-items: center; padding: 0 12px; border-bottom: 1px solid #142036; }
+.rb-dr span { color: #e2e8f0; } .rb-dr span::before { content: "▣ "; color: var(--a); } .rb-dr em { font-style: normal; color: #64748b; }
+.rb-dr i { justify-self: start; height: 6px; width: 0; border-radius: 3px; background: var(--a); transition: width .7s cubic-bezier(.2,.8,.2,1) .15s; }
+.rb-dr.on i { width: var(--w); }
+.rb-dr u { text-decoration: none; text-align: right; color: #94a3b8; }
+
+/* knitting */
+.rb-kn { transition: opacity 1s; } .rb-kn.old { opacity: .4; }
+.rb-kn g { opacity: 0; transform-box: fill-box; transform-origin: 50% 0; animation: rbKnit .16s ease-out both; }
+.rb-kn ellipse { stroke: rgba(0,0,0,.45); stroke-width: .7; }
+@keyframes rbKnit { from { opacity: 0; transform: scaleY(.15); } to { opacity: 1; transform: none; } }
 .rb-vig { position: absolute; inset: 0; pointer-events: none; transition: opacity 1s;
   background: radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,.65) 100%), repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px); }
 .rb-vig.off { opacity: 0; }
@@ -170,9 +182,6 @@
 .rb-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
 .rb-flash.go { animation: rbFlash .8s ease-out both; }
 @keyframes rbFlash { 0% { opacity: 0; } 12% { opacity: .5; } 100% { opacity: 0; } }
-@media (max-width: 700px) { .rb-brand, .rb-meta .rb-clock, .rb-meta .rb-ags-n { display: none; } .rb-prog { width: 70px; } .rb-hud { gap: 10px; }
-  .rb-cap { bottom: 46px; } .rb-cap span { display: block; padding: 0 16px; font-size: 12px; } }
-@media (max-height: 560px) { .rb-cap span { display: none; } }
 #desktop.rb-glitch { animation: rbGlitch 1s steps(1, end) both; }
 @keyframes rbGlitch {
   0% { filter: none; transform: none; clip-path: none; }
@@ -193,20 +202,84 @@
 
   const AGENTS = [["nova", "#f472b6"], ["atlas", "#22d3ee"], ["pixel", "#a3e635"], ["echo", "#fbbf24"], ["flux", "#a78bfa"], ["orbit", "#fb7185"], ["vega", "#34d399"], ["juno", "#60a5fa"],
     ["kite", "#f59e0b"], ["ion", "#2dd4bf"], ["lumen", "#e879f9"], ["quill", "#facc15"], ["rho", "#38bdf8"], ["zed", "#4ade80"]];
-  const THREADS = ["#f43f5e", "#fbbf24", "#22d3ee", "#e879f9", "#a3e635", "#fb923c"];
+  const YARN = ["#f43f5e", "#fbbf24", "#22d3ee", "#e879f9", "#a3e635", "#fb923c", "#f8fafc"];
+  const CHECKS = ["lint ✓", "tests ✓", "types ✓", "200 OK", "gzip 38 kB", "cache hit", "a11y ✓", "0 warnings", "hydrated", "diff +12 −3", "p95 41ms", "snapshot ✓"];
 
-  // the back end, as the swarm draws it
-  const BE = {
-    edge: { t: "VERCEL EDGE", tag: "cdn", lines: [["regions", "18"], ["cache", "1y immutable"], ["nosniff", "on"], ["referrer", "strict-origin"], ["permissions", "locked"]] },
-    api: { t: "API/", tag: "serverless", subs: {
-      otp: { t: "otp.js", lines: [["POST", "/api/otp"], ["code", "4 digits"]] },
-      contact: { t: "contact.js", lines: [["verify", "→ send"], ["via", "gmail"]] },
-      proxy: { t: "proxy.js", lines: [["sandbox", "IE only"], ["cookies", "never"]] },
-      mailer: { t: "_mail.js", lines: [["mailer", "shared"], ["auth", "app pw"]] },
-    } },
-    rules: { t: "FIRESTORE.RULES", tag: "gatekeeper", lines: [["fields", "validated"], ["scores · board", "add-only"], ["stats", "+1 max"], ["limits", "hashed keys"]] },
-    db: { t: "FIRESTORE", tag: "resume-41921", db: true, lines: [["shared/notepad", "rw"], ["tasks", "rw"], ["pictures", "add · del"], ["scores", "add-only"], ["board", "add-only"], ["stats", "+1"], ["otp", "counters"], ["limits", "hashed"]] },
-    mail: { t: "GMAIL SMTP", tag: "outbound", lines: [["otp", "4 digits"], ["contact", "→ inbox"], ["rate limit", "on"]] },
+  // the back end, as real source (condensed): each one is a window the swarm opens and types into
+  const PANELS = {
+    rules: { title: "firestore.rules", kind: "code", lines: [
+      "rules_version = '2';",
+      "// The site talks to Firestore straight from the browser,",
+      "// so these rules are the only gatekeeper.",
+      "service cloud.firestore {",
+      "  match /databases/{database}/documents {",
+      "    match /shared/notepad {",
+      "      allow read: if true;",
+      "      allow write: if request.resource.data.text.size() <= 20000;",
+      "    }",
+      "    match /scores/{id} {",
+      "      allow read: if true;",
+      "      allow create: if validScore(request.resource.data);",
+      "      allow update, delete: if false;",
+      "    }"] },
+    otp: { title: "api/otp.js", kind: "code", lines: [
+      "// POST -> emails a random 4-digit code",
+      "import { mailer, send, issue, throttled } from './_mail.js';",
+      "",
+      "export default async function handler(req, res) {",
+      "  if (req.method !== 'POST') return send(res, 405, {});",
+      "  const b = body(req), email = str(b.email, 120);",
+      "  if (!EMAIL.test(email)) return send(res, 400, {});",
+      "  if (throttled(req, 'otp', 5, 15 * 60 * 1000))",
+      "    return send(res, 429, { error: 'Slow down.' });",
+      "  const { code, token } = issue(email, digest(m));",
+      "  await mailer().sendMail({ to: email,",
+      "    subject: `${code} is your verification code` });",
+      "  return send(res, 200, { token });",
+      "}"] },
+    contact: { title: "api/contact.js", kind: "code", lines: [
+      "// Checks the 4-digit code, then emails the message.",
+      "export default async function handler(req, res) {",
+      "  const b = body(req);",
+      "  if (str(b.website, 200)) return send(res, 200, { ok: true });",
+      "  const claim = await claimAttempt(b.token);",
+      "  const bad = verify(b.token, m.email, b.code, digest(m));",
+      "  if (bad) return send(res, 400, { error: bad });",
+      "  await mailer().sendMail({",
+      "    to: process.env.CONTACT_TO || process.env.GMAIL_USER,",
+      "    replyTo: { name: m.name, address: m.email },",
+      "    subject: `[Portfolio] ${m.subject}` });",
+      "  return send(res, 200, { ok: true });",
+      "}"] },
+    vercel: { title: "vercel.json", kind: "code", lines: [
+      "{",
+      "  \"cleanUrls\": false,",
+      "  \"headers\": [",
+      "    { \"source\": \"/(.*)\", \"headers\": [",
+      "      { \"key\": \"X-Content-Type-Options\", \"value\": \"nosniff\" },",
+      "      { \"key\": \"Referrer-Policy\", \"value\": \"strict-origin\" },",
+      "      { \"key\": \"Permissions-Policy\", \"value\": \"camera=()\" }",
+      "    ] },",
+      "    { \"source\": \"/(.*)\\\\.(js|css|jpg|png)\", \"headers\": [",
+      "      { \"key\": \"Cache-Control\",",
+      "        \"value\": \"public, max-age=31536000, immutable\" }",
+      "    ] }",
+      "  ]",
+      "}"] },
+    db: { title: "Firestore · resume-41921", kind: "db", lines: [
+      ["shared/notepad", "read · write", 1], ["tasks", "validated", 38], ["pictures", "add · delete", 12], ["scores", "add-only", 214],
+      ["board", "add-only", 57], ["stats", "+1 max", 6], ["otp", "5 attempts", 19], ["limits", "hashed keys", 44]] },
+    deploy: { title: "C:\\WINDOWS\\system32\\cmd.exe - vercel", kind: "term", lines: [
+      "C:\\medhansh-xp> vercel deploy --prod",
+      "Vercel CLI 59.11.2",
+      "Deploying medhansh-xp",
+      "Uploading [====================] (637.7KB/637.7KB)",
+      "Running build in Washington, D.C., USA (East) - iad1",
+      "Installing dependencies... up to date in 503ms",
+      "Build Completed in /vercel/output [3s]",
+      "Deploying outputs...",
+      "Production   https://medhansh-xp.vercel.app",
+      "Aliased      https://medhansh-xp.vercel.app"] },
   };
   // the front end, built on top of it
   const FE = {
@@ -222,8 +295,6 @@
   const APP_IDS = ["about", "cmd", "mine", "paint", "projects", "solitaire", "msn", "calc", "resume", "spider", "wmp", "snake", "notepad"];
   const APP_AT = [20000, 22300, 24300, 26000, 27400, 28600, 29600, 30500, 31300, 32000, 32600, 33200, 33700];
   const APP_SPOT = [[.3, .4], [.7, .36], [.46, .6], [.2, .64], [.78, .62], [.54, .32], [.34, .5], [.64, .5], [.16, .4], [.84, .42], [.42, .66], [.58, .44], [.5, .52]];
-  // where each app's thread is stitched to underneath
-  const APP_LINK = { about: "data", cmd: "app", mine: "db", paint: "app", projects: "data", solitaire: "db", msn: "api:contact", calc: "extras", resume: "edge", spider: "db", wmp: "extras", snake: "db", notepad: "db" };
 
   let running = false;
 
@@ -236,7 +307,8 @@
     const soundOn = () => { try { return localStorage.getItem("xp-sounds") !== "0"; } catch { return true; } };
     const blip = (...a) => soundOn() && window.XPS?.blip?.(...a);
     const play = (n) => window.XPS?.play?.(n);
-    if (!document.getElementById("rb-css")) { const st = document.createElement("style"); st.id = "rb-css"; st.textContent = CSS; document.head.appendChild(st); }
+    // the marks share class names, so only the stylesheet of the one playing may be on the page
+    const old = document.getElementById("rb-css"); if (old?.dataset.mark !== "2") { old?.remove(); const st = document.createElement("style"); st.id = "rb-css"; st.dataset.mark = "2"; st.textContent = CSS; document.head.appendChild(st); }
 
     // ---------- timers (all cancelled on skip) ----------
     let done = false;
@@ -261,7 +333,7 @@
     const M = narrow ? { hdr: 26, row: 18, ch: 6.2, hdrs: 22, rows: 16, chs: 5.9, fs: "10.5px", fss: "10px" }
       : { hdr: 30, row: 22, ch: 7.2, hdrs: 24, rows: 18, chs: 6.6, fs: "12px", fss: "11px" };
     const side = narrow ? 12 : Math.max(24, vw * 0.035);
-    const R = { x: side, y: narrow ? 64 : 70, w: vw - 2 * side, h: vh - (narrow ? 64 : 70) - 120 };
+    const R = { x: side, y: 30, w: vw - 2 * side, h: vh - 60 };
 
     // ---------- measure the live desktop before anything moves ----------
     const rel = (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
@@ -295,20 +367,17 @@
     ov.innerHTML = `<div class="rb-grid"></div>
       <div class="rb-layer rb-be">${svgL}</div><div class="rb-layer rb-fe">${svgL}</div>
       <div class="rb-layer rb-apps"></div><div class="rb-wall"></div>
-      <div class="rb-sew"><svg width="${vw}" height="${vh}" viewBox="0 0 ${vw} ${vh}"><defs><linearGradient id="rbNdG" x1="0" y1="0" x2="0" y2="1">
+      <div class="rb-sew"><svg width="${vw}" height="${vh}" viewBox="0 0 ${vw} ${vh}" style="position:absolute;left:0;top:0;overflow:visible"><defs><linearGradient id="rbNdG" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="#f8fafc"/><stop offset=".45" stop-color="#cbd5e1"/><stop offset="1" stop-color="#475569"/></linearGradient></defs></svg></div>
       <div class="rb-fx"></div><div class="rb-ags"></div>
       <div class="rb-glitch-bars">${Array.from({ length: 7 }, () => `<i style="top:${rand(0, 96).toFixed(1)}%;height:${rand(1, 9).toFixed(1)}px"></i>`).join("")}</div>
       <div class="rb-intro"><div class="rb-intro-t">&nbsp;</div><div class="rb-intro-bar"></div><div class="rb-intro-s">&nbsp;</div></div>
-      <div class="rb-cap off" aria-live="polite"><small></small><b></b><span></span></div>
       <div class="rb-vig"></div>
-      <div class="rb-hud off"><span class="rb-brand">VISUAL REBUILD</span><span class="rb-prog"><i></i></span>
-        <span class="rb-meta"><b class="rb-ph">BOOT</b><span class="rb-ags-n">0 agents</span><span class="rb-clock">00.000</span></span>
-        <button class="rb-skip" type="button">SKIP<small>ESC</small></button></div>
+      <button class="rb-skip" type="button">SKIP · ESC</button>
       <div class="rb-flash"></div>`;
     const q = (s) => ov.querySelector(s);
     const beL = q(".rb-be"), feL = q(".rb-fe"), appsL = q(".rb-apps"), wall = q(".rb-wall"), sewL = q(".rb-sew"), sewS = q(".rb-sew svg"), fx = q(".rb-fx"), agL = q(".rb-ags");
-    const cap = q(".rb-cap"), hud = q(".rb-hud"), intro = q(".rb-intro"), flash = q(".rb-flash");
+    const intro = q(".rb-intro"), flash = q(".rb-flash");
     ["backgroundColor", "backgroundImage", "backgroundSize", "backgroundPosition", "backgroundRepeat", "backgroundOrigin", "backgroundClip"].forEach((k) => (wall.style[k] = rcs[k]));
     wall.after(clone);
 
@@ -316,19 +385,6 @@
     const prevFocus = document.activeElement;
     const skipBtn = q(".rb-skip");
     skipBtn.addEventListener("click", () => finish(true));
-    const t0 = performance.now();
-    const clockEl = q(".rb-clock"), progEl = q(".rb-prog i");
-    const TOTAL = 45000;
-    every(60, () => {
-      const e = (performance.now() - t0) / sp;
-      clockEl.textContent = `${String((e / 1000) | 0).padStart(2, "0")}.${String((e | 0) % 1000).padStart(3, "0")}`;
-      progEl.style.width = Math.min(100, (e / TOTAL) * 100) + "%";
-    });
-    const phase = (name, c) => { q(".rb-ph").textContent = name; if (c) ov.style.setProperty("--c", c); };
-    const caption = (small, big, line) => {
-      cap.classList.remove("off", "swap"); void cap.offsetWidth; cap.classList.add("swap");
-      cap.querySelector("small").textContent = small; cap.querySelector("b").textContent = big; cap.querySelector("span").textContent = line;
-    };
     const decode = (el, text, ms) => {
       const glyphs = "▓▒░█<>/\\|=+*#01ABCDEF"; const s0 = performance.now();
       const id = every(28, () => {
@@ -340,7 +396,7 @@
 
     // ---------- the swarm ----------
     const ags = [];
-    let pace = 1.25; // > 1 is slower: every move and draw is scaled by it, and it drops as the show speeds up
+    let pace = 1; // > 1 is slower: every move and draw is scaled by it, and it drops as the show speeds up
     function place(a, x, y, ms, ease) {
       a.x = x; a.y = y;
       a.el.style.transition = ms && !rm ? `transform ${ms * sp}ms ${ease || "cubic-bezier(.45,0,.2,1)"}, opacity .4s` : "opacity .4s";
@@ -363,7 +419,6 @@
         ags.push(a);
         at(30 + k * 60, () => { el.classList.add("on"); go(a, clamp(vw / 2 + rand(-vw * 0.3, vw * 0.3), 20, vw - 80), clamp(vh / 2 + rand(-vh * 0.25, vh * 0.25), 60, vh - 60), 650); worker(a); });
       }
-      q(".rb-ags-n").textContent = ags.length + " agents";
     };
 
     // tasks: each agent pulls the most urgent ready task, nearest first
@@ -375,6 +430,8 @@
       while (!done && !a.home) {
         const ready = queue.filter((t) => t.deps.every((d) => doneIds.has(d)));
         if (!ready.length) {
+          const ps = chores ? pieces() : [];
+          if (ps.length && Math.random() < 0.75) { await chore(a, pick(ps)); continue; }
           const x = focusPt ? focusPt[0] + rand(-150, 150) : a.x + rand(-90, 90), y = focusPt ? focusPt[1] + rand(-90, 90) : a.y + rand(-70, 70);
           say(a); await go(a, clamp(x, 16, vw - 90), clamp(y, 60, vh - 50), rand(500, 800)); await wait(rand(40, 160)); continue;
         }
@@ -387,13 +444,13 @@
     }
 
     // a wireframe box dragged out corner to corner, the way the swarm marks out every element
-    const frame = async (a, r, label, ms = 450) => {
+    const frame = async (a, r, label, ms = 450, size = true) => {
       await go(a, r.x, r.y);
       click(a);
       const f = document.createElement("div");
       f.className = "rb-fr" + (r.y < 34 ? " lo" : "") + (r.x + 200 > vw ? " rt" : "");
       f.style.cssText = `--a:${a.color};left:${r.x}px;top:${r.y}px;width:0;height:0;--t:${rm ? 0 : ms * sp}ms`;
-      f.innerHTML = `<i></i><i></i><i></i><i></i><b class="rb-chip">${esc(label)} · ${Math.round(r.w)}×${Math.round(r.h)}</b>`;
+      f.innerHTML = `<i></i><i></i><i></i><i></i><b class="rb-chip">${esc(label)}${size ? ` · ${Math.round(r.w)}×${Math.round(r.h)}` : ""}</b>`;
       fx.appendChild(f); void f.offsetWidth;
       f.style.width = r.w + "px"; f.style.height = r.h + "px";
       await go(a, r.x + r.w, r.y + r.h, ms, "cubic-bezier(.5,0,.2,1)");
@@ -504,21 +561,72 @@
       }, { deps: [ai, bi], pri: 1, x: p0[0], y: p0[1] });
     };
 
-    // ---------- layouts ----------
-    const layoutColumns = (cols, gapX, gapY, maxW) => {
-      const n = cols.length, colW = Math.min(maxW, (R.w - (n - 1) * gapX) / n), x0 = R.x + (R.w - n * colW - (n - 1) * gapX) / 2;
-      cols.forEach((ids, c) => {
-        const hs = ids.map((id) => boxH(BE[id]));
-        const tot = hs.reduce((s, v) => s + v, 0) + gapY * (ids.length - 1);
-        let y = R.y + Math.max(0, (R.h - tot) / 2);
-        ids.forEach((id, k) => { rects[id] = { x: x0 + c * (colW + gapX), y, w: colW, h: hs[k] }; y += hs[k] + gapY; });
-      });
-    };
-    if (narrow) layoutColumns([["edge", "rules", "mail"], ["api", "db"]], 12, 26, 400);
-    else {
-      dbRow = clamp(Math.floor((R.h * 0.86 - M.hdr - 14) / BE.db.lines.length), M.row, 40);
-      layoutColumns([["edge"], ["api"], ["rules", "mail"], ["db"]], clamp(R.w * 0.06, 40, 110), 46, 330);
+    // ---------- the back end: windows with the real source, typed in by the swarm ----------
+    const LH = narrow ? 14 : 17, CW = narrow ? 6 : 6.9, TB = 26, GUT = 26;
+    ov.style.setProperty("--clh", LH + "px"); ov.style.setProperty("--cfs", narrow ? "10px" : "11.5px");
+    const shown = (p) => p.lines.slice(0, narrow ? 9 : 14);
+    const panelH = (p) => TB + 16 + shown(p).length * LH + 2;
+    if (narrow) {
+      const order = ["rules", "otp", "contact", "vercel", "db", "deploy"], hs = order.map((id) => panelH(PANELS[id]));
+      const step = Math.min(hs[0] + 10, (R.h - hs.at(-1)) / (order.length - 1));
+      order.forEach((id, k) => (rects[id] = { x: R.x + (k % 2 ? 8 : 0), y: R.y + k * step, w: R.w - 8, h: hs[k] }));
+    } else {
+      const gap = 28, colW = Math.min(500, (R.w - 2 * gap) / 3), grid = [["rules", "otp", "vercel"], ["deploy", "contact", "db"]];
+      const rowH = grid.map((row) => Math.max(...row.map((id) => panelH(PANELS[id]))));
+      const tot = rowH[0] + gap + rowH[1], y0 = R.y + Math.max(0, (R.h - tot) / 2), lift = Math.min(0, R.h - tot), x0 = R.x + (R.w - 3 * colW - 2 * gap) / 2;
+      grid.forEach((row, ri) => row.forEach((id, ci) => {
+        const h = panelH(PANELS[id]);
+        rects[id] = { x: clamp(x0 + ci * (colW + gap) + (ri ? colW * 0.08 : -colW * 0.03) + rand(-8, 8), 6, vw - colW - 6), y: y0 + (ri ? rowH[0] + gap + lift : 0) + rand(-8, 8), w: colW, h };
+      }));
     }
+    const hl = (line) => {
+      const re = /(\/\/.*$)|('[^']*'|"[^"]*"|`[^`]*`)|(\b\d[\d_.]*\b)|(\b(?:import|from|export|default|async|function|return|if|const|await|allow|match|read|write|create|update|delete|service|true|false|rules_version)\b)/g;
+      let out = "", i = 0, m;
+      while ((m = re.exec(line))) { out += esc(line.slice(i, m.index)) + `<b class="${m[1] ? "c" : m[2] ? "s" : m[3] ? "n" : "k"}">${esc(m[0])}</b>`; i = re.lastIndex; }
+      return out + esc(line.slice(i));
+    };
+    const makePanel = (p, r, color) => {
+      const el = document.createElement("div");
+      el.className = "rb-pn " + p.kind;
+      el.style.cssText = `--a:${color};left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`;
+      const rows = shown(p).map((ln, k) => {
+        if (p.kind === "db") return `<div class="rb-cl rb-dr"><span>${esc(ln[0])}</span><em>${esc(ln[1])}</em><i style="--w:${Math.round(14 + Math.log10(ln[2] + 1) * 34)}%"></i><u>${ln[2]}</u></div>`;
+        if (p.kind === "term") return `<div class="rb-cl${k === 0 ? " p" : /^(Production|Aliased)/.test(ln) ? " ok" : ""}"><code>${esc(ln)}</code></div>`;
+        return `<div class="rb-cl"><s>${k + 1}</s><code>${hl(ln)}</code></div>`;
+      }).join("");
+      el.innerHTML = `<div class="rb-pt"><i></i><b>${esc(p.title)}</b><span><u></u><u></u><u></u></span></div><div class="rb-pb">${rows}</div>`;
+      beL.appendChild(el);
+      return el;
+    };
+    // one agent opens the window; then whoever is free piles in and types a line, so several lines type at once
+    const short = (t) => t.replace(/^.*[\\/]/, "");
+    const buildPanel = (id) => {
+      const p = PANELS[id], r = rects[id];
+      task(id, async (a) => {
+        say(a, short(p.title));
+        const f = await frame(a, r, "win · " + short(p.title), 400 * pace);
+        const el = boxes[id] = makePanel(p, r, a.color);
+        void el.offsetWidth; el.classList.add("on"); click(a);
+        await go(a, r.x + 10, r.y + TB / 2, 140);
+        el.classList.add("hd");
+        await go(a, r.x + r.w - 70, r.y + TB / 2, 300 * pace, "linear");
+        unframe(f, 250); chime();
+      }, { pri: -1, x: r.x, y: r.y });
+      shown(p).forEach((ln, k) => task(id + ":" + k, async (a) => {
+        const row = boxes[id].querySelectorAll(".rb-cl")[k];
+        const text = Array.isArray(ln) ? ln.slice(0, 2).join("    ") : ln, n = text.trimEnd().length, indent = text.length - text.trimStart().length;
+        if (!n) { row.classList.add("on"); return; }
+        const y = r.y + TB + 8 + k * LH + LH / 2, x0 = r.x + (p.kind === "code" ? GUT + 4 : 10) + indent * CW;
+        say(a, p.kind === "db" ? ln[0] : short(p.title));
+        await go(a, x0, y);
+        const t = clamp((n - indent) * 7, 90, 300) * pace;
+        row.style.setProperty("--t", t * sp + "ms"); row.style.setProperty("--n", Math.min(n, 48));
+        row.classList.add("on");
+        if (k % 3 === 0) click(a);
+        await go(a, Math.min(r.x + r.w - 12, x0 + (n - indent) * CW), y, t, "linear");
+      }, { deps: [id], pri: Math.floor(k / 4) * 0.01, x: r.x, y: r.y + TB + k * LH }));
+    };
+
     // front-end modules are laid over the back end, offset so both stay readable
     const FE_SPOT = narrow
       ? { index: [0, 0, .58], sound: [.62, .03, .38], app: [.16, .2, .68], data: [0, .5, .52], style: [.55, .52, .45], games: [0, .74, .48], extras: [.52, .78, .48] }
@@ -528,49 +636,48 @@
       rects[id] = { x: R.x + clamp(R.w * fx0, 0, R.w - w), y: R.y + clamp(R.h * fy0, 0, Math.max(0, R.h - h)), w, h };
     });
 
-    // ---------- needles: a thread stitched between two pieces, in the background ----------
-    let seamN = 0;
-    const inside = (r, s) => { let x = r.x + r.w * rand(0.25, 0.75), y = r.y + r.h * rand(0.3, 0.7); if (s && s !== 1) { x = vw / 2 + (x - vw / 2) * s; y = vh / 2 + (y - vh / 2) * s; } return [x, y]; };
-    const stitch = (A, B, color = pick(THREADS), ms = rand(1100, 1600)) => {
-      if (!A || !B) return;
-      const [x1, y1] = A, [x2, y2] = B, dx = x2 - x1, dy = y2 - y1;
-      if (Math.hypot(dx, dy) < 40) return;
-      const bend = rand(0.12, 0.3) * (Math.random() < 0.5 ? -1 : 1), cx = (x1 + x2) / 2 - dy * bend, cy = (y1 + y2) / 2 + dx * bend;
-      const d = `M${x1.toFixed(1)} ${y1.toFixed(1)} Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`;
-      const id = "rbM" + seamN++;
+    // ---------- needles: knitting little sweater patches over anything, purely for texture ----------
+    // rows of V stitches, back and forth like a sweater; the needle dips into the fabric and out again on every stitch
+    const STEP = narrow ? 8 : 10, ROWH = narrow ? 8 : 10, SPD = 50;
+    const knit = (cx, cy, color = pick(YARN)) => {
+      const per = (rand(5, 10) | 0), rows = (rand(3, 5) | 0), x0 = cx - (per * STEP) / 2, y0 = cy - (rows * ROWH) / 2, pts = [];
+      let vs = "";
+      for (let r = 0; r < rows; r++) for (let k = 0; k < per; k++) {
+        const x = x0 + (r % 2 ? per - 1 - k : k) * STEP + STEP / 2, y = y0 + r * ROWH + ROWH / 2, i = r * per + k;
+        pts.push([x, y]);
+        const lx = (x - STEP * 0.23).toFixed(1), rx = (x + STEP * 0.23).toFixed(1), cy = y.toFixed(1), ex = (STEP * 0.2).toFixed(1), ey = (ROWH * 0.55).toFixed(1);
+        vs += `<g style="animation-delay:${Math.round(i * SPD * sp)}ms"><ellipse cx="${lx}" cy="${cy}" rx="${ex}" ry="${ey}" transform="rotate(-34 ${lx} ${cy})"/><ellipse cx="${rx}" cy="${cy}" rx="${ex}" ry="${ey}" transform="rotate(34 ${rx} ${cy})"/></g>`;
+      }
       const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.setAttribute("class", "rb-sg");
-      g.innerHTML = `<mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="${vw}" height="${vh}"><path d="${d}" fill="none" stroke="#fff" stroke-width="10" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" style="transition:stroke-dashoffset ${ms * sp}ms linear"/></mask>
-        <path class="rb-seam-u" stroke="${color}" d="${d}" mask="url(#${id})"/><path class="rb-seam" stroke="${color}" d="${d}" mask="url(#${id})"/>
-        <circle r="3" fill="${color}" cx="${x1}" cy="${y1}"/>`;
+      g.setAttribute("class", "rb-kn"); g.setAttribute("fill", color); g.innerHTML = vs;
       sewS.appendChild(g);
+      const ms = pts.length * SPD, d = "M" + pts.map((p) => p.map((v) => v.toFixed(1)).join(" ")).join(" L");
       const nd = document.createElement("div");
       nd.className = "rb-nd";
-      nd.style.cssText = `offset-path:path("${d}");transition:offset-distance ${ms * sp}ms linear, opacity .3s`;
-      nd.innerHTML = `<svg viewBox="0 0 64 10"><path d="M6 5 L-30 ${rand(-4, 4).toFixed(1)}" stroke="${color}" stroke-width="1.6" fill="none"/><path d="M3 5 Q3 2 8 2.2 L60 4.5 Q64 5 60 5.5 L8 7.8 Q3 8 3 5Z" fill="url(#rbNdG)" stroke="#0f172a" stroke-width=".5"/><ellipse cx="9" cy="5" rx="3.2" ry="1.1" fill="#0b1020"/></svg>`;
+      nd.style.cssText = `offset-path:path("${d}");transition:offset-distance ${ms * sp}ms linear;--sp:${SPD * sp}ms`;
+      nd.innerHTML = `<svg viewBox="0 0 58 9"><path d="M6 4.5 C-8 4.5 -14 ${rand(-6, 14).toFixed(1)} -34 ${rand(-4, 12).toFixed(1)}" stroke="${color}" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M3 4.5 Q3 2 7 2 L54 4 Q58 4.5 54 5 L7 7 Q3 7 3 4.5Z" fill="url(#rbNdG)" stroke="#0f172a" stroke-width=".5"/><ellipse cx="8" cy="4.5" rx="2.8" ry="1" fill="#0b1020"/></svg>`;
       sewL.appendChild(nd);
-      void nd.offsetWidth; void g.getBoundingClientRect();
-      nd.style.offsetDistance = "100%";
-      g.querySelector("mask path").style.strokeDashoffset = "0";
-      blip(rand(500, 700), 0.05, "triangle", 0.04, rand(300, 400));
-      at(ms, () => { nd.classList.add("out"); g.insertAdjacentHTML("beforeend", `<circle r="3" fill="${color}" cx="${x2}" cy="${y2}"/>`); at(400, () => nd.remove()); });
-      at(ms + 2600, () => g.classList.add("old"));
-      at(ms + (narrow ? 5500 : 9000), () => g.remove());
+      void nd.offsetWidth; nd.style.offsetDistance = "100%";
+      blip(rand(900, 1300), 0.03, "triangle", 0.03, rand(500, 700));
+      at(ms, () => { nd.classList.add("out"); at(300, () => nd.remove()); });
+      at(ms + 1800, () => g.classList.add("old"));
+      at(ms + (narrow ? 4000 : 5500), () => g.remove());
     };
-    // the threads that tie the front end to the back end; app windows join the pool as they are built
-    const SEAMS = [["index", "edge"], ["app", "rules"], ["app", "api:otp"], ["games", "db"], ["data", "edge"], ["app", "db"], ["extras", "edge"], ["style", "index"], ["sound", "app"], ["app", "api:contact"], ["index", "api:proxy"], ["games", "rules"]];
-    const seamPool = [], appRects = {};
-    const ptOf = (id) => {
-      if (appRects[id]) return inside(appRects[id]);
-      const r = rects[id]; if (!r || !boxes[id]) return null;
-      return FE[id] ? inside(r, feL.classList.contains("under") ? 0.985 : 1) : inside(r, beL.classList.contains("under") ? 0.965 : 1);
-    };
-    let seamI = 0;
-    const sewOne = () => {
-      const ready = [...SEAMS, ...seamPool].filter(([a, b]) => ptOf(a) && ptOf(b));
-      if (!ready.length) return;
-      const [a, b] = ready[(seamI++ * 7) % ready.length];
-      stitch(ptOf(a), ptOf(b));
+    // anything that has been built can be knitted onto, along its edges
+    const appRects = {};
+    let chores = true;
+    const scaled = (r, f) => (f === 1 ? r : { x: vw / 2 + (r.x - vw / 2) * f, y: vh / 2 + (r.y - vh / 2) * f, w: r.w * f, h: r.h * f });
+    const pieces = () => [
+      ...Object.keys(boxes).filter((id) => rects[id]).map((id) => scaled(rects[id], FE[id] ? (feL.classList.contains("under") ? 0.985 : 1) : (beL.classList.contains("under") ? 0.965 : 1))),
+      ...Object.values(appRects)];
+    const onEdge = (r) => { const e = (Math.random() * 4) | 0, t = rand(0.12, 0.88); return e === 0 ? [r.x + r.w * t, r.y] : e === 1 ? [r.x + r.w, r.y + r.h * t] : e === 2 ? [r.x + r.w * t, r.y + r.h] : [r.x, r.y + r.h * t]; };
+    const knitOne = () => { const ps = pieces(); if (!ps.length) return; const [x, y] = onEdge(pick(ps)); knit(clamp(x, 50, vw - 50), clamp(y, 24, vh - 24)); };
+    // an idle agent never waits around: it checks something that is already built
+    const chore = async (a, r) => {
+      const h = rand(16, 24), sub = { x: r.x + rand(4, r.w * 0.3), y: r.y + rand(r.h * 0.15, Math.max(r.h * 0.15, r.h - h - 6)), w: r.w * rand(0.3, 0.6), h };
+      say(a, "check");
+      const f = await frame(a, sub, pick(CHECKS), 220, false);
+      tick(); await wait(rand(180, 320)); unframe(f, 0);
     };
 
     // ---------- real apps: opened hidden behind the overlay, copied, closed again ----------
@@ -606,7 +713,7 @@
 
     const buildApp = (app, i) => {
       const [fx0, fy0] = APP_SPOT[i % APP_SPOT.length];
-      const top = 58, bottom = vh - 34, w = app.w, h = app.h;
+      const top = 16, bottom = vh - 16, w = app.w, h = app.h;
       const x = clamp(vw * fx0 - w / 2, 8, Math.max(8, vw - w - 8)), y = clamp(top + (bottom - top) * fy0 - h / 2, top, Math.max(top, bottom - h));
       const r = { x, y, w, h };
       const wrap = document.createElement("div");
@@ -653,8 +760,7 @@
       task(base + ":d", async () => {
         wrap.classList.add("done"); if (wrap.f) unframe(wrap.f, 0);
         appRects[app.id] = r;
-        seamPool.push([app.id, APP_LINK[app.id] || "db"]);
-        if (!rm) stitch(inside(r), ptOf(APP_LINK[app.id] || "db"), pick(THREADS), 1000);
+        if (!rm) for (let n = 0; n < 2; n++) { const [kx, ky] = onEdge(r); knit(clamp(kx, 50, vw - 50), clamp(ky, 24, vh - 24)); }
         chime();
       }, { deps: [base + ":b"], pri: -2, x, y });
     };
@@ -666,63 +772,40 @@
     at(650, () => { ov.classList.add("on"); skipBtn.focus({ preventScroll: true }); });
     at(900, () => { decode(q(".rb-intro-t"), "VISUAL REBUILD", 900); q(".rb-intro-bar").classList.add("on"); blip(90, 0.9, "sawtooth", 0.6, 45); });
     at(1150, () => { q(".rb-intro-s").innerHTML = "unmounting render tree · <b>0 nodes remain</b>"; tick(); });
-    at(1900, () => { q(".rb-intro-s").innerHTML = "spawning swarm ▸ <b>8 agents · needle and thread</b>"; tick(); });
+    at(1900, () => { q(".rb-intro-s").innerHTML = "spawning swarm ▸ <b>10 agents · knitting needles</b>"; tick(); });
     at(1000, () => prepAll());
 
-    // 0-10s: the back end
-    at(2600, () => {
-      intro.classList.add("off"); hud.classList.remove("off");
-      phase("BACKEND", "#22d3ee");
-      caption("01 · BACK END", "BACKEND", "Edge network, serverless functions, rules, data.");
-      spawn(8); thud();
-    });
-    at(2700, () => {
-      ["edge", "api", "rules", "db", "mail"].forEach((id) => buildBox(beL, id, BE[id], ""));
-      if (narrow) {
-        wire(beL, ["edge", "r", 0.4], ["api", "l", 0.15], "invoke");
-        wire(beL, ["api", "l", 0.7], ["rules", "r", 0.5], "admin sdk");
-        wire(beL, ["api", "l", 0.9], ["mail", "r", 0.5], "smtp");
-        wire(beL, ["rules", "r", 0.85], ["db", "l", 0.25], "allow");
-      } else {
-        wire(beL, ["edge", "r", 0.5], ["api", "l", 0.3], "invoke");
-        wire(beL, ["api", "r", 0.3], ["rules", "l", 0.6], "admin sdk");
-        wire(beL, ["api", "r", 0.8], ["mail", "l", 0.5], "smtp");
-        wire(beL, ["rules", "r", 0.5], ["db", "l", 0.3], "allow");
-      }
-    });
+    // 2.6-10s: the back end, as its real source files
+    at(2600, () => { intro.classList.add("off"); spawn(10); thud(); });
+    [["rules", 2700], ["otp", 3250], ["contact", 3800], ["vercel", 4400], ["db", 5000], ["deploy", 5600]].forEach(([id, t]) => at(t, () => buildPanel(id)));
+    // needles start knitting once there is something to knit onto
+    let sewTimer = 0;
+    at(8200, () => { if (!rm) sewTimer = every(narrow ? 650 : 340, knitOne); });
 
     // 10-20s: the front end on top of the back end; needles start stitching the two together
-    let sewTimer = 0;
     at(10000, () => {
       beL.classList.add("under");
       pace = 1.1;
-      phase("FRONT END", "#f472b6");
-      caption("02 · FRONT END", "INTERFACE", "Shell, runtime, sound, data and styles, on top of the back end.");
       thud();
       ["index", "app", "sound", "data", "style", "games", "extras"].forEach((id) => buildBox(feL, id, FE[id], "fe"));
       wire(feL, ["index", "r", 0.5], ["app", "l", 0.3], "boot");
       wire(feL, ["app", "b", 0.3], ["games", "t", 0.5], "import()");
       wire(feL, ["app", narrow ? "b" : "r", narrow ? 0.75 : 0.8], ["extras", "t", 0.4], "import()");
-      if (!rm) sewTimer = every(narrow ? 1400 : 850, sewOne);
     });
 
     // 20-38s: the real apps, stacking on top of each other and speeding up
     at(19500, () => {
       feL.classList.add("under"); beL.classList.add("under2");
       pace = 1;
-      phase("APPS", "#fbbf24");
-      caption("03 · APPS", "PROGRAMS", "Every window rebuilt live, one on top of another.");
       const edges = [[-30, vh * 0.3], [vw + 30, vh * 0.5], [vw * 0.5, vh + 30], [-30, vh * 0.8], [vw + 30, vh * 0.2], [vw * 0.3, -30]];
-      spawn(6, (k) => edges[k]); thud();
+      spawn(4, (k) => edges[k]); thud();
     });
-    at(23500, () => { cap.classList.remove("swap"); cap.classList.add("off"); });
     APP_AT.forEach((t, i) => at(t, () => { if (apps[i]) buildApp(apps[i], i); }));
 
     // 38-42s: the windows fly away and the desktop is built
     at(37600, () => stop(sewTimer));
     at(38000, () => {
-      phase("DESKTOP", "#a3e635");
-      queue.length = 0;
+      queue.length = 0; chores = false;
       [...appsL.children].reverse().forEach((w, k) => at(k * 45, () => {
         const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(w.style.transform) || [0, 0, 0];
         const x = +m[1], y = +m[2], dx = x + w.offsetWidth / 2 - vw / 2, dy = y + w.offsetHeight / 2 - vh / 2, L = Math.hypot(dx, dy) || 1, far = Math.max(vw, vh) * 0.95;
@@ -763,7 +846,6 @@
 
     // 42-45s: taskbar, start button, tray: wifi, battery, volume, clock
     at(41900, () => {
-      phase("TASKBAR", "#60a5fa");
       focusPt = [vw / 2, vh - 70];
       D.bar.forEach((p) => task("bar", async (a) => {
         say(a, "taskbar");
@@ -790,7 +872,7 @@
       queue.length = 0;
       const home = D.start[0]?.r || { x: 20, y: vh - 30, w: 60, h: 30 };
       ags.forEach((a, k) => { a.home = true; at(k * 35, () => { place(a, home.x + home.w / 2, home.y + home.h / 2, 520, "cubic-bezier(.6,0,.8,.4)"); at(480, () => a.el.classList.remove("on")); }); });
-      hud.classList.add("off"); fx.style.opacity = "0";
+      skipBtn.style.opacity = "0"; fx.style.opacity = "0";
       // anything the swarm did not reach in time is simply shown
       clone.querySelectorAll(".rb-h").forEach((e) => e.classList.add("rb-on"));
     });
