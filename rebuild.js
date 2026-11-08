@@ -1,9 +1,9 @@
-// Visual Rebuild, Mark 2: a ~37 second, purely visual rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
-// 3-12s   the foundation: back-end windows (real source, data, a deploy) and front-end modules, built side by side
-// 7-30s   needles drop in from above, go under the page, come back out and the thread is snipped: no mark is left
-// 12-29s  a handful of real app windows are built one on top of another, the games last and About Me on top
-// 30-34s  the windows fly away and the desktop (wallpaper, icons) is built
-// 34-37s  the taskbar, start button and tray icons, then it hands back to the live desktop underneath
+// Visual Rebuild, Mark 2: a ~32 second, purely visual rebuild of this site by a swarm of tiny agents. (Mark 1 is rebuild-mk1.js.)
+// 3-10s   the foundation: back-end windows (real source, data, a deploy) and front-end modules, built side by side
+// 7-26s   needles drop in from above, go under the page, come back out and the thread is snipped: no mark is left
+// 9-25s   a handful of real app windows are built one on top of another, the games last and About Me on top
+// 26-29s  the windows fly away and the desktop (wallpaper, icons) is built
+// 29-32s  the taskbar, start button and tray icons, then it hands back to the live desktop underneath
 // It is all theatre: nothing here writes data or touches the network. Loaded on demand by app.js.
 (() => {
   const CSS = `
@@ -77,6 +77,16 @@
 .rb-app.fly { opacity: 0; }
 .rb-app .rb-hide { opacity: 0; }
 .rb-app .rb-tl { display: block; width: fit-content; }
+.rb-throw { position: absolute; width: 46px; height: 46px; border-radius: 6px; border: 2px solid #fff; background-size: cover; background-position: center;
+  box-shadow: 0 8px 18px rgba(0,0,0,.45); pointer-events: none; }
+.rb-app .rb-stick { position: absolute; right: 1px; bottom: 1px; width: 60%; height: 60%; border-radius: 3px; background-size: cover; background-position: center;
+  box-shadow: 0 0 0 1px #fff, 0 2px 4px rgba(0,0,0,.35); pointer-events: none; }
+.rb-mine { position: absolute; width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2); border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff 0 12%, #111 14%); box-shadow: 0 0 0 2px rgba(0,0,0,.25); animation: rbMine .2s cubic-bezier(.3,1.6,.5,1) both; }
+.rb-mine::before, .rb-mine::after { content: ""; position: absolute; left: 50%; top: -22%; width: 2px; height: 144%; margin-left: -1px; background: #111; }
+.rb-mine::after { transform: rotate(90deg); }
+.rb-mine.bury { transform: scale(0); opacity: 0; transition: transform .25s ease-in, opacity .25s; }
+@keyframes rbMine { from { transform: scale(0); } to { transform: scale(1); } }
 
 /* the desktop copy that is built last */
 .rb-wall { position: absolute; inset: 0; clip-path: circle(0 at var(--x, 50%) var(--y, 50%)); transition: clip-path 1.2s cubic-bezier(.6,0,.2,1); }
@@ -105,14 +115,14 @@
 
 /* swarm */
 .rb-fx, .rb-ags { position: absolute; inset: 0; pointer-events: none; transition: opacity .4s; }
-.rb-fr { position: absolute; box-sizing: border-box; border: 1px solid var(--a);
-  transition: width var(--t) cubic-bezier(.5,0,.2,1), height var(--t) cubic-bezier(.5,0,.2,1), opacity .4s; }
-.rb-fr::before { content: ""; position: absolute; inset: 0; background: color-mix(in srgb, var(--a) 8%, transparent); }
-.rb-fr i { position: absolute; width: 6px; height: 6px; background: #fff; border: 1px solid var(--a); box-sizing: border-box; opacity: 0; transition: opacity .2s; }
+.rb-fr { position: absolute; box-sizing: border-box; border: 1px solid #3b82f6;
+  transition: width var(--t) cubic-bezier(.5,0,.2,1), height var(--t) cubic-bezier(.5,0,.2,1), left var(--t) cubic-bezier(.5,0,.2,1), top var(--t) cubic-bezier(.5,0,.2,1), opacity .4s; }
+.rb-fr::before { content: ""; position: absolute; inset: 0; background: rgba(59,130,246,.07); }
+.rb-fr i { position: absolute; width: 6px; height: 6px; background: #fff; border: 1px solid #3b82f6; box-sizing: border-box; opacity: 0; transition: opacity .2s; }
 .rb-fr i:nth-child(1) { left: -3px; top: -3px; } .rb-fr i:nth-child(2) { right: -3px; top: -3px; }
 .rb-fr i:nth-child(3) { left: -3px; bottom: -3px; } .rb-fr i:nth-child(4) { right: -3px; bottom: -3px; }
 .rb-fr.set i { opacity: 1; }
-.rb-chip { position: absolute; left: -1px; bottom: 100%; margin-bottom: 4px; background: var(--a); color: #020617; font: 600 10px/1 var(--rb-mono);
+.rb-chip { position: absolute; left: -1px; bottom: 100%; margin-bottom: 4px; background: #3b82f6; color: #fff; font: 600 10px/1 var(--rb-mono);
   padding: 3px 6px; border-radius: 3px; white-space: nowrap; opacity: 0; transition: opacity .2s; }
 .rb-fr.lo .rb-chip { bottom: auto; top: 100%; margin: 4px 0 0; }
 .rb-fr.rt .rb-chip { left: auto; right: -1px; }
@@ -120,17 +130,40 @@
 .rb-fr.gone { opacity: 0; }
 .rb-ag { position: absolute; left: 0; top: 0; opacity: 0; transition: transform .5s cubic-bezier(.45,0,.2,1), opacity .4s; }
 .rb-ag.on { opacity: 1; }
-.rb-ag svg { display: block; width: 16px; height: 20px; overflow: visible; }
-.rb-ag path { fill: var(--a); stroke: #fff; stroke-width: 1.3; stroke-linejoin: round; }
-.rb-ag span { position: absolute; left: 12px; top: 17px; background: var(--a); color: #020617; font: 600 10px/1 var(--rb-mono); padding: 3px 6px;
-  border-radius: 2px 8px 8px 8px; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.45); }
-.rb-ag.click svg { animation: rbClick .22s ease-out; }
-@keyframes rbClick { 50% { transform: scale(.8); } }
+.rb-ag svg { display: block; width: 14px; height: 14px; overflow: visible; transform-origin: 1.5px 1.5px; transition: transform .22s ease-out; }
+.rb-ag path { fill: var(--a); stroke: #fff; stroke-width: 1.2; stroke-linejoin: round; }
+.rb-ag span { position: absolute; left: 12px; top: 14px; background: var(--a); color: #020617; font: 600 9.5px/1 var(--rb-mono); padding: 3px 6px;
+  border-radius: 2px 8px 8px 8px; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.45); opacity: 0; transition: opacity .25s; }
+.rb-ag.tag span { opacity: 1; }
+.rb-ag.click svg path { animation: rbClick .22s ease-out; }
+@keyframes rbClick { 50% { opacity: .55; } }
+.rb-gd { position: absolute; background: #ff4d4d; pointer-events: none; animation: rbGd .55s ease both; }
+.rb-gd.v { top: 0; bottom: 0; width: 1px; } .rb-gd.h { left: 0; right: 0; height: 1px; }
+@keyframes rbGd { 0% { opacity: 0; } 15%, 70% { opacity: .75; } 100% { opacity: 0; } }
+.rb-ruler { position: absolute; pointer-events: none; opacity: 0; transition: opacity .6s; background-color: rgba(8,12,24,.9); font: 9px/1 var(--rb-mono); color: #64748b; overflow: hidden; }
+.rb-ruler.on { opacity: 1; }
+.rb-ruler.h { left: 0; right: 0; top: 0; height: 16px; border-bottom: 1px solid #1e293b;
+  background-image: repeating-linear-gradient(90deg, #475569 0 1px, transparent 1px 10px), repeating-linear-gradient(90deg, #94a3b8 0 1px, transparent 1px 100px);
+  background-size: 100% 4px, 100% 9px; background-position: 0 100%, 0 100%; background-repeat: repeat-x; }
+.rb-ruler.v { left: 0; top: 16px; bottom: 0; width: 16px; border-right: 1px solid #1e293b;
+  background-image: repeating-linear-gradient(180deg, #475569 0 1px, transparent 1px 10px), repeating-linear-gradient(180deg, #94a3b8 0 1px, transparent 1px 100px);
+  background-size: 4px 100%, 9px 100%; background-position: 100% -16px, 100% -16px; background-repeat: repeat-y; }
+.rb-ruler span { position: absolute; top: 2px; } .rb-ruler.v span { left: 2px; writing-mode: vertical-rl; transform: rotate(180deg); }
+.rb-end { position: fixed; left: 50%; bottom: 44px; z-index: 100000; display: flex; align-items: center; gap: 10px; padding: 7px 8px 7px 12px; transform: translateX(-50%);
+  background: rgba(5,9,19,.9); color: #e2e8f0; border: 1px solid #1e293b; border-radius: 999px; font: 12px "Segoe UI", system-ui, sans-serif;
+  box-shadow: 0 10px 30px rgba(0,0,0,.45); animation: rbEnd .4s cubic-bezier(.2,.8,.2,1) both; }
+.rb-end.out { opacity: 0; transition: opacity .4s; }
+@keyframes rbEnd { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.rb-end .dots { display: flex; padding-left: 3px; } .rb-end .dots i { width: 9px; height: 9px; border-radius: 50%; margin-left: -3px; border: 1.5px solid #050913; }
+.rb-end b { font-weight: 600; color: #fff; }
+.rb-end button { border: 0; border-radius: 999px; padding: 5px 12px; font: 600 11px "Segoe UI", system-ui, sans-serif; cursor: pointer; background: #3b82f6; color: #fff; }
+.rb-end button.x { background: transparent; color: #94a3b8; padding: 5px 7px; }
+.rb-end button:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
 .rb-rip { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; border: 1.5px solid var(--a); box-sizing: border-box; animation: rbRip .55s ease-out both; }
 @keyframes rbRip { from { transform: scale(.2); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
 
 /* skip */
-.rb-skip { position: absolute; right: 12px; top: 10px; background: rgba(5,9,19,.55); border: 1px solid #334155; color: #cbd5e1; cursor: pointer; font: 10px var(--rb-mono);
+.rb-skip { position: absolute; right: 12px; top: 24px; background: rgba(5,9,19,.55); border: 1px solid #334155; color: #cbd5e1; cursor: pointer; font: 10px var(--rb-mono);
   letter-spacing: .2em; padding: 4px 10px; border-radius: 999px; opacity: .35; transition: opacity .3s; }
 .rb-skip:hover, .rb-skip:focus-visible { opacity: 1; outline: none; }
 
@@ -258,9 +291,9 @@
     style: { t: "STYLE.CSS", tag: "luna", swatch: ["#0058ee", "#3c8f3c", "#ece9d8", "#4c9b2d", "#d6dff7", "#1941a5"], lines: [["titlebar", "#0058ee"], ["start", "#3c8f3c"]] },
   };
   // real apps, in build order (none that need the network)
-  const APP_IDS = ["cmd", "paint", "projects", "msn", "mine", "solitaire", "spider", "snake", "about"];
-  const APP_AT = [12000, 14000, 15900, 17600, 19200, 20600, 21900, 23100, 24800];
-  const APP_SPOT = [[.3, .4], [.7, .36], [.22, .62], [.78, .62], [.4, .62], [.62, .34], [.34, .46], [.66, .56], [.5, .5]];
+  const APP_IDS = ["cmd", "paint", "projects", "msn", "calendar", "mine", "solitaire", "spider", "snake", "about"];
+  const APP_AT = [9400, 10600, 11800, 13000, 14200, 15400, 16600, 17800, 19000, 20800];
+  const APP_SPOT = [[.3, .4], [.7, .36], [.22, .62], [.78, .62], [.56, .4], [.4, .62], [.62, .34], [.34, .46], [.66, .56], [.5, .5]];
 
   let running = false;
 
@@ -335,6 +368,8 @@
       <div class="rb-layer rb-apps"></div><div class="rb-wall"></div>
       <div class="rb-sew"><svg width="${vw}" height="${vh}" viewBox="0 0 ${vw} ${vh}" style="position:absolute;left:0;top:0;overflow:visible"><defs><linearGradient id="rbNdG" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="#f8fafc"/><stop offset=".45" stop-color="#cbd5e1"/><stop offset="1" stop-color="#475569"/></linearGradient></defs></svg></div>
+      <div class="rb-ruler h">${Array.from({ length: Math.ceil(vw / 100) }, (_, n) => `<span style="left:${n * 100 + 2}px">${n * 100}</span>`).join("")}</div>
+      <div class="rb-ruler v">${Array.from({ length: Math.ceil(vh / 100) }, (_, n) => `<span style="top:${n * 100 - 14}px">${n * 100}</span>`).join("")}</div>
       <div class="rb-fx"></div><div class="rb-ags"></div>
       <div class="rb-glitch-bars">${Array.from({ length: 7 }, () => `<i style="top:${rand(0, 96).toFixed(1)}%;height:${rand(1, 9).toFixed(1)}px"></i>`).join("")}</div>
       <div class="rb-intro"><div class="rb-intro-t">&nbsp;</div><div class="rb-intro-bar"></div><div class="rb-intro-s">&nbsp;</div></div>
@@ -364,12 +399,22 @@
     const ags = [];
     let pace = 1; // > 1 is slower: every move and draw is scaled by it, and it drops as the show speeds up
     function place(a, x, y, ms, ease) {
+      if (Math.hypot(x - a.x, y - a.y) > 6) {
+        const deg = (Math.atan2(y - a.y, x - a.x) * 180) / Math.PI + 135;
+        a.rot += ((((deg - a.rot) % 360) + 540) % 360) - 180;
+        a.svg.style.transform = `rotate(${a.rot.toFixed(1)}deg)`;
+      }
       a.x = x; a.y = y;
       a.el.style.transition = ms && !rm ? `transform ${ms * sp}ms ${ease || "cubic-bezier(.45,0,.2,1)"}, opacity .4s` : "opacity .4s";
       a.el.style.transform = `translate(${x}px,${y}px)`;
     }
     const go = async (a, x, y, ms, ease) => { if (ms == null) ms = Math.min(850, 230 + Math.hypot(x - a.x, y - a.y) * 0.5) * Math.min(pace, 1.1); place(a, x, y, ms, ease); await wait(ms); };
-    const say = (a, txt) => (a.tag.textContent = txt ? `${a.name} · ${txt}` : a.name);
+    const say = (a, txt) => {
+      if (!txt) return;
+      a.tag.textContent = `${a.name} · ${txt}`;
+      a.el.classList.add("tag");
+      clearTimeout(a.tagT); a.tagT = setTimeout(() => a.el.classList.remove("tag"), 1300);
+    };
     const ripple = (x, y, c) => { const d = document.createElement("div"); d.className = "rb-rip"; d.style.cssText = `left:${x}px;top:${y}px;--a:${c}`; fx.appendChild(d); at(600, () => d.remove()); };
     const click = (a) => { a.el.classList.remove("click"); void a.el.offsetWidth; a.el.classList.add("click"); ripple(a.x, a.y, a.color); tick(); };
     const spawn = (n, from) => {
@@ -377,9 +422,9 @@
         const [name, color] = AGENTS[ags.length];
         const el = document.createElement("div");
         el.className = "rb-ag"; el.style.setProperty("--a", color);
-        el.innerHTML = `<svg viewBox="0 0 16 20"><path d="M1.5 1.5 L14 10 L8.2 11.2 L5.2 17.5 Z"/></svg><span>${name}</span>`;
+        el.innerHTML = `<svg viewBox="0 0 14 14"><path d="M1.5 1.5 L12.5 6 L7 7.2 L5.6 12.5 Z"/></svg><span>${name}</span>`;
         agL.appendChild(el);
-        const a = { name, color, el, tag: el.querySelector("span"), x: 0, y: 0 };
+        const a = { name, color, el, tag: el.querySelector("span"), svg: el.querySelector("svg"), x: 0, y: 0, rot: 0 };
         const [sx, sy] = from ? from(k) : [vw / 2, vh / 2];
         place(a, sx, sy, 0);
         ags.push(a);
@@ -419,7 +464,14 @@
       f.style.width = r.w + "px"; f.style.height = r.h + "px";
       await go(a, r.x + r.w, r.y + r.h, ms, "cubic-bezier(.5,0,.2,1)");
       f.classList.add("set");
+      guides(r);
       return f;
+    };
+    const guides = (r) => {
+      if (Math.random() < 0.45) return;
+      const v = document.createElement("div"), h = document.createElement("div");
+      v.className = "rb-gd v"; v.style.left = r.x + "px"; h.className = "rb-gd h"; h.style.top = r.y + "px";
+      fx.append(v, h); at(600, () => { v.remove(); h.remove(); });
     };
     const unframe = (f, delay = 200) => at(delay, () => { f.classList.add("gone"); at(500, () => f.remove()); });
 
@@ -585,7 +637,7 @@
         const y = r.y + TB + 8 + k * LH + LH / 2, x0 = r.x + (p.kind === "code" ? GUT + 4 : 10) + indent * CW;
         say(a, p.kind === "db" ? ln[0] : short(p.title));
         await go(a, x0, y);
-        const t = clamp((n - indent) * 7, 90, 300) * pace;
+        const t = clamp((n - indent) * 11, 160, 460) * pace;
         row.style.setProperty("--t", t * sp + "ms"); row.style.setProperty("--n", Math.min(n, 48));
         row.classList.add("on");
         if (k % 3 === 0) click(a);
@@ -690,7 +742,8 @@
         lines.forEach((l) => { const sp = document.createElement("span"); sp.className = "rb-tl"; sp.textContent = l || " "; e.appendChild(sp); });
       });
       const ok = (r) => r.width >= 8 && r.height >= 8 && r.width <= w * 0.7 && r.height <= h * 0.6 && r.top >= box.top + 24 && r.top <= box.bottom - 6 && r.left <= box.right - 6 && r.right >= box.left + 6;
-      let c = [...rl.querySelectorAll(PART_SEL + ", .rb-tl")].filter((e) => !tb?.contains(e) && !e.closest("svg *") && !(e.classList.contains("rb-tl") && !e.textContent.trim()));
+      let c = [...rl.querySelectorAll(PART_SEL + ", .rb-tl")].filter((e) => !tb?.contains(e) && !e.closest("svg *") && !(e.classList.contains("rb-tl") && !e.textContent.trim())
+        && !e.closest(SPECIAL_OWN) && !e.querySelector(SPECIAL_OWN));
       // a long run of identical siblings is placed as one block, if that block is a sensible size
       c = c.map((e) => { const par = e.parentElement; return par && par !== rl && par.children.length > 12 && ok(par.getBoundingClientRect()) ? par : e; });
       // containers too big to move as one give way to the pieces inside them
@@ -699,6 +752,176 @@
       const max = 14, step = Math.max(1, o.length / max);
       return Array.from({ length: Math.min(max, o.length) }, (_, n) => o[Math.floor(n * step)]);
     };
+    // typed in, the cursor running along the line
+    const typeEl = async (b, e, k, xMax) => {
+      const r = e.getBoundingClientRect(), cy = r.top + r.height / 2, n = Math.min(40, e.textContent.trim().length), t = clamp(n * 20, 220, 700) * k;
+      say(b, "type");
+      await go(b, r.left, cy);
+      e.classList.remove("rb-hide");
+      e.animate([{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: t * sp, easing: `steps(${Math.max(4, n)})`, fill: "backwards" });
+      await go(b, Math.min(r.right, xMax), cy, t, "linear");
+    };
+    const mid = (e) => { const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, r]; };
+    const flyIn = (e, dx, dy, t, delay = 0) => e.animate([{ translate: `${dx}px ${dy}px`, scale: "0.85", opacity: 0 }, { opacity: 1, offset: 0.15 }, { translate: "0px 0px", scale: "1", opacity: 1 }],
+      { duration: t * sp, delay: delay * sp, easing: "cubic-bezier(.3,.7,.3,1)", fill: "backwards" });
+    // the bits each app builds its own way, so the agents look like they are using the apps
+    const SPECIAL_OWN = ".card, .mine-grid, .cal.big, .paint-area canvas, .cmd .line input, .msn-bar textarea";
+    const SPECIAL = {
+      // cards: the deck goes down first, then several agents deal from it at once
+      solitaire: (rl, base, k) => deal(rl, base, k),
+      spider: (rl, base, k) => deal(rl, base, k),
+      // minesweeper: the grid is drawn row by row
+      mine(rl, base, k) {
+        const g = rl.querySelector(".mine-grid"); if (!g?.children.length) return;
+        const rowIds = drawRows(g, base, k, "grid");
+        const cells = [...g.children];
+        const picks = cells.map((c) => [Math.random(), c]).sort((p, q) => p[0] - q[0]).slice(0, 10).map((p) => p[1]);
+        [0, 1, 2].forEach((n) => task(`${base}:mines${n}`, async (a) => {
+          say(a, "mines");
+          for (const c of picks.filter((_, j) => j % 3 === n)) {
+            const [cx, cy, cr] = mid(c);
+            await go(a, cx, cy, 200 * k); click(a);
+            const m = document.createElement("div");
+            m.className = "rb-mine";
+            m.style.cssText = `left:${cx}px;top:${cy}px;--s:${Math.max(8, cr.width * 0.55)}px`;
+            fx.appendChild(m);
+            at(650 * k, () => { m.classList.add("bury"); at(260, () => m.remove()); });
+            await wait(120 * k);
+          }
+        }, { deps: rowIds, pri: -1, x: g.getBoundingClientRect().left, y: g.getBoundingClientRect().top }));
+      },
+      // paint: three agents draw on the canvas at once
+      paint(rl, base, k) {
+        const cv = rl.querySelector(".paint-area canvas"), area = rl.querySelector(".paint-area"); if (!cv || !area) return;
+        const r = cv.getBoundingClientRect(), ar = area.getBoundingClientRect(), W = Math.min(r.width, ar.width) - 10, H = Math.min(r.height, ar.height) - 10;
+        const ctx = cv.getContext("2d"), sx = cv.width / r.width, sy = cv.height / r.height;
+        const seg = (pts, n = 6) => pts.slice(1).flatMap((p, i) => Array.from({ length: n }, (_, j) => [pts[i][0] + ((p[0] - pts[i][0]) * (j + 1)) / n, pts[i][1] + ((p[1] - pts[i][1]) * (j + 1)) / n]));
+        const R0 = Math.min(W, H) * 0.12;
+        const shapes = [
+          ["#f5b700", Array.from({ length: 25 }, (_, i) => [W * 0.2 + Math.cos((i / 24) * Math.PI * 2) * R0, H * 0.28 + Math.sin((i / 24) * Math.PI * 2) * R0])],
+          ["#1e5fd0", [[W * 0.48, H * 0.78], ...seg([[W * 0.48, H * 0.78], [W * 0.48, H * 0.5], [W * 0.62, H * 0.32], [W * 0.76, H * 0.5], [W * 0.76, H * 0.78], [W * 0.48, H * 0.78]])]],
+          ["#2e9d3a", Array.from({ length: 30 }, (_, i) => [W * 0.04 + (W * 0.92 * i) / 29, H * 0.9 + Math.sin(i * 1.3) * 5])],
+        ];
+        shapes.forEach(([color, pts], n) => task(`${base}:draw${n}`, async (a) => {
+          say(a, "draw");
+          const P = pts.map(([px, py]) => [r.left + 5 + px, r.top + 5 + py]);
+          await go(a, P[0][0], P[0][1]); click(a);
+          ctx.strokeStyle = color; ctx.lineWidth = 4 * sx; ctx.lineCap = ctx.lineJoin = "round";
+          for (let i = 1; i < P.length; i++) {
+            await go(a, P[i][0], P[i][1], 30 * k, "linear");
+            ctx.beginPath(); ctx.moveTo((P[i - 1][0] - r.left) * sx, (P[i - 1][1] - r.top) * sy); ctx.lineTo((P[i][0] - r.left) * sx, (P[i][1] - r.top) * sy); ctx.stroke();
+          }
+        }, { deps: [base + ":b"], pri: -1, x: r.left + W * (0.2 + n * 0.3), y: r.top + H / 2 }));
+      },
+      // calendar: the month is drawn row by row while two agents throw photos up from the bottom of the screen onto the days
+      calendar(rl, base, k) {
+        const g = rl.querySelector(".cal.big"); if (!g?.children.length) return;
+        const rowIds = drawRows(g, base, k, "calendar");
+        const days = [...g.querySelectorAll("button[data-d]")].map((d) => [Math.random(), d]).sort((p, q) => p[0] - q[0]).slice(0, 6).map((p) => p[1]);
+        const PICS = ["url(photo.jpg)", "linear-gradient(160deg,#ffb347,#ff5f6d)", "linear-gradient(160deg,#4facfe,#00f2fe)", "url(photo.jpg)", "linear-gradient(160deg,#43e97b,#38f9d7)", "linear-gradient(160deg,#a18cd1,#fbc2eb)"];
+        [0, 1].forEach((n) => task(`${base}:throw${n}`, async (a) => {
+          say(a, "photos");
+          for (const [j, d] of days.entries()) {
+            if (j % 2 !== n) continue;
+            const [dx, dy, dr] = mid(d), sx = clamp(dx + rand(-220, 220), 30, vw - 30), sy = vh - 26, pic = PICS[j];
+            await go(a, sx, sy, 320 * k); click(a);
+            const im = document.createElement("div");
+            im.className = "rb-throw";
+            im.style.cssText = `left:${sx}px;top:${sy}px;background-image:${pic}`;
+            fx.appendChild(im);
+            const tx = dx - sx, ty = dy - sy, t = 640 * k;
+            im.animate([{ transform: "translate(-50%,-50%) rotate(0deg) scale(1)" },
+              { transform: `translate(calc(-50% + ${tx * 0.5}px), calc(-50% + ${ty * 0.5 - 130}px)) rotate(200deg) scale(1.15)`, offset: 0.5 },
+              { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) rotate(360deg) scale(${((dr.width * 0.6) / 46).toFixed(2)})` }],
+              { duration: t * sp, easing: "cubic-bezier(.3,0,.6,1)", fill: "forwards" });
+            at(t, () => {
+              im.remove();
+              const st = document.createElement("i");
+              st.className = "rb-stick"; st.style.backgroundImage = pic;
+              d.appendChild(st);
+              st.animate([{ scale: "1.4" }, { scale: "1" }], { duration: 200 * sp, easing: "cubic-bezier(.3,1.5,.5,1)" });
+              tick();
+            });
+            await wait(220 * k);
+          }
+        }, { deps: rowIds, pri: -1, x: vw / 2, y: vh - 30 }));
+      },
+      // command prompt: someone types "help" and the swarm types the answer
+      cmd(rl, base, k, partIds) {
+        const inp = rl.querySelector(".cmd .line input"), out = rl.querySelector(".cmd .out"); if (!inp || !out) return;
+        const [, iy, ir] = mid(inp);
+        task(`${base}:help`, async (a) => {
+          say(a, "help");
+          await go(a, ir.left + 4, iy); click(a);
+          for (let n = 1; n <= 4; n++) { inp.value = "help".slice(0, n); tick(); await go(a, ir.left + 4 + n * 8, iy, 120 * k, "linear"); }
+          await wait(150);
+          inp.value = "";
+          const lines = ["help", "Available commands:", "  ABOUT     - Displays biography", "  PROJECTS  - Lists showcase projects", "  GAMES     - Lists the games you can play"]
+            .map((l) => { const sp0 = document.createElement("span"); sp0.className = "rb-tl rb-hide"; sp0.textContent = l; out.appendChild(sp0); return sp0; });
+          lines.forEach((e, n) => task(`${base}:out${n}`, (b) => typeEl(b, e, k, ir.right), { deps: n ? [`${base}:out${n - 1}`] : [], pri: -1, x: ir.left, y: iy }));
+        }, { deps: [base + ":b", ...partIds], pri: -1, x: ir.left, y: iy });
+      },
+      // msn: someone types a message and sends it, and a reply comes back
+      msn(rl, base, k, partIds) {
+        const ta = rl.querySelector(".msn-bar textarea"), log = rl.querySelector(".msn-log"), btn = rl.querySelector(".msn-bar button"); if (!ta || !log) return;
+        const [, , tr] = mid(ta);
+        task(`${base}:chat`, async (a) => {
+          say(a, "typing");
+          await go(a, tr.left + 8, tr.top + 12); click(a);
+          const msg = "hey! who built this site?";
+          for (let n = 2; n <= msg.length; n += 2) { ta.value = msg.slice(0, n); if (n % 6 === 0) tick(); await go(a, tr.left + 8 + Math.min(tr.width - 24, n * 6), tr.top + 12, 50 * k, "linear"); }
+          ta.value = msg;
+          if (btn) { const [bx, by] = mid(btn); await go(a, bx, by, 220 * k); click(a); }
+          ta.value = "";
+          const say2 = (who, text, cls) => { const el = document.createElement("p"); el.innerHTML = `<b>${esc(who)} says:</b><br><span class="${cls}">${esc(text)}</span>`; log.appendChild(el); el.animate([{ opacity: 0, translate: "0 6px" }, { opacity: 1, translate: "0 0" }], { duration: 260 * sp }); };
+          say2("You", msg, "");
+          await wait(500 * k);
+          say2("Medhansh", "a swarm of tiny agents. they're still at it.", "them");
+        }, { deps: [base + ":b", ...partIds], pri: -1, x: tr.left, y: tr.top });
+      },
+    };
+    function drawRows(g, base, k, label) {
+      const rows = new Map();
+      [...g.children].forEach((c) => { c.classList.add("rb-hide"); const t = Math.round(c.getBoundingClientRect().top); rows.has(t) || rows.set(t, []); rows.get(t).push(c); });
+      return [...rows.values()].map((row, n) => {
+        const [x0, y0] = mid(row[0]), [x1] = mid(row.at(-1)), id = `${base}:row${n}`;
+        task(id, async (a) => {
+          say(a, label);
+          const t = (120 + row.length * 30) * k;
+          await go(a, x0 - 10, y0);
+          row.forEach((c, m) => { c.classList.remove("rb-hide"); c.animate([{ scale: "0.2", opacity: 0 }, { scale: "1", opacity: 1 }], { duration: 170 * sp, delay: ((m * t) / row.length) * sp, easing: "cubic-bezier(.3,1.4,.5,1)", fill: "backwards" }); });
+          await go(a, x1 + 10, y0, t, "linear");
+        }, { deps: [base + ":b"], pri: -1, x: x0, y: y0 });
+        return id;
+      });
+    }
+    function deal(rl, base, k) {
+      const cards = [...rl.querySelectorAll(".card")].filter((c) => !c.closest(".deck-grid"));
+      if (!cards.length) return;
+      cards.forEach((c) => c.classList.add("rb-hide"));
+      const stock = cards.filter((c) => c.dataset.pile === "s"), rest = cards.filter((c) => c.dataset.pile !== "s");
+      const [ox, oy] = mid(stock[0] || cards[0]);
+      task(base + ":deck", async (a) => {
+        say(a, "shuffle");
+        await go(a, ox, oy); click(a);
+        stock.forEach((c, n) => { c.classList.remove("rb-hide"); flyIn(c, rand(-40, 40), -60, 280 * k, n * 40); });
+        await wait(320 * k);
+      }, { deps: [base + ":b"], pri: -1, x: ox, y: oy });
+      const per = Math.max(3, Math.ceil(rest.length / 10));
+      for (let b = 0; b * per < rest.length; b++) {
+        const group = rest.slice(b * per, b * per + per);
+        task(`${base}:deal${b}`, async (a) => {
+          say(a, "deal");
+          for (const c of group) {
+            await go(a, ox, oy, 150 * k);
+            const [cx, cy] = mid(c);
+            c.classList.remove("rb-hide"); flyIn(c, ox - cx, oy - cy, 230 * k);
+            await go(a, cx, cy, 230 * k, "cubic-bezier(.3,.7,.3,1)");
+          }
+          tick();
+        }, { deps: [base + ":deck"], pri: -1, x: ox, y: oy });
+      }
+    }
     const buildApp = (app, i) => {
       const [fx0, fy0] = APP_SPOT[i % APP_SPOT.length];
       const top = 16, bottom = vh - 16, w = app.w, h = app.h;
@@ -718,18 +941,34 @@
         appsL.appendChild(wrap);
         focusPt = [x + w / 2, y + h / 2];
         thud();
-        pickParts(app.rl, w, h).forEach(({ e, r: pr }, j) => {
+        const parts = pickParts(app.rl, w, h);
+        parts.forEach(({ e, r: pr }, j) => {
           e.classList.add("rb-hide");
           const cx = pr.left + pr.width / 2, cy = pr.top + pr.height / 2;
           task(`${base}:p${j}`, async (b) => {
-            if (isText(e)) {
-              // typed in, the cursor running along the line
-              const n = Math.min(40, e.textContent.trim().length), t = clamp(n * 20, 220, 700) * k;
-              say(b, "type");
-              await go(b, pr.left, cy);
+            if (isText(e)) await typeEl(b, e, k, x + w - 8);
+            else if (e.matches("input, textarea, select")) {
+              // a text box: its outline is drawn first, then it fills in
+              say(b, "text box");
+              const fr = await frame(b, { x: pr.left, y: pr.top, w: pr.width, h: pr.height }, e.tagName.toLowerCase(), 320 * k);
               e.classList.remove("rb-hide");
-              e.animate([{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: t * sp, easing: `steps(${Math.max(4, n)})`, fill: "backwards" });
-              await go(b, Math.min(pr.right, x + w - 8), cy, t, "linear");
+              e.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 * sp });
+              unframe(fr, 120);
+            } else if (pr.width >= 28 && pr.height >= 28 && (e.matches("img, canvas, .avatar") || /photo|avatar|pic|img/i.test(e.className))) {
+              // an image: dropped in small, then pulled out to size from its corner
+              say(b, "resize");
+              await go(b, pr.left + pr.width * 0.3, pr.top + pr.height * 0.3); click(b);
+              e.classList.remove("rb-hide");
+              const t = 520 * k;
+              e.style.transformOrigin = "0 0";
+              e.animate([{ scale: "0.3", opacity: 0.4 }, { scale: "1", opacity: 1 }], { duration: t * sp, easing: "cubic-bezier(.3,.7,.3,1)", fill: "backwards" });
+              const fr = document.createElement("div");
+              fr.className = "rb-fr set" + (pr.top < 34 ? " lo" : "");
+              fr.style.cssText = `--a:${b.color};left:${pr.left}px;top:${pr.top}px;width:${pr.width * 0.3}px;height:${pr.height * 0.3}px;--t:${t * sp}ms`;
+              fr.innerHTML = `<i></i><i></i><i></i><i></i><b class="rb-chip">resize · ${Math.round(pr.width)}×${Math.round(pr.height)}</b>`;
+              fx.appendChild(fr); void fr.offsetWidth; fr.style.width = pr.width + "px"; fr.style.height = pr.height + "px";
+              await go(b, pr.right, pr.bottom, t, "cubic-bezier(.3,.7,.3,1)");
+              unframe(fr, 150);
             } else {
               // picked up nearby and dragged into place
               const ox = clamp(rand(-150, 150), x + 12 - cx, x + w - 12 - cx), oy = clamp(rand(-110, 110), y + app.tb + 12 - cy, y + h - 12 - cy), t = 440 * k;
@@ -739,8 +978,22 @@
               e.animate([{ translate: `${ox}px ${oy}px`, scale: "0.6", opacity: 0 }, { opacity: 1, offset: 0.25 }, { translate: "0px 0px", scale: "1", opacity: 1 }],
                 { duration: t * sp, easing: "cubic-bezier(.2,.75,.25,1.15)", fill: "backwards" });
               await go(b, cx, cy, t, "cubic-bezier(.2,.75,.25,1.15)");
+              guides({ x: pr.left, y: pr.top });
             }
           }, { deps: [base + ":b"], pri: -1, x: cx, y: cy });
+        });
+        SPECIAL[app.id]?.(app.rl, base, k, parts.map((_, j) => `${base}:p${j}`));
+        const NAMES = { min: "minimize", max: "maximize", close: "close", fs: "full screen" };
+        [...app.rl.querySelectorAll(".titlebar .tbtn")].forEach((bt, n) => {
+          bt.classList.add("rb-hide");
+          const [bx, by, br] = mid(bt);
+          task(`${base}:tb${n}`, async (b) => {
+            say(b, NAMES[bt.dataset.a] || "button");
+            const fr = await frame(b, { x: br.left, y: br.top, w: br.width, h: br.height }, NAMES[bt.dataset.a] || "button", 200 * k, false);
+            bt.classList.remove("rb-hide");
+            bt.animate([{ scale: "0.3", opacity: 0 }, { scale: "1", opacity: 1 }], { duration: 220 * sp, easing: "cubic-bezier(.3,1.5,.5,1)" });
+            click(b); unframe(fr, 80);
+          }, { deps: [base + ":t"], pri: -1, x: bx, y: by });
         });
         const f = await frame(a, r, "win · " + app.title.replace(/ - .*$/, "").replace(/^.* - /, ""), 360 * k);
         wrap.classList.add("wf"); click(a);
@@ -785,14 +1038,18 @@
     at(650, () => { ov.classList.add("on"); skipBtn.focus({ preventScroll: true }); });
     at(900, () => { decode(q(".rb-intro-t"), "VISUAL REBUILD", 900); q(".rb-intro-bar").classList.add("on"); blip(90, 0.9, "sawtooth", 0.6, 45); });
     at(1150, () => { q(".rb-intro-s").innerHTML = "unmounting render tree · <b>0 nodes remain</b>"; tick(); });
-    at(1900, () => { q(".rb-intro-s").innerHTML = "spawning swarm ▸ <b>10 agents · needle and thread</b>"; tick(); });
+    at(1900, () => { q(".rb-intro-s").innerHTML = "spawning swarm ▸ <b>agents · needle and thread</b>"; tick(); });
     at(1000, () => prepAll());
 
-    // 2.6-12s: the foundation, back end and front end built together
-    at(2600, () => { intro.classList.add("off"); spawn(10); thud(); });
-    [["rules", 2700], ["app", 3500], ["sound", 4300], ["db", 5100], ["deploy", 5900], ["style", 6700], ["otp", 7500], ["data", 8300]]
+    // 2.6-10s: the foundation, back end and front end built together
+    at(2600, () => { intro.classList.add("off"); ov.querySelectorAll(".rb-ruler").forEach((e) => e.classList.add("on")); spawn(4); thud(); });
+    // the swarm grows with the work, so nobody stands around waiting for something to do
+    const sideIn = (k) => [[-30, vh * (0.25 + k * 0.25)], [vw + 30, vh * (0.3 + k * 0.2)], [vw * (0.3 + k * 0.2), -30]][k % 3];
+    at(5400, () => spawn(3, sideIn));
+    at(8200, () => spawn(3, sideIn));
+    [["rules", 2700], ["app", 3100], ["sound", 3900], ["db", 4700], ["deploy", 5500], ["style", 6300], ["otp", 7100], ["data", 7900]]
       .forEach(([id, t]) => at(t, () => (PANELS[id] ? buildPanel(id) : buildBox(beL, id, FE[id], "fe"))));
-    if (!narrow) at(8800, () => {
+    if (!narrow) at(8400, () => {
       wire(beL, ["rules", "r", 0.5], ["app", "l", 0.35], "allow");
       wire(beL, ["app", "r", 0.3], ["sound", "l", 0.5], "play()");
       wire(beL, ["app", "b", 0.5], ["style", "t", 0.5], "paint");
@@ -802,18 +1059,18 @@
     let sewTimer = 0;
     at(7000, () => { if (!rm) sewTimer = every(narrow ? 320 : 190, stitchOne); });
 
-    // 12-29s: the real apps, stacking on top of each other, the games last and About Me on top
-    at(11500, () => {
-      beL.classList.add("under");
+    // 9-25s: the real apps, stacking on top of each other, the games last and About Me on top
+    at(10000, () => { beL.classList.add("under"); });
+    at(12500, () => {
       const edges = [[-30, vh * 0.3], [vw + 30, vh * 0.5], [vw * 0.5, vh + 30], [-30, vh * 0.8], [vw + 30, vh * 0.2], [vw * 0.3, -30]];
       spawn(4, (k) => edges[k]); thud();
     });
-    at(18000, () => beL.classList.add("under2"));
+    at(16000, () => beL.classList.add("under2"));
     APP_AT.forEach((t, i) => at(t, () => { if (apps[i]) buildApp(apps[i], i); }));
 
-    // 30-34s: the windows fly away and the desktop is built
-    at(29600, () => stop(sewTimer));
-    at(30000, () => {
+    // 26-29s: the windows fly away and the desktop is built
+    at(25600, () => stop(sewTimer));
+    at(26000, () => {
       queue.length = 0; focusPt = null;
       appsL.querySelectorAll(".rb-hide").forEach((e) => e.classList.remove("rb-hide"));
       [...appsL.children].reverse().forEach((w, k) => at(k * 45, () => {
@@ -826,24 +1083,36 @@
       sewL.style.opacity = "0";
       blip(55, 1.0, "sawtooth", 0.4, 140);
     });
-    at(30500, () => {
+    at(26500, () => {
       clone.classList.add("on");
       q(".rb-vig").classList.add("off");
       pace = 0.7;
       task("wall", async (a) => {
         say(a, "wallpaper");
-        await go(a, vw / 2, vh / 2, 380); click(a);
-        wall.style.setProperty("--x", vw / 2 + "px"); wall.style.setProperty("--y", vh / 2 + "px");
-        wall.classList.add("on"); blip(220, 0.5, "sine", 1.0, 440);
+        await go(a, vw * 0.6, vh * 0.6, 380); click(a);
+        wall.style.clipPath = "none";
+        wall.animate([{ clipPath: "inset(40% 40% 40% 40% round 10px)" }, { clipPath: "inset(0 0 0 0 round 0)" }], { duration: 1100 * sp, easing: "cubic-bezier(.5,0,.2,1)", fill: "backwards" });
+        const fr = document.createElement("div");
+        fr.className = "rb-fr set";
+        fr.style.cssText = `--a:${a.color};left:${vw * 0.4}px;top:${vh * 0.4}px;width:${vw * 0.2}px;height:${vh * 0.2}px;--t:${1100 * sp}ms`;
+        fr.innerHTML = `<i></i><i></i><i></i><i></i><b class="rb-chip">wallpaper · ${vw}×${vh}</b>`;
+        fx.appendChild(fr); void fr.offsetWidth;
+        fr.style.cssText += `;left:0;top:0;width:${vw}px;height:${vh}px;transition:width var(--t) cubic-bezier(.5,0,.2,1),height var(--t) cubic-bezier(.5,0,.2,1),left var(--t) cubic-bezier(.5,0,.2,1),top var(--t) cubic-bezier(.5,0,.2,1)`;
+        blip(220, 0.5, "sine", 1.0, 440);
         at(1300, () => { beL.classList.add("gone"); feL.classList.add("gone"); q(".rb-grid").style.opacity = 0; });
-        await go(a, vw / 2 + 60, vh / 2 - 40, 500);
+        await go(a, vw - 24, vh - 40, 1100, "cubic-bezier(.5,0,.2,1)");
+        unframe(fr, 100);
       }, { pri: -3 });
       D.icons.forEach((p, k) => task("icon" + k, async (a) => {
-        const lbl = p.el.textContent.trim() || "icon";
+        const lbl = p.el.textContent.trim() || "icon", cx = p.r.x + p.r.w / 2, cy = p.r.y + p.r.h / 2;
+        const ox = clamp(rand(-260, 260), 30 - cx, vw - 60 - cx), oy = clamp(rand(-160, 160), 30 - cy, vh - 60 - cy);
         say(a, lbl.toLowerCase());
-        const f = await frame(a, p.r, ".dicon " + lbl, 240);
-        p.el.style.setProperty("--t", 360 * sp + "ms"); p.el.classList.add("rb-on"); click(a);
-        unframe(f, 260);
+        await go(a, cx + ox, cy + oy); click(a);
+        p.el.style.setProperty("--t", "0ms"); p.el.classList.add("rb-on");
+        p.el.animate([{ translate: `${ox}px ${oy}px`, scale: "0.6", opacity: 0 }, { opacity: 1, offset: 0.2 }, { translate: "0px 0px", scale: "1", opacity: 1 }],
+          { duration: 380 * sp, easing: "cubic-bezier(.2,.75,.25,1.15)", fill: "backwards" });
+        await go(a, cx, cy, 380, "cubic-bezier(.2,.75,.25,1.15)");
+        guides(p.r);
       }, { x: p.r.x, y: p.r.y }));
       D.wins.forEach((p, k) => task("uwin" + k, async (a) => {
         say(a, "window");
@@ -854,8 +1123,8 @@
       }, { x: p.r.x, y: p.r.y }));
     });
 
-    // 34-37s: taskbar, start button, tray: wifi, battery, volume, clock
-    at(33900, () => {
+    // 29-32s: taskbar, start button, tray: wifi, battery, volume, clock
+    at(28600, () => {
       focusPt = [vw / 2, vh - 70];
       D.bar.forEach((p) => task("bar", async (a) => {
         say(a, "taskbar");
@@ -877,17 +1146,24 @@
       part(D.clock, "clock", "clock");
     });
 
-    // outro: the swarm flies home into the start button and the live desktop takes over
-    at(36000, () => {
+    // outro: the swarm streams off the screen together, like a flock, and the live desktop takes over
+    at(31200, () => {
       queue.length = 0;
-      const home = D.start[0]?.r || { x: 20, y: vh - 30, w: 60, h: 30 };
-      ags.forEach((a, k) => { a.home = true; at(k * 35, () => { place(a, home.x + home.w / 2, home.y + home.h / 2, 520, "cubic-bezier(.6,0,.8,.4)"); at(480, () => a.el.classList.remove("on")); }); });
+      ags.forEach((a, k) => {
+        a.home = true; a.el.classList.remove("tag");
+        at(k * 45, () => {
+          place(a, vw * 0.7 + rand(-70, 70), vh * 0.72 + rand(-50, 50), 380, "cubic-bezier(.4,0,.6,1)");
+          at(380, () => { place(a, vw + 60 + rand(0, 80), vh * 0.85 + rand(-140, 60), 520, "cubic-bezier(.6,0,.9,.5)"); at(520, () => a.el.classList.remove("on")); });
+        });
+      });
       skipBtn.style.opacity = "0"; fx.style.opacity = "0";
+      ov.querySelectorAll(".rb-ruler").forEach((e) => e.classList.remove("on"));
       // anything the swarm did not reach in time is simply shown
       clone.querySelectorAll(".rb-h").forEach((e) => e.classList.add("rb-on"));
     });
-    at(36450, () => { flash.classList.add("go"); real.classList.remove("rb-glitch"); play("startup"); });
-    at(37000, () => finish(false));
+    at(31650, () => { flash.classList.add("go"); real.classList.remove("rb-glitch"); play("startup"); });
+    at(32200, () => finish(false));
+    const tStart = performance.now();
 
     // ---------- skip + exit ----------
     const onKey = (e) => {
@@ -896,6 +1172,20 @@
       else if (e.key === "Tab") { e.preventDefault(); skipBtn.focus(); }
     };
     addEventListener("keydown", onKey, true);
+    // "Rebuilt by N agents in X s", over the live desktop for a few seconds, with Replay
+    function credit() {
+      document.querySelector(".rb-end")?.remove();
+      const pill = document.createElement("div");
+      pill.className = "rb-end"; pill.setAttribute("role", "status");
+      pill.innerHTML = `<span class="dots">${ags.map((a) => `<i style="background:${a.color}"></i>`).join("")}</span>
+        <span>Rebuilt by <b>${ags.length} agents</b> in <b>${((performance.now() - tStart) / 1000).toFixed(1)}s</b></span>
+        <button type="button" class="re">Replay</button><button type="button" class="x" aria-label="Close">✕</button>`;
+      document.body.appendChild(pill);
+      const close = () => { pill.classList.add("out"); setTimeout(() => pill.remove(), 400); };
+      pill.querySelector(".re").onclick = () => { pill.remove(); window.REBUILD(opts); };
+      pill.querySelector(".x").onclick = close;
+      setTimeout(() => pill.isConnected && close(), 7000);
+    }
     function finish(skipped) {
       if (done) return;
       done = true;
@@ -908,6 +1198,7 @@
       setTimeout(() => {
         ov.remove(); real.classList.remove("rb-reveal"); running = false;
         if (prevFocus?.isConnected) prevFocus.focus?.({ preventScroll: true });
+        if (!skipped) credit();
         opts.onDone?.();
       }, skipped ? 800 : 750);
     }
